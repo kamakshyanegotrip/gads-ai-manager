@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Google Ads Manager</title>
+<meta name="description" content="Multi-business, multi-account AI Google Ads manager with approval-gated changes.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #f5f6f8; --panel: #ffffff; --ink: #14171f; --muted: #667085; --line: #e4e7ec;
+  --accent: #2563eb; --accent-ink: #ffffff; --good: #067647; --good-bg: #ecfdf3;
+  --warn: #b54708; --warn-bg: #fffaeb; --bad: #b42318; --bad-bg: #fef3f2; --info-bg: #eff4ff;
+  --shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.08); --radius: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0e1116; --panel: #161b22; --ink: #e6edf3; --muted: #8b949e; --line: #2a313c;
+    --accent: #4c8dff; --accent-ink: #0b1220; --good: #3fb950; --good-bg: #12261a;
+    --warn: #e3a008; --warn-bg: #2a2110; --bad: #f85149; --bad-bg: #2d1414; --info-bg: #152238;
+    --shadow: none;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: Inter, system-ui, -apple-system, Segoe UI, sans-serif; font-size: 14px; line-height: 1.45; }
+button, input, select, textarea { font: inherit; color: inherit; }
+a { color: var(--accent); }
+.hidden { display: none !important; }
+.muted { color: var(--muted); }
+.small { font-size: 12px; }
+
+/* login */
+.login-wrap { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
+.login { width: 100%; max-width: 420px; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 28px; box-shadow: var(--shadow); }
+.login h1 { font-size: 20px; margin: 0 0 4px; }
+.login p { margin: 0 0 20px; color: var(--muted); }
+.field { display: grid; gap: 6px; margin-bottom: 14px; }
+.field label { font-weight: 500; font-size: 13px; }
+.field input, .field select { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; width: 100%; }
+.check { display: flex; gap: 8px; align-items: center; margin: 4px 0 18px; color: var(--muted); font-size: 13px; }
+.btn { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 8px 14px; cursor: pointer; font-weight: 500; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.good { background: var(--good); border-color: var(--good); color: #fff; }
+.btn.bad { color: var(--bad); }
+.btn:disabled { opacity: .55; cursor: default; }
+.btn.block { width: 100%; padding: 11px; }
+.err { color: var(--bad); font-size: 13px; min-height: 18px; margin-top: 10px; }
+
+/* shell */
+header.top { position: sticky; top: 0; z-index: 5; background: var(--panel); border-bottom: 1px solid var(--line); }
+.top-inner { max-width: 1280px; margin: 0 auto; padding: 10px 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.brand { font-weight: 700; display: flex; align-items: center; gap: 8px; margin-right: auto; }
+.brand .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+.scope { display: flex; gap: 8px; flex-wrap: wrap; }
+.scope select { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; max-width: 220px; }
+nav.tabs { max-width: 1280px; margin: 0 auto; padding: 0 16px; display: flex; gap: 4px; overflow-x: auto; }
+nav.tabs button { border: 0; background: none; padding: 10px 12px; border-bottom: 2px solid transparent; cursor: pointer; color: var(--muted); font-weight: 500; white-space: nowrap; }
+nav.tabs button.active { color: var(--ink); border-color: var(--accent); }
+nav.tabs .count { background: var(--accent); color: var(--accent-ink); border-radius: 10px; padding: 0 7px; font-size: 11px; margin-left: 4px; }
+main { max-width: 1280px; margin: 0 auto; padding: 18px 16px 60px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px; }
+.panel h2 { font-size: 15px; margin: 0 0 12px; }
+.grid { display: grid; gap: 14px; }
+.kpis { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+.kpi .label { color: var(--muted); font-size: 12px; font-weight: 500; }
+.kpi .value { font-size: 24px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.kpi .sub { font-size: 12px; margin-top: 2px; }
+.two { grid-template-columns: 2fr 1fr; }
+@media (max-width: 900px) { .two { grid-template-columns: 1fr; } }
+.chart-box { position: relative; height: 260px; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { color: var(--muted); font-size: 12px; font-weight: 600; }
+td.num, th.num { text-align: right; }
+.pill { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--bg); color: var(--muted); border: 1px solid var(--line); }
+.pill.good { background: var(--good-bg); color: var(--good); border-color: transparent; }
+.pill.warn { background: var(--warn-bg); color: var(--warn); border-color: transparent; }
+.pill.bad { background: var(--bad-bg); color: var(--bad); border-color: transparent; }
+.pill.info { background: var(--info-bg); color: var(--accent); border-color: transparent; }
+.bar { height: 6px; background: var(--bg); border-radius: 4px; overflow: hidden; min-width: 70px; }
+.bar > span { display: block; height: 100%; background: var(--accent); }
+.issues li { margin-bottom: 8px; }
+.issues { margin: 0; padding-left: 18px; }
+
+/* recs */
+.recs { display: grid; gap: 12px; }
+.rec { border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; background: var(--panel); }
+.rec-head { display: flex; gap: 10px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
+.rec-title { font-weight: 600; font-size: 14px; }
+.rec-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.rec p { margin: 10px 0 0; }
+.pc { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+@media (max-width: 700px) { .pc { grid-template-columns: 1fr; } }
+.pc div { background: var(--bg); border-radius: 8px; padding: 8px 10px; font-size: 13px; }
+.pc b { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 2px; }
+.rec-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
+details.kw summary { cursor: pointer; color: var(--accent); margin-top: 10px; font-size: 13px; }
+.kwlist { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.kwlist span { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 2px 8px; font-size: 12px; }
+.filters { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+.filters button { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 5px 12px; cursor: pointer; font-size: 13px; }
+.filters button.active { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+/* chat */
+.chat { display: grid; grid-template-rows: 1fr auto; height: calc(100vh - 190px); min-height: 420px; padding: 0; overflow: hidden; }
+.msgs { overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.msg { max-width: 80%; padding: 10px 12px; border-radius: 12px; white-space: pre-wrap; word-wrap: break-word; }
+.msg.me { align-self: flex-end; background: var(--accent); color: var(--accent-ink); border-bottom-right-radius: 4px; }
+.msg.ai { align-self: flex-start; background: var(--bg); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+.msg.ai.typing { color: var(--muted); font-style: italic; }
+.suggest { display: flex; gap: 6px; flex-wrap: wrap; padding: 0 16px 10px; }
+.suggest button { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 5px 10px; cursor: pointer; font-size: 12px; }
+.composer { border-top: 1px solid var(--line); display: flex; gap: 8px; padding: 12px; }
+.composer textarea { flex: 1; resize: none; border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 10px; height: 44px; }
+
+/* modal + toast */
+.modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: grid; place-items: center; padding: 16px; z-index: 20; }
+.modal { background: var(--panel); border-radius: 14px; padding: 20px; width: 100%; max-width: 460px; border: 1px solid var(--line); }
+.modal h3 { margin: 0 0 8px; font-size: 16px; }
+.modal .row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+.toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 14px; border-radius: 10px; z-index: 30; max-width: min(92vw, 560px); white-space: pre-wrap; box-shadow: 0 6px 20px rgba(0,0,0,.25); }
+.empty { text-align: center; color: var(--muted); padding: 30px 10px; }
+.spin { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: s 0.8s linear infinite; vertical-align: -2px; }
+@keyframes s { to { transform: rotate(360deg); } }
+footer { max-width: 1280px; margin: 0 auto; padding: 0 16px 24px; color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginView" class="login-wrap">
+  <form class="login" id="loginForm" autocomplete="on">
+    <h1>AI Google Ads Manager</h1>
+    <p>Multi-business · multi-account · every change needs your approval.</p>
+    <div class="field"><label for="tenant">Tenant ID</label><input id="tenant" name="tenant" placeholder="TEN-001" required></div>
+    <div class="field"><label for="user">User ID</label><input id="user" name="username" placeholder="USR-001" required autocomplete="username"></div>
+    <div class="field"><label for="key">API key</label><input id="key" name="password" type="password" placeholder="gak_…" required autocomplete="current-password"></div>
+    <details class="small muted" style="margin-bottom:12px"><summary>Server</summary>
+      <div class="field" style="margin-top:8px"><label for="base">n8n base URL</label><input id="base" value="https://n8n.assignover.in"></div>
+    </details>
+    <label class="check"><input type="checkbox" id="remember"> Keep me signed in on this device</label>
+    <button class="btn primary block" id="loginBtn" type="submit">Sign in</button>
+    <div class="err" id="loginErr"></div>
+  </form>
+</div>
+
+<!-- APP -->
+<div id="appView" class="hidden">
+  <header class="top">
+    <div class="top-inner">
+      <div class="brand"><span class="dot"></span>AI Google Ads Manager</div>
+      <div class="scope">
+        <select id="bizSel" aria-label="Business"></select>
+        <select id="accSel" aria-label="Account"></select>
+        <select id="daysSel" aria-label="Period">
+          <option value="7">Last 7 days</option><option value="14">Last 14 days</option>
+          <option value="30" selected>Last 30 days</option><option value="60">Last 60 days</option><option value="90">Last 90 days</option>
+        </select>
+        <button class="btn" id="refreshBtn" title="Reload data">Refresh</button>
+        <button class="btn" id="logoutBtn">Sign out</button>
+      </div>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button data-tab="dash" class="active">Dashboard</button>
+      <button data-tab="recs">Recommendations <span class="count hidden" id="recCount"></span></button>
+      <button data-tab="chat">AI Chat</button>
+      <button data-tab="log">Change log</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- DASHBOARD -->
+    <section id="tab-dash">
+      <div class="grid kpis" id="kpis"></div>
+      <div class="grid two" style="margin-top:14px">
+        <div class="panel"><h2>Daily spend &amp; conversions</h2><div class="chart-box"><canvas id="chart"></canvas></div></div>
+        <div class="panel"><h2>Open issues</h2><ul class="issues" id="issues"></ul></div>
+      </div>
+      <div class="panel" style="margin-top:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+          <h2 style="margin:0">Campaigns</h2>
+          <span class="small muted" id="freshness"></span>
+        </div>
+        <div class="table-wrap" style="margin-top:10px"><table id="campTable"></table></div>
+      </div>
+    </section>
+
+    <!-- RECOMMENDATIONS -->
+    <section id="tab-recs" class="hidden">
+      <div class="filters" id="recFilters">
+        <button data-f="proposed" class="active">Needs approval</button>
+        <button data-f="advisory">Manual checks</button>
+        <button data-f="done">Decided / applied</button>
+        <button data-f="all">All</button>
+      </div>
+      <div class="recs" id="recList"></div>
+    </section>
+
+    <!-- CHAT -->
+    <section id="tab-chat" class="hidden">
+      <div class="panel chat">
+        <div class="msgs" id="msgs"></div>
+        <div>
+          <div class="suggest" id="suggest">
+            <button>How are my Google Ads doing this month?</button>
+            <button>Which campaign is wasting money?</button>
+            <button>Compare my accounts</button>
+            <button>Show pending recommendations</button>
+          </div>
+          <form class="composer" id="chatForm">
+            <textarea id="chatInput" placeholder="Ask about performance, audit a campaign, or request a change…"></textarea>
+            <button class="btn primary" id="sendBtn" type="submit">Send</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- LOG -->
+    <section id="tab-log" class="hidden">
+      <div class="panel"><h2>Change ledger</h2><div class="table-wrap"><table id="logTable"></table></div>
+        <p class="small muted">Every execution attempt is recorded — applied, verified, no-op, blocked or failed.</p></div>
+    </section>
+  </main>
+  <footer>Changes to Google Ads only happen after you approve them, and only on the account the recommendation belongs to.</footer>
+</div>
+
+<div id="modalRoot"></div>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const $$ = s => [...document.querySelectorAll(s)];
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const inr = v => v === null || v === undefined || isNaN(v) ? '—' : '₹' + Math.round(Number(v)).toLocaleString('en-IN');
+  const pct = v => v === null || v === undefined || isNaN(v) ? '—' : (Number(v) * 100).toFixed(1) + '%';
+  const num = v => Math.round(Number(v || 0)).toLocaleString('en-IN');
+  const store = {
+    get(k) { try { return localStorage.getItem(k) ?? sessionStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v, persist) { try { (persist ? localStorage : sessionStorage).setItem(k, v); } catch (e) {} },
+    clear() { try { ['gads_auth'].forEach(k => { localStorage.removeItem(k); sessionStorage.removeItem(k); }); } catch (e) {} }
+  };
+
+  let auth = null, data = null, chart = null, recFilter = 'proposed';
+  const sessionId = 'web-' + Math.random().toString(36).slice(2, 10);
+
+  async function post(path, fields) {
+    const body = new URLSearchParams();
+    Object.entries(fields).forEach(([k, v]) => body.append(k, v == null ? '' : String(v)));
+    const res = await fetch(auth.base.replace(/\/+$/, '') + '/webhook/' + path, { method: 'POST', body });
+    const text = await res.text();
+    if (!res.ok) throw new Error('Server returned ' + res.status + (text ? ': ' + text.slice(0, 200) : ''));
+    try { return JSON.parse(text); } catch (e) { return { output: text }; }
+  }
+  const creds = () => ({ tenant_id: auth.tenant, user_id: auth.user, api_key: auth.key });
+
+  function toast(msg, ms = 4500) {
+    const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
+    document.body.appendChild(t); setTimeout(() => t.remove(), ms);
+  }
+  function confirmBox(title, html, okLabel, okClass) {
+    return new Promise(resolve => {
+      const root = $('#modalRoot');
+      root.innerHTML = '<div class="modal-bg"><div class="modal" role="dialog" aria-modal="true"><h3>' + esc(title) + '</h3><div>' + html +
+        '</div><div class="row"><button class="btn" data-x="0">Cancel</button><button class="btn ' + (okClass || 'primary') + '" data-x="1">' + esc(okLabel) + '</button></div></div></div>';
+      root.querySelectorAll('[data-x]').forEach(b => b.onclick = () => { root.innerHTML = ''; resolve(b.dataset.x === '1'); });
+    });
+  }
+
+  // ---------- auth ----------
+  async function login(a, silent) {
+    auth = a;
+    $('#loginBtn').disabled = true; $('#loginErr').textContent = '';
+    try {
+      const r = await post('gads-webapp-api', { action: 'bootstrap', days: $('#daysSel').value || 30, ...creds() });
+      if (!r.ok) throw new Error(r.error || 'Sign-in failed');
+      data = r;
+      store.set('gads_auth', JSON.stringify(a), a.remember);
+      $('#loginView').classList.add('hidden'); $('#appView').classList.remove('hidden');
+      buildScope(); render();
+      if (!$('#msgs').children.length) addMsg('ai', 'Hi ' + (r.user.full_name || '') + '. Ask me about performance, waste, cross-campaign overlap or cross-account comparisons. I can also prepare a change — nothing is applied until you approve it.');
+    } catch (e) {
+      auth = null;
+      if (!silent) $('#loginErr').textContent = e.message.includes('Failed to fetch') ? 'Could not reach the server (network or CORS). Check the n8n URL.' : e.message;
+      $('#loginView').classList.remove('hidden'); $('#appView').classList.add('hidden');
+    } finally { $('#loginBtn').disabled = false; }
+  }
+  $('#loginForm').addEventListener('submit', e => {
+    e.preventDefault();
+    login({ tenant: $('#tenant').value.trim().toUpperCase(), user: $('#user').value.trim().toUpperCase(), key: $('#key').value.trim(), base: $('#base').value.trim(), remember: $('#remember').checked });
+  });
+  $('#logoutBtn').onclick = () => { store.clear(); location.reload(); };
+
+  async function reload() {
+    $('#refreshBtn').disabled = true; $('#refreshBtn').innerHTML = '<span class="spin"></span>';
+    try {
+      const r = await post('gads-webapp-api', { action: 'bootstrap', days: $('#daysSel').value, ...creds() });
+      if (!r.ok) throw new Error(r.error);
+      data = r; render();
+    } catch (e) { toast('Could not refresh: ' + e.message); }
+    finally { $('#refreshBtn').disabled = false; $('#refreshBtn').textContent = 'Refresh'; }
+  }
+  $('#refreshBtn').onclick = reload;
+  $('#daysSel').onchange = reload;
+
+  // ---------- scope ----------
+  function buildScope() {
+    const bizSel = $('#bizSel'), prev = bizSel.value;
+    bizSel.innerHTML = (data.businesses.length > 1 ? '<option value="ALL">All businesses</option>' : '') +
+      data.businesses.map(b => '<option value="' + esc(b.business_id) + '">' + esc(b.business_name) + '</option>').join('');
+    if (prev && [...bizSel.options].some(o => o.value === prev)) bizSel.value = prev;
+    buildAcc();
+  }
+  function buildAcc() {
+    const biz = $('#bizSel').value, accSel = $('#accSel'), prev = accSel.value;
+    const accs = data.accounts.filter(a => biz === 'ALL' || a.business_id === biz);
+    accSel.innerHTML = '<option value="ALL">All accounts (' + accs.length + ')</option>' +
+      accs.map(a => '<option value="' + esc(a.account_id) + '">' + esc((a.label || a.name) + ' · ' + a.account_id) + '</option>').join('');
+    if (prev && [...accSel.options].some(o => o.value === prev)) accSel.value = prev;
+  }
+  $('#bizSel').onchange = () => { buildAcc(); render(); };
+  $('#accSel').onchange = render;
+  const inScope = x => {
+    const biz = $('#bizSel').value, acc = $('#accSel').value;
+    return (biz === 'ALL' || x.business_id === biz) && (acc === 'ALL' || x.account_id === acc);
+  };
+  function targetCpa() {
+    const acc = $('#accSel').value, biz = $('#bizSel').value;
+    if (acc !== 'ALL') { const a = data.accounts.find(x => x.account_id === acc); if (a && a.target_cpa) return Number(a.target_cpa); }
+    const b = data.businesses.find(x => x.business_id === biz) || (data.businesses.length === 1 ? data.businesses[0] : null);
+    return b && b.target_cpa ? Number(b.target_cpa) : null;
+  }
+
+  // ---------- render ----------
+  function render() { renderDash(); renderRecs(); renderLog(); }
+
+  function renderDash() {
+    const camps = data.campaigns.filter(inScope);
+    const daily = data.daily.filter(inScope);
+    const cost = camps.reduce((s, c) => s + Number(c.cost), 0), conv = camps.reduce((s, c) => s + Number(c.conversions), 0);
+    const clicks = camps.reduce((s, c) => s + Number(c.clicks), 0);
+    const zero = camps.filter(c => Number(c.conversions) === 0).reduce((s, c) => s + Number(c.cost), 0);
+    const cpa = conv > 0 ? cost / conv : null, tgt = targetCpa();
+    const cpaCls = cpa === null || !tgt ? '' : (cpa <= tgt ? 'good' : (cpa <= tgt * 1.25 ? 'warn' : 'bad'));
+    $('#kpis').innerHTML = [
+      ['Spend', inr(cost), data.days + ' days · ' + num(clicks) + ' clicks'],
+      ['Conversions', num(conv), 'CVR ' + (clicks ? (conv / clicks * 100).toFixed(2) + '%' : '—')],
+      ['CPA', inr(cpa), tgt ? '<span class="pill ' + cpaCls + '">target ' + inr(tgt) + '</span>' : 'no target set'],
+      ['Zero-conversion spend', inr(zero), cost ? (zero / cost * 100).toFixed(1) + '% of spend' : '—'],
+      ['Awaiting approval', String(data.recommendations.filter(r => r.status === 'proposed' && inScope(r)).length), 'recommendations']
+    ].map(k => '<div class="panel kpi"><div class="label">' + k[0] + '</div><div class="value">' + k[1] + '</div><div class="sub muted">' + k[2] + '</div></div>').join('');
+
+    const byDate = {};
+    daily.forEach(d => { const k = String(d.metric_date).slice(0, 10); const o = byDate[k] || (byDate[k] = { cost: 0, conv: 0 }); o.cost += Number(d.cost); o.conv += Number(d.conversions); });
+    const labels = Object.keys(byDate).sort();
+    const css = getComputedStyle(document.documentElement);
+    const accent = css.getPropertyValue('--accent').trim(), good = css.getPropertyValue('--good').trim(), muted = css.getPropertyValue('--muted').trim(), line = css.getPropertyValue('--line').trim();
+    if (!window.Chart) { $('#chart').parentElement.innerHTML = '<div class="empty">Chart library could not load. Check your connection and refresh.</div>'; }
+    else {
+      if (chart) chart.destroy();
+      chart = new Chart($('#chart'), {
+        data: { labels: labels.map(l => l.slice(5)), datasets: [
+          { type: 'bar', label: 'Spend (₹)', data: labels.map(l => Math.round(byDate[l].cost)), backgroundColor: accent + '99', borderRadius: 3, yAxisID: 'y' },
+          { type: 'line', label: 'Conversions', data: labels.map(l => byDate[l].conv), borderColor: good, backgroundColor: good, tension: .3, pointRadius: 2, yAxisID: 'y1' }
+        ] },
+        options: { maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+          plugins: { legend: { labels: { color: muted, boxWidth: 12 } } },
+          scales: { x: { ticks: { color: muted, maxRotation: 0, autoSkip: true }, grid: { display: false } },
+            y: { ticks: { color: muted }, grid: { color: line } }, y1: { position: 'right', ticks: { color: muted, precision: 0 }, grid: { display: false }, beginAtZero: true } } }
+      });
+    }
+
+    const issues = data.issues.filter(inScope);
+    const sevCls = { high: 'bad', medium: 'warn', opportunity: 'good' };
+    $('#issues').innerHTML = issues.length ? issues.map(i => '<li><span class="pill ' + (sevCls[i.severity] || '') + '">' + esc(i.severity) + '</span> ' + esc((i.detail || {}).title || i.issue_type) + '</li>').join('')
+      : '<li class="muted" style="list-style:none;margin-left:-18px">No open issues in this scope.</li>';
+
+    const accName = id => { const a = data.accounts.find(x => x.account_id === id); return a ? (a.label || a.name) : id; };
+    $('#campTable').innerHTML = '<thead><tr><th>Campaign</th><th>Account</th><th>Status</th><th class="num">Spend</th><th class="num">Clicks</th><th class="num">Conv.</th><th class="num">CPA</th><th class="num">Budget/day</th><th>Impr. share</th><th class="num">Lost: budget</th><th class="num">Lost: rank</th></tr></thead><tbody>' +
+      (camps.length ? camps.map(c => {
+        const cc = Number(c.conversions) > 0 ? Number(c.cost) / Number(c.conversions) : null;
+        const st = String(c.status || '').toUpperCase();
+        return '<tr><td><b>' + esc(c.campaign_name) + '</b><div class="small muted">' + esc(c.campaign_type || '') + ' · ' + esc((c.bidding_strategy_type || '').replace(/_/g, ' ').toLowerCase()) + '</div></td>' +
+          '<td>' + esc(accName(c.account_id)) + '</td><td><span class="pill ' + (st === 'ENABLED' ? 'good' : '') + '">' + esc(st.toLowerCase()) + '</span></td>' +
+          '<td class="num">' + inr(c.cost) + '</td><td class="num">' + num(c.clicks) + '</td><td class="num">' + num(c.conversions) + '</td>' +
+          '<td class="num">' + (cc === null ? '—' : '<span class="pill ' + (tgt ? (cc <= tgt ? 'good' : cc <= tgt * 1.25 ? 'warn' : 'bad') : '') + '">' + inr(cc) + '</span>') + '</td>' +
+          '<td class="num">' + inr(c.daily_budget) + '</td>' +
+          '<td><div style="display:flex;gap:6px;align-items:center"><div class="bar"><span style="width:' + Math.round(Number(c.search_is || 0) * 100) + '%"></span></div>' + pct(c.search_is) + '</div></td>' +
+          '<td class="num">' + pct(c.budget_lost_is) + '</td><td class="num">' + pct(c.rank_lost_is) + '</td></tr>';
+      }).join('') : '<tr><td colspan="11" class="empty">No campaign data yet. Ask the AI chat for a performance review to collect data.</td></tr>') + '</tbody>';
+
+    const collected = data.accounts.filter(inScope).map(a => a.last_collected).filter(Boolean).sort().pop();
+    $('#freshness').textContent = (collected ? 'Data collected ' + new Date(collected).toLocaleString() : 'No data collected yet') +
+      (data.last_analysis_at ? ' · last analysis ' + new Date(data.last_analysis_at).toLocaleString() : '');
+  }
+
+  function recStatusPill(s) {
+    const m = { proposed: 'info', advisory: '', approved: 'warn', executing: 'warn', applied: 'good', verified: 'good', declined: '', dismissed: '', acknowledged: '', failed: 'bad', stale: 'warn', expired: '' };
+    return '<span class="pill ' + (m[s] ?? '') + '">' + esc(s) + '</span>';
+  }
+  function renderRecs() {
+    const all = data.recommendations.filter(inScope);
+    const pending = all.filter(r => r.status === 'proposed').length;
+    $('#recCount').textContent = pending; $('#recCount').classList.toggle('hidden', !pending);
+    const list = all.filter(r => recFilter === 'all' ? true : recFilter === 'done' ? !['proposed', 'advisory'].includes(r.status) : r.status === recFilter);
+    const accName = id => { const a = data.accounts.find(x => x.account_id === id); return a ? (a.label || a.name) : id; };
+    const campName = (acc, id) => { const c = data.campaigns.find(x => x.account_id === acc && String(x.campaign_id) === String(id)); return c ? c.campaign_name : id; };
+    $('#recList').innerHTML = list.length ? list.map(r => {
+      const kws = r.action_params && Array.isArray(r.action_params.keywords) ? r.action_params.keywords : null;
+      const canAct = ['proposed', 'advisory'].includes(r.status);
+      const acctRow = data.accounts.find(a => a.account_id === r.account_id);
+      const canExec = acctRow && acctRow.can_execute;
+      return '<article class="rec"><div class="rec-head"><div><div class="rec-title">' + esc(r.title) + '</div><div class="rec-meta">' +
+        recStatusPill(r.status) + '<span class="pill">' + esc((r.intelligence_level || '').replace('_', '-')) + '</span><span class="pill">' + esc(accName(r.account_id)) + '</span>' +
+        (r.campaign_id ? '<span class="pill">' + esc(campName(r.account_id, r.campaign_id)) + '</span>' : '') +
+        '<span class="pill">' + esc(r.recommendation_id) + '</span></div></div>' +
+        (r.expected_impact ? '<div class="pill good">' + esc(r.expected_impact) + '</div>' : '') + '</div>' +
+        (r.rationale ? '<p>' + esc(r.rationale) + '</p>' : '') +
+        '<div class="pc"><div><b>Pros</b>' + esc(r.pros || '—') + '</div><div><b>Cons</b>' + esc(r.cons || '—') + '</div></div>' +
+        (kws ? '<details class="kw"><summary>Show the ' + kws.length + ' negative keywords (' + esc(kws[0].match_type || 'EXACT').toLowerCase() + ' match)</summary><div class="kwlist">' + kws.map(k => '<span>' + esc(k.text) + '</span>').join('') + '</div></details>' : '') +
+        (r.result_note && !canAct ? '<p class="small muted">' + esc(r.result_note) + '</p>' : '') +
+        (canAct && canExec ? '<div class="rec-actions">' + (r.status === 'proposed'
+            ? '<button class="btn good" data-act="approve" data-id="' + esc(r.recommendation_id) + '">Approve &amp; apply</button><button class="btn bad" data-act="decline" data-id="' + esc(r.recommendation_id) + '">Decline</button>'
+            : '<button class="btn" data-act="approve" data-id="' + esc(r.recommendation_id) + '">Mark done</button><button class="btn" data-act="decline" data-id="' + esc(r.recommendation_id) + '">Dismiss</button>') +
+          '<span class="small muted">Expires ' + new Date(r.expires_at).toLocaleDateString() + '</span></div>' : '') +
+        (canAct && !canExec ? '<p class="small muted">You have read-only access to this account.</p>' : '') +
+        '</article>';
+    }).join('') : '<div class="panel empty">' + (recFilter === 'proposed' ? 'Nothing needs your approval in this scope.' : 'Nothing here.') + '</div>';
+  }
+  $('#recFilters').onclick = e => {
+    const b = e.target.closest('button'); if (!b) return;
+    $$('#recFilters button').forEach(x => x.classList.toggle('active', x === b)); recFilter = b.dataset.f; renderRecs();
+  };
+  $('#recList').onclick = async e => {
+    const b = e.target.closest('button[data-act]'); if (!b) return;
+    const r = data.recommendations.find(x => x.recommendation_id === b.dataset.id); if (!r) return;
+    const approve = b.dataset.act === 'approve';
+    const live = approve && r.status === 'proposed';
+    const ok = await confirmBox(live ? 'Apply this change to Google Ads?' : (approve ? 'Mark as done?' : 'Decline this recommendation?'),
+      '<p>' + esc(r.title) + '</p>' + (live ? '<p class="small muted">It will be re-validated (ownership, permission, current state) and then applied to account ' + esc(r.account_id) + ' only.</p>' : ''),
+      live ? 'Approve & apply' : (approve ? 'Mark done' : 'Decline'), live ? 'good' : 'primary');
+    if (!ok) return;
+    $$('#recList button').forEach(x => x.disabled = true);
+    b.innerHTML = '<span class="spin"></span> Working…';
+    try {
+      const res = await post('gads-webapp-api', { action: 'decide', recommendation_id: r.recommendation_id, decision: approve ? 'approve' : 'decline', ...creds() });
+      toast(res.message || res.error || 'Done', 8000);
+    } catch (err) { toast('Failed: ' + err.message); }
+    await reload();
+  };
+
+  function renderLog() {
+    const rows = data.ledger.filter(inScope);
+    const cls = { verified: 'good', applied: 'good', no_op: '', blocked: 'warn', blocked_state: 'warn', blocked_concurrent: 'warn', failed: 'bad' };
+    $('#logTable').innerHTML = '<thead><tr><th>When</th><th>Recommendation</th><th>Action</th><th>Account</th><th>Result</th><th>By</th></tr></thead><tbody>' +
+      (rows.length ? rows.map(l => '<tr><td>' + new Date(l.executed_at).toLocaleString() + '</td><td>' + esc(l.recommendation_id) + '</td><td>' + esc((l.action_type || '').replace(/_/g, ' ')) +
+        '</td><td>' + esc(l.account_id) + '</td><td><span class="pill ' + (cls[l.status] || '') + '">' + esc(l.status) + '</span></td><td>' + esc(l.executed_by) + '</td></tr>').join('')
+        : '<tr><td colspan="6" class="empty">No changes yet.</td></tr>') + '</tbody>';
+  }
+
+  // ---------- tabs ----------
+  $('#tabs').onclick = e => {
+    const b = e.target.closest('button[data-tab]'); if (!b) return;
+    $$('#tabs button').forEach(x => x.classList.toggle('active', x === b));
+    ['dash', 'recs', 'chat', 'log'].forEach(t => $('#tab-' + t).classList.toggle('hidden', t !== b.dataset.tab));
+    if (b.dataset.tab === 'chat') $('#chatInput').focus();
+  };
+
+  // ---------- chat ----------
+  function addMsg(who, text) {
+    const d = document.createElement('div'); d.className = 'msg ' + who; d.textContent = text;
+    $('#msgs').appendChild(d); $('#msgs').scrollTop = $('#msgs').scrollHeight; return d;
+  }
+  async function send(text) {
+    text = text.trim(); if (!text) return;
+    addMsg('me', text); $('#chatInput').value = '';
+    const t = addMsg('ai typing', 'Working on it… analyses pull fresh Google Ads data and can take up to a minute.');
+    $('#sendBtn').disabled = true;
+    try {
+      const r = await post('gads-ai-manager', { ...creds(), message: text, session_id: sessionId });
+      t.remove(); addMsg('ai', r.output || r.message || JSON.stringify(r));
+      if (/REC-|approved|declined|analysis|run /i.test(r.output || '')) reload();
+    } catch (e) { t.remove(); addMsg('ai', 'Sorry — ' + e.message); }
+    finally { $('#sendBtn').disabled = false; }
+  }
+  $('#chatForm').addEventListener('submit', e => { e.preventDefault(); send($('#chatInput').value); });
+  $('#chatInput').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send($('#chatInput').value); } });
+  $('#suggest').onclick = e => { const b = e.target.closest('button'); if (b) send(b.textContent); };
+
+  // ---------- boot ----------
+  try {
+    const saved = JSON.parse(store.get('gads_auth') || 'null');
+    if (saved && saved.key) { $('#tenant').value = saved.tenant; $('#user').value = saved.user; $('#base').value = saved.base; $('#remember').checked = !!saved.remember; login(saved, true); }
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>
