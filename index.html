@@ -39,6 +39,7 @@ a { color: var(--accent); }
 .login p { margin: 0 0 20px; color: var(--muted); }
 .field { display: grid; gap: 6px; margin-bottom: 14px; }
 .field label { font-weight: 500; font-size: 13px; }
+.hint { font-size: 12px; color: var(--muted); line-height: 1.4; }
 .field input, .field select { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; width: 100%; }
 .check { display: flex; gap: 8px; align-items: center; margin: 4px 0 18px; color: var(--muted); font-size: 13px; }
 .btn { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 8px 14px; cursor: pointer; font-weight: 500; }
@@ -137,9 +138,9 @@ footer { max-width: 1280px; margin: 0 auto; padding: 0 16px 24px; color: var(--m
   <form class="login" id="loginForm" autocomplete="on">
     <h1>AI Google Ads Manager</h1>
     <p>Multi-business · multi-account · every change needs your approval.</p>
-    <div class="field"><label for="tenant">Tenant ID</label><input id="tenant" name="tenant" placeholder="TEN-001" required></div>
-    <div class="field"><label for="user">User ID</label><input id="user" name="username" placeholder="USR-001" required autocomplete="username"></div>
-    <div class="field"><label for="key">API key</label><input id="key" name="password" type="password" placeholder="gak_…" required autocomplete="current-password"></div>
+    <div class="field"><label for="tenant">Tenant ID</label><input id="tenant" name="tenant" placeholder="TEN-001" required><div class="hint">Your company's ID (starts with TEN-). Your platform admin gives it to you when your business is added.</div></div>
+    <div class="field"><label for="user">User ID</label><input id="user" name="username" placeholder="USR-001" required autocomplete="username"><div class="hint">Your personal login ID (starts with USR-). Each team member gets their own from the admin.</div></div>
+    <div class="field"><label for="key">API key</label><input id="key" name="password" type="password" placeholder="gak_…" required autocomplete="current-password"><div class="hint">Your secret key (starts with gak_), shown to you once by the admin. Lost it? Ask the admin for a new one &mdash; old keys can't be recovered.</div></div>
     <details class="small muted" style="margin-bottom:12px"><summary>Server</summary>
       <div class="field" style="margin-top:8px"><label for="base">n8n base URL</label><input id="base" value="https://n8n.assignover.in"></div>
     </details>
