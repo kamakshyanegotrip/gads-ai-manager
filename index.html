@@ -169,6 +169,8 @@ footer { max-width: 1280px; margin: 0 auto; padding: 0 16px 24px; color: var(--m
     <nav class="tabs" id="tabs">
       <button data-tab="dash" class="active">Dashboard</button>
       <button data-tab="recs">Recommendations <span class="count hidden" id="recCount"></span></button>
+      <button data-tab="site">Site &amp; Tracking <span class="count hidden" id="siteCount"></span></button>
+      <button data-tab="reports">Reports</button>
       <button data-tab="chat">AI Chat</button>
       <button data-tab="log">Change log</button>
     </nav>
@@ -212,6 +214,7 @@ footer { max-width: 1280px; margin: 0 auto; padding: 0 16px 24px; color: var(--m
             <button>Which campaign is wasting money?</button>
             <button>Compare my accounts</button>
             <button>Show pending recommendations</button>
+            <button>Audit my landing pages and tracking</button>
           </div>
           <form class="composer" id="chatForm">
             <textarea id="chatInput" placeholder="Ask about performance, audit a campaign, or request a change…"></textarea>
@@ -219,6 +222,30 @@ footer { max-width: 1280px; margin: 0 auto; padding: 0 16px 24px; color: var(--m
           </form>
         </div>
       </div>
+    </section>
+
+    <!-- SITE & TRACKING -->
+    <section id="tab-site" class="hidden">
+      <div class="panel" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <div><h2 style="margin:0">Site, tracking &amp; ads audit</h2><div class="small muted" id="auditWhen"></div></div>
+        <button class="btn primary" id="auditBtn">Run audit now</button>
+      </div>
+      <div class="grid kpis" id="siteKpis" style="margin-top:14px"></div>
+      <div class="panel" style="margin-top:14px"><h2>Findings</h2><div id="auditFindings"></div></div>
+      <div class="panel" style="margin-top:14px"><h2>Final URLs &amp; landing pages</h2><div class="table-wrap"><table id="lpTable"></table></div>
+        <p class="small muted">Checked daily at 07:30 IST: HTTP status, redirects, Google tag, enquiry form / call / WhatsApp, and mobile PageSpeed for the busiest pages.</p></div>
+      <div class="grid two" style="margin-top:14px">
+        <div class="panel"><h2>Ads &amp; message match</h2><div class="table-wrap"><table id="adTable"></table></div></div>
+        <div class="panel"><h2>Tracking setup</h2><div id="trackBox"></div></div>
+      </div>
+      <div class="panel" style="margin-top:14px"><h2>Conversion actions</h2><div class="table-wrap"><table id="convTable"></table></div></div>
+    </section>
+
+    <!-- REPORTS -->
+    <section id="tab-reports" class="hidden">
+      <div class="panel"><h2 style="margin:0">Weekly &amp; monthly reviews</h2>
+        <p class="small muted" style="margin:6px 0 0">Created automatically every Monday 09:00 IST (last week) and on the 1st at 09:30 IST (last month), and emailed to the business owner.</p></div>
+      <div class="recs" id="reportList" style="margin-top:14px"></div>
     </section>
 
     <!-- LOG -->
@@ -337,7 +364,7 @@ footer { max-width: 1280px; margin: 0 auto; padding: 0 16px 24px; color: var(--m
   }
 
   // ---------- render ----------
-  function render() { renderDash(); renderRecs(); renderLog(); }
+  function render() { renderDash(); renderRecs(); renderLog(); renderSite(); renderReports(); }
 
   function renderDash() {
     const camps = data.campaigns.filter(inScope);
@@ -376,7 +403,7 @@ footer { max-width: 1280px; margin: 0 auto; padding: 0 16px 24px; color: var(--m
     }
 
     const issues = data.issues.filter(inScope);
-    const sevCls = { high: 'bad', medium: 'warn', opportunity: 'good' };
+    const sevCls = { high: 'bad', critical: 'bad', medium: 'warn', warning: 'warn', opportunity: 'good' };
     $('#issues').innerHTML = issues.length ? issues.map(i => '<li><span class="pill ' + (sevCls[i.severity] || '') + '">' + esc(i.severity) + '</span> ' + esc((i.detail || {}).title || i.issue_type) + '</li>').join('')
       : '<li class="muted" style="list-style:none;margin-left:-18px">No open issues in this scope.</li>';
 
@@ -463,11 +490,110 @@ footer { max-width: 1280px; margin: 0 auto; padding: 0 16px 24px; color: var(--m
         : '<tr><td colspan="6" class="empty">No changes yet.</td></tr>') + '</tbody>';
   }
 
+
+  // ---------- site & tracking ----------
+  const shortUrl = u => String(u || '').replace(/^https?:\/\//, '');
+  const yes = (v, good) => v === null || v === undefined ? '<span class="pill">unknown</span>' : (v ? '<span class="pill ' + (good === false ? 'bad' : 'good') + '">yes</span>' : '<span class="pill ' + (good === false ? 'good' : 'bad') + '">no</span>');
+  function renderSite() {
+    const lps = (data.landing_pages || []).filter(inScope);
+    const trk = (data.tracking || []).filter(inScope);
+    const conv = (data.conversion_actions || []).filter(inScope);
+    const ads = (data.ads || []).filter(inScope);
+    const aud = data.issues.filter(i => inScope(i) && String(i.issue_type || '').startsWith('audit_'));
+    const crit = aud.filter(i => i.severity === 'critical').length;
+    $('#siteCount').textContent = crit; $('#siteCount').classList.toggle('hidden', !crit);
+    $('#auditWhen').textContent = data.last_audit_at ? 'Last audit ' + new Date(data.last_audit_at).toLocaleString() : 'No audit has run yet.';
+    const broken = lps.filter(p => !p.http_status || p.http_status >= 400).length;
+    const noTag = lps.filter(p => p.http_status >= 200 && p.http_status < 300 && !(p.tag_ids || []).length).length;
+    const utm = trk.length ? trk.every(t => t.final_url_suffix || t.tracking_url_template) : null;
+    const auto = trk.length ? trk.every(t => t.auto_tagging) : null;
+    const prim = conv.filter(c => c.primary_for_goal && c.status === 'ENABLED').length;
+    $('#siteKpis').innerHTML = [
+      ['Landing pages', lps.length ? (lps.length - broken) + ' / ' + lps.length + ' OK' : '—', broken ? '<span class="pill bad">' + broken + ' broken</span>' : 'all reachable'],
+      ['Critical issues', String(crit), aud.length + ' audit findings open'],
+      ['Final URL tracking (UTM)', utm === null ? '—' : (utm ? 'Tracked' : 'Untracked'), utm === false ? '<span class="pill warn">add a final URL suffix</span>' : 'account-level suffix / template'],
+      ['Auto-tagging (gclid)', auto === null ? '—' : (auto ? 'On' : 'Off'), auto === false ? '<span class="pill bad">turn it on</span>' : 'needed for GA4 & offline conversions'],
+      ['Primary conversion actions', String(prim), noTag ? '<span class="pill warn">' + noTag + ' page(s) without a Google tag</span>' : 'enabled and counted in bidding']
+    ].map(k => '<div class="panel kpi"><div class="label">' + k[0] + '</div><div class="value">' + k[1] + '</div><div class="sub muted">' + k[2] + '</div></div>').join('');
+    const AREA = { audit_landing_page: 'Final URLs & landing pages', audit_tracking: 'Tracking & conversions', audit_ads: 'Ads & message match', audit_keywords: 'Keywords & Quality Score', audit_assets: 'Sitelinks & callouts', audit_data: 'Data' };
+    const sev = { critical: 'bad', warning: 'warn' };
+    $('#auditFindings').innerHTML = aud.length ? Object.keys(AREA).map(a => {
+      const l = aud.filter(i => i.issue_type === a).sort((x, y) => (x.severity === 'critical' ? 0 : 1) - (y.severity === 'critical' ? 0 : 1));
+      return l.length ? '<div style="margin-bottom:12px"><div class="small muted" style="font-weight:600;margin-bottom:6px">' + AREA[a] + '</div><ul class="issues">' +
+        l.map(i => '<li><span class="pill ' + (sev[i.severity] || '') + '">' + esc(i.severity) + '</span> ' + esc((i.detail || {}).title || i.issue_type) + ((i.detail || {}).note ? '<div class="small muted">' + esc(i.detail.note) + '</div>' : '') + '</li>').join('') + '</ul></div>' : '';
+    }).join('') : '<div class="empty">' + (data.last_audit_at ? 'No open audit findings in this scope. Nice.' : 'Run the audit to check your final URLs, tracking, ads and keywords.') + '</div>';
+    $('#lpTable').innerHTML = '<thead><tr><th>Page</th><th>Used by</th><th>Status</th><th>Google tag</th><th>Form / call / WhatsApp</th><th class="num">Mobile speed</th><th class="num">Clicks 30d</th><th class="num">Conv. 30d</th><th class="num">Spend 30d</th></tr></thead><tbody>' +
+      (lps.length ? lps.map(p => {
+        const st = p.http_status ? (p.http_status < 300 ? '<span class="pill good">' + p.http_status + '</span>' : '<span class="pill bad">' + p.http_status + '</span>') : '<span class="pill bad">no response</span>';
+        const sp = p.pagespeed_mobile === null || p.pagespeed_mobile === undefined ? '—' : '<span class="pill ' + (p.pagespeed_mobile >= 70 ? 'good' : p.pagespeed_mobile >= 50 ? 'warn' : 'bad') + '">' + p.pagespeed_mobile + '</span>' + (p.lcp_ms ? ' <span class="small muted">' + (p.lcp_ms / 1000).toFixed(1) + 's</span>' : '');
+        const ok = p.http_status >= 200 && p.http_status < 300;
+        return '<tr><td style="white-space:normal;max-width:340px"><a href="' + esc(p.url) + '" target="_blank" rel="noopener">' + esc(shortUrl(p.url)) + '</a>' + (p.title ? '<div class="small muted">' + esc(p.title) + '</div>' : '') +
+          (p.redirect_to ? '<div class="small" style="color:var(--warn)">redirects to ' + esc(shortUrl(p.redirect_to)) + '</div>' : '') + '</td>' +
+          '<td>' + (p.sources || []).map(x => '<span class="pill">' + esc(String(x).replace('_', ' ')) + '</span>').join(' ') + '</td><td>' + st + '</td>' +
+          '<td>' + (ok ? ((p.tag_ids || []).length ? '<span class="small">' + esc(p.tag_ids.join(', ')) + '</span>' : '<span class="pill bad">missing</span>') : '—') + '</td>' +
+          '<td>' + (ok ? [p.has_form ? 'form' : '', p.has_phone ? 'call' : '', p.has_whatsapp ? 'WhatsApp' : ''].filter(Boolean).join(' · ') || '<span class="pill warn">none</span>' : '—') + '</td>' +
+          '<td class="num">' + sp + '</td><td class="num">' + num(p.clicks_30d) + '</td><td class="num">' + num(p.conversions_30d) + '</td><td class="num">' + inr(p.cost_30d) + '</td></tr>';
+      }).join('') : '<tr><td colspan="9" class="empty">No pages checked yet.</td></tr>') + '</tbody>';
+    $('#adTable').innerHTML = '<thead><tr><th>Ad</th><th>Strength</th><th>Final URL</th><th class="num">Match</th><th class="num">Spend 30d</th><th class="num">Conv.</th></tr></thead><tbody>' +
+      (ads.length ? ads.map(a => {
+        const fu = (a.final_urls || [])[0] || '';
+        const ms = a.match_score === null || a.match_score === undefined ? '—' : '<span class="pill ' + (a.match_score >= 7 ? 'good' : a.match_score >= 5 ? 'warn' : 'bad') + '" title="' + esc(a.match_note || '') + '">' + a.match_score + '/10</span>';
+        const stg = String(a.ad_strength || '').toUpperCase();
+        return '<tr><td>' + esc(a.ad_id) + (/DISAPPROVED|LIMITED/.test(String(a.approval_status || '')) ? ' <span class="pill bad">' + esc(String(a.approval_status).toLowerCase()) + '</span>' : '') + '</td>' +
+          '<td><span class="pill ' + (/EXCELLENT|GOOD/.test(stg) ? 'good' : /AVERAGE/.test(stg) ? 'warn' : /POOR/.test(stg) ? 'bad' : '') + '">' + esc(stg.toLowerCase() || '—') + '</span></td>' +
+          '<td style="white-space:normal;max-width:260px">' + esc(shortUrl(fu)) + (a.suggested_url && a.suggested_url.replace(/\/$/, '') !== String(fu).toLowerCase().replace(/\/$/, '') ? '<div class="small" style="color:var(--accent)">better: ' + esc(shortUrl(a.suggested_url)) + '</div>' : '') + '</td>' +
+          '<td class="num">' + ms + '</td><td class="num">' + inr(a.cost_30d) + '</td><td class="num">' + num(a.conversions_30d) + '</td></tr>';
+      }).join('') : '<tr><td colspan="6" class="empty">No live ads found.</td></tr>') + '</tbody>';
+    $('#trackBox').innerHTML = trk.length ? trk.map(t => '<table><tbody>' +
+      '<tr><td>Account</td><td>' + esc(t.account_id) + '</td></tr>' +
+      '<tr><td>Auto-tagging (gclid)</td><td>' + yes(t.auto_tagging) + '</td></tr>' +
+      '<tr><td>Final URL suffix (UTM)</td><td>' + (t.final_url_suffix ? '<span class="small">' + esc(t.final_url_suffix) + '</span>' : '<span class="pill warn">not set</span>') + '</td></tr>' +
+      '<tr><td>Tracking template</td><td>' + (t.tracking_url_template ? '<span class="small">' + esc(t.tracking_url_template) + '</span>' : '<span class="pill">not set</span>') + '</td></tr>' +
+      '<tr><td>Conversion tracking</td><td><span class="small">' + esc(String(t.conversion_tracking_status || '—').replace(/_/g, ' ').toLowerCase()) + '</span></td></tr>' +
+      '<tr><td>Enhanced conversions (leads)</td><td>' + yes(t.enhanced_conversions_leads) + '</td></tr>' +
+      '<tr><td>Checked</td><td class="small muted">' + (t.checked_at ? new Date(t.checked_at).toLocaleString() : '—') + '</td></tr></tbody></table>').join('<hr style="border:0;border-top:1px solid var(--line)">')
+      : '<div class="empty">No tracking data yet.</div>';
+    $('#convTable').innerHTML = '<thead><tr><th>Conversion action</th><th>Category</th><th>Primary</th><th>Counting</th><th class="num">Conv. 30d</th><th class="num">All conv. 30d</th><th class="num">Conv. 7d</th><th>Last recorded</th></tr></thead><tbody>' +
+      (conv.length ? conv.map(c => '<tr><td style="white-space:normal;max-width:360px">' + esc(c.action_name) + (c.status !== 'ENABLED' ? ' <span class="pill">' + esc(String(c.status).toLowerCase()) + '</span>' : '') + '</td>' +
+        '<td>' + esc(String(c.category || '').replace(/_/g, ' ').toLowerCase()) + '</td><td>' + (c.primary_for_goal ? '<span class="pill info">primary</span>' : '<span class="pill">secondary</span>') + '</td>' +
+        '<td>' + esc(String(c.counting_type || '').replace(/_/g, ' ').toLowerCase()) + '</td><td class="num">' + num(c.conversions_30d) + '</td><td class="num">' + num(c.all_conversions_30d) + '</td><td class="num">' + num(c.conversions_7d) + '</td>' +
+        '<td>' + (c.last_conversion_date ? String(c.last_conversion_date).slice(0, 10) : '<span class="pill warn">none in 30d</span>') + '</td></tr>').join('')
+        : '<tr><td colspan="8" class="empty">No conversion actions found.</td></tr>') + '</tbody>';
+  }
+  $('#auditBtn').onclick = async () => {
+    const b = $('#auditBtn'); b.disabled = true; b.innerHTML = '<span class="spin"></span> Auditing… (about 1 minute)';
+    try {
+      const r = await post('gads-ai-manager', { ...creds(), message: 'Run a full site, tracking and ads audit now', session_id: sessionId });
+      addMsg('me', 'Run a full site, tracking and ads audit now'); addMsg('ai', r.output || r.message || 'Audit finished.');
+      toast('Audit finished. The full summary is also in AI Chat.', 6000);
+      await reload();
+    } catch (e) { toast('Audit failed: ' + e.message); }
+    finally { b.disabled = false; b.textContent = 'Run audit now'; }
+  };
+
+  // ---------- reports ----------
+  function renderReports() {
+    const biz = $('#bizSel').value;
+    const reps = (data.reports || []).filter(r => biz === 'ALL' || r.business_id === biz);
+    const pctCh = (a, b) => { a = Number(a || 0); b = Number(b || 0); if (!b) return a ? 'new' : '—'; const v = Math.round((a - b) / b * 100); return (v > 0 ? '+' : '') + v + '%'; };
+    const bizName = id => { const b = data.businesses.find(x => x.business_id === id); return b ? b.business_name : id; };
+    $('#reportList').innerHTML = reps.length ? reps.map(r => {
+      const d = r.data || {}, t = d.totals || {}, p = d.prev_totals || {};
+      const row = (k, a, b, f) => '<tr><td>' + k + '</td><td class="num"><b>' + f(a) + '</b></td><td class="num muted">' + f(b) + '</td><td class="num">' + pctCh(a, b) + '</td></tr>';
+      return '<article class="rec"><div class="rec-head"><div><div class="rec-title">' + (r.period_type === 'monthly' ? 'Monthly' : 'Weekly') + ' review · ' + esc(bizName(r.business_id)) + '</div>' +
+        '<div class="rec-meta"><span class="pill info">' + esc(String(r.period_start).slice(0, 10)) + ' → ' + esc(String(r.period_end).slice(0, 10)) + '</span>' +
+        (r.emailed_to ? '<span class="pill good">emailed to ' + esc(r.emailed_to) + '</span>' : '<span class="pill">saved</span>') + '</div></div></div>' +
+        '<div class="table-wrap" style="margin-top:10px"><table style="max-width:520px"><thead><tr><th>Metric</th><th class="num">This period</th><th class="num">Previous</th><th class="num">Change</th></tr></thead><tbody>' +
+        row('Spend', t.cost, p.cost, inr) + row('Clicks', t.clicks, p.clicks, num) + row('Conversions', t.conversions, p.conversions, num) + row('CPA', d.cpa, d.prev_cpa, inr) + '</tbody></table></div>' +
+        '<details class="kw" open><summary>AI review</summary><p style="white-space:pre-wrap">' + esc(r.summary || '') + '</p></details></article>';
+    }).join('') : '<div class="panel empty">No reviews yet. The first weekly review is created on Monday at 09:00 IST.</div>';
+  }
+
   // ---------- tabs ----------
   $('#tabs').onclick = e => {
     const b = e.target.closest('button[data-tab]'); if (!b) return;
     $$('#tabs button').forEach(x => x.classList.toggle('active', x === b));
-    ['dash', 'recs', 'chat', 'log'].forEach(t => $('#tab-' + t).classList.toggle('hidden', t !== b.dataset.tab));
+    ['dash', 'recs', 'site', 'reports', 'chat', 'log'].forEach(t => $('#tab-' + t).classList.toggle('hidden', t !== b.dataset.tab));
     if (b.dataset.tab === 'chat') $('#chatInput').focus();
   };
 
