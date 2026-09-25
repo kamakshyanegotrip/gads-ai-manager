@@ -239,6 +239,15 @@ footer { max-width: 1280px; margin: 0 auto; padding: 0 16px 24px; color: var(--m
         <div class="panel"><h2>Tracking setup</h2><div id="trackBox"></div></div>
       </div>
       <div class="panel" style="margin-top:14px"><h2>Conversion actions</h2><div class="table-wrap"><table id="convTable"></table></div></div>
+      <div class="grid two" style="margin-top:14px">
+        <div class="panel"><h2>Leads by goal (30 days)</h2><div class="table-wrap"><table id="goalTable"></table></div>
+          <p class="small muted">"Counted" = in the Conversions column used for bidding. "Recorded" = All conversions. A gap means the goal is not used by the campaigns.</p></div>
+        <div class="panel"><h2>Target CPA &amp; bidding</h2><div id="bidBox"></div></div>
+      </div>
+      <div class="panel" style="margin-top:14px"><h2>Keywords &amp; Quality Score</h2><div class="table-wrap"><table id="kwTable"></table></div>
+        <p class="small muted">Quality Score and its three parts (expected CTR, ad relevance, landing page experience) as reported by Google Ads, latest value in the last 30 days.</p></div>
+      <div class="panel" style="margin-top:14px"><h2>Competitors in your auctions</h2><div id="compBox"></div>
+        <p class="small muted">Domains from Google Ads Auction Insights (last 30 days). The top direct competitors' home pages are checked daily and compared with your main landing page.</p></div>
     </section>
 
     <!-- REPORTS -->
@@ -515,7 +524,7 @@ footer { max-width: 1280px; margin: 0 auto; padding: 0 16px 24px; color: var(--m
       ['Auto-tagging (gclid)', auto === null ? '—' : (auto ? 'On' : 'Off'), auto === false ? '<span class="pill bad">turn it on</span>' : 'needed for GA4 & offline conversions'],
       ['Primary conversion actions', String(prim), noTag ? '<span class="pill warn">' + noTag + ' page(s) without a Google tag</span>' : 'enabled and counted in bidding']
     ].map(k => '<div class="panel kpi"><div class="label">' + k[0] + '</div><div class="value">' + k[1] + '</div><div class="sub muted">' + k[2] + '</div></div>').join('');
-    const AREA = { audit_landing_page: 'Final URLs & landing pages', audit_tracking: 'Tracking & conversions', audit_ads: 'Ads & message match', audit_keywords: 'Keywords & Quality Score', audit_assets: 'Sitelinks & callouts', audit_data: 'Data' };
+    const AREA = { audit_landing_page: 'Final URLs & landing pages', audit_tracking: 'Tracking & conversions', audit_ads: 'Ads & message match', audit_keywords: 'Keywords & Quality Score', audit_bidding: 'Target CPA, bidding & competition', audit_assets: 'Sitelinks & callouts', audit_data: 'Data' };
     const sev = { critical: 'bad', warning: 'warn' };
     $('#auditFindings').innerHTML = aud.length ? Object.keys(AREA).map(a => {
       const l = aud.filter(i => i.issue_type === a).sort((x, y) => (x.severity === 'critical' ? 0 : 1) - (y.severity === 'critical' ? 0 : 1));
@@ -559,6 +568,50 @@ footer { max-width: 1280px; margin: 0 auto; padding: 0 16px 24px; color: var(--m
         '<td>' + esc(String(c.counting_type || '').replace(/_/g, ' ').toLowerCase()) + '</td><td class="num">' + num(c.conversions_30d) + '</td><td class="num">' + num(c.all_conversions_30d) + '</td><td class="num">' + num(c.conversions_7d) + '</td>' +
         '<td>' + (c.last_conversion_date ? String(c.last_conversion_date).slice(0, 10) : '<span class="pill warn">none in 30d</span>') + '</td></tr>').join('')
         : '<tr><td colspan="8" class="empty">No conversion actions found.</td></tr>') + '</tbody>';
+    // ---- Leads by goal, target CPA, keywords/QS, competitors (from audit insights) ----
+    const ins = (data.insights || []).filter(inScope).map(x => x.insights).filter(Boolean);
+    const lab = s => esc(String(s || '').replace(/_/g, ' ').toLowerCase());
+    const goals = {};
+    conv.filter(c => c.status === 'ENABLED').forEach(c => { const g = goals[c.category || 'OTHER'] = goals[c.category || 'OTHER'] || { n: 0, cnt: 0, all: 0, d7: 0, many: 0, prim: 0 };
+      g.n++; g.cnt += Number(c.conversions_30d || 0); g.all += Number(c.all_conversions_30d || 0); g.d7 += Number(c.conversions_7d || 0);
+      if (c.counting_type === 'MANY_PER_CLICK') g.many++; if (c.primary_for_goal) g.prim++; });
+    const gk = Object.keys(goals).sort((a, b) => goals[b].all - goals[a].all);
+    $('#goalTable').innerHTML = '<thead><tr><th>Goal</th><th class="num">Actions</th><th class="num">Counted</th><th class="num">Recorded</th><th class="num">Counted 7d</th><th>Check</th></tr></thead><tbody>' +
+      (gk.length ? gk.map(k => { const g = goals[k];
+        const chk = g.all >= 3 && g.cnt === 0 ? '<span class="pill bad">not counted in bidding</span>' : g.many ? '<span class="pill warn">' + g.many + ' counts every conversion</span>' : !g.prim ? '<span class="pill">secondary only</span>' : '<span class="pill good">ok</span>';
+        return '<tr><td>' + lab(k) + '</td><td class="num">' + g.n + '</td><td class="num">' + num(g.cnt) + '</td><td class="num">' + num(g.all) + '</td><td class="num">' + num(g.d7) + '</td><td>' + chk + '</td></tr>'; }).join('')
+        : '<tr><td colspan="6" class="empty">No conversion data yet.</td></tr>') + '</tbody>';
+    const camps = [].concat(...ins.map(i => (i.campaigns || []).map(c => ({ ...c, sys: i.system_target_cpa }))));
+    const live = camps.filter(c => c.cost_30d > 0);
+    $('#bidBox').innerHTML = live.length ? '<div class="table-wrap"><table><thead><tr><th>Campaign</th><th class="num">Google tCPA</th><th class="num">System target</th><th class="num">Actual CPA 30d</th><th class="num">Impr. share</th><th class="num">Lost to rank</th></tr></thead><tbody>' +
+      live.sort((a, b) => b.cost_30d - a.cost_30d).map(c => {
+        const t = c.tcpa, sys = c.sys; const mis = t && sys && Math.abs(t - sys) / sys > 0.1;
+        const cpaCls = c.cpa_30d && (t || sys) ? (c.cpa_30d <= (t || sys) ? 'good' : c.cpa_30d <= 2 * (t || sys) ? 'warn' : 'bad') : '';
+        const pct = v => v === null || v === undefined ? '—' : Math.round(v * 100) + '%';
+        return '<tr><td style="white-space:normal;max-width:220px">' + esc(c.name) + '<div class="small muted">' + lab(c.strategy) + '</div></td>' +
+          '<td class="num">' + (t ? '<span class="pill ' + (mis ? 'warn' : 'good') + '">' + inr(t) + '</span>' : '<span class="pill">none</span>') + '</td><td class="num">' + inr(sys) + '</td>' +
+          '<td class="num">' + (c.cpa_30d ? '<span class="pill ' + cpaCls + '">' + inr(c.cpa_30d) + '</span>' : '—') + '<div class="small muted">' + num(c.conversions_30d) + ' conv · ' + inr(c.cost_30d) + '</div></td>' +
+          '<td class="num">' + pct(c.search_is) + '</td><td class="num">' + (c.rank_lost_is >= 0.5 ? '<span class="pill bad">' + pct(c.rank_lost_is) + '</span>' : pct(c.rank_lost_is)) + '</td></tr>'; }).join('') + '</tbody></table></div>'
+      : '<div class="empty">Target CPA data appears after the next audit.</div>';
+    const kws = (data.keywords || []).filter(inScope);
+    const qsCls = q => q === null || q === undefined ? '' : q >= 7 ? 'good' : q >= 5 ? 'warn' : 'bad';
+    const part = v => { const t = String(v || '').toUpperCase(); return t ? '<span class="pill ' + (/ABOVE/.test(t) ? 'good' : /BELOW/.test(t) ? 'bad' : 'warn') + '">' + lab(t.replace('_AVERAGE', '')) + '</span>' : '—'; };
+    const qsKw = kws.filter(k => k.quality_score !== null || k.cost_30d > 0);
+    const avgQs = (() => { const w = qsKw.filter(k => k.quality_score && k.impressions_30d); const s = w.reduce((a, k) => a + k.quality_score * k.impressions_30d, 0), n = w.reduce((a, k) => a + Number(k.impressions_30d), 0); return n ? (s / n).toFixed(1) : null; })();
+    $('#kwTable').innerHTML = '<caption class="small muted" style="text-align:left;padding-bottom:6px">' + (avgQs ? 'Impression-weighted average Quality Score: <b>' + avgQs + '</b> / 10 · ' : '') + qsKw.filter(k => k.quality_score && k.quality_score <= 4).length + ' keyword(s) with QS 4 or lower</caption>' +
+      '<thead><tr><th>Keyword</th><th>Match</th><th class="num">QS</th><th>Expected CTR</th><th>Ad relevance</th><th>Landing page exp.</th><th class="num">Clicks</th><th class="num">Conv.</th><th class="num">Spend 30d</th></tr></thead><tbody>' +
+      (qsKw.length ? qsKw.slice(0, 40).map(k => '<tr><td>' + esc(k.keyword_text) + '</td><td>' + lab(k.match_type) + '</td><td class="num">' + (k.quality_score ? '<span class="pill ' + qsCls(k.quality_score) + '">' + k.quality_score + '</span>' : '—') + '</td>' +
+        '<td>' + part(k.expected_ctr) + '</td><td>' + part(k.ad_relevance) + '</td><td>' + part(k.lp_experience) + '</td><td class="num">' + num(k.clicks_30d) + '</td><td class="num">' + num(k.conversions_30d) + '</td><td class="num">' + inr(k.cost_30d) + '</td></tr>').join('')
+        : '<tr><td colspan="9" class="empty">No keyword data yet.</td></tr>') + '</tbody>';
+    const own = ins.map(i => i.own_main_page).filter(Boolean)[0];
+    const cps = [].concat(...ins.map(i => i.competitor_pages || []));
+    const clist = [].concat(...ins.map(i => i.competitors || []));
+    const row = (p, me) => { const sp = p.pagespeed_mobile; return '<tr' + (me ? ' style="background:var(--soft,rgba(37,99,235,.06))"' : '') + '><td>' + (me ? '<b>You</b> · ' : '') + '<a href="' + esc(p.url) + '" target="_blank" rel="noopener">' + esc(p.domain || shortUrl(p.url)) + '</a>' + (p.title ? '<div class="small muted">' + esc(String(p.title).slice(0, 80)) + '</div>' : '') + '</td>' +
+      '<td>' + (p.http_status >= 200 && p.http_status < 300 ? '<span class="pill good">' + p.http_status + '</span>' : '<span class="pill bad">' + (p.http_status || 'no response') + '</span>') + '</td>' +
+      '<td class="num">' + (sp === null || sp === undefined ? '—' : '<span class="pill ' + (sp >= 70 ? 'good' : sp >= 50 ? 'warn' : 'bad') + '">' + sp + '</span>' + (p.lcp_ms ? ' <span class="small muted">' + (p.lcp_ms / 1000).toFixed(1) + 's</span>' : '')) + '</td>' +
+      '<td>' + [p.has_form ? 'form' : '', p.has_phone ? 'call' : '', p.has_whatsapp ? 'WhatsApp' : ''].filter(Boolean).join(' · ') + '</td><td class="num">' + (p.page_kb ? num(p.page_kb) + ' KB' : '—') + '</td></tr>'; };
+    $('#compBox').innerHTML = (own || cps.length ? '<div class="table-wrap"><table><thead><tr><th>Site</th><th>Status</th><th class="num">Mobile speed</th><th>Enquiry options</th><th class="num">Page size</th></tr></thead><tbody>' + (own ? row(own, true) : '') + cps.map(p => row(p, false)).join('') + '</tbody></table></div>' : '<div class="empty">Competitor comparison appears after the next audit.</div>') +
+      (clist.length ? '<div style="margin-top:10px">' + clist.map(c => '<span class="pill' + (c.aggregator ? '' : ' info') + '" title="' + esc((c.campaigns || []).join(', ')) + '">' + esc(c.domain) + '</span>').join(' ') + '</div><div class="small muted" style="margin-top:4px">Blue = direct competitors; grey = OTAs / marketplaces.</div>' : '');
   }
   $('#auditBtn').onclick = async () => {
     const b = $('#auditBtn'); b.disabled = true; b.innerHTML = '<span class="spin"></span> Auditing… (about 1 minute)';
