@@ -170,6 +170,8 @@ footer { max-width: 1280px; margin: 0 auto; padding: 0 16px 24px; color: var(--m
       <button data-tab="dash" class="active">Dashboard</button>
       <button data-tab="recs">Recommendations <span class="count hidden" id="recCount"></span></button>
       <button data-tab="site">Site &amp; Tracking <span class="count hidden" id="siteCount"></span></button>
+      <button data-tab="intel">Alerts &amp; Insights <span class="count hidden" id="alertCount"></span></button>
+      <button data-tab="market">Market</button>
       <button data-tab="reports">Reports</button>
       <button data-tab="chat">AI Chat</button>
       <button data-tab="log">Change log</button>
@@ -248,6 +250,33 @@ footer { max-width: 1280px; margin: 0 auto; padding: 0 16px 24px; color: var(--m
         <p class="small muted">Quality Score and its three parts (expected CTR, ad relevance, landing page experience) as reported by Google Ads, latest value in the last 30 days.</p></div>
       <div class="panel" style="margin-top:14px"><h2>Competitors in your auctions</h2><div id="compBox"></div>
         <p class="small muted">Domains from Google Ads Auction Insights (last 30 days). The top direct competitors' home pages are checked daily and compared with your main landing page.</p></div>
+    </section>
+
+    <!-- ALERTS & INSIGHTS -->
+    <section id="tab-intel" class="hidden">
+      <div class="panel"><h2>Live alerts</h2><div id="alertBox"></div>
+        <p class="small muted">Checked every 2 hours from 07:20 to 23:20 IST: spend spikes or stops, CPC spikes, conversions stopping, budget running out early, disapproved ads, campaigns or account not serving. Each new or worse problem is emailed once.</p></div>
+      <div class="panel" style="margin-top:14px"><h2>What the daily analysis found</h2><div id="intelFindings"></div><div class="small muted" id="intelWhen"></div></div>
+      <div class="grid two" style="margin-top:14px">
+        <div class="panel"><h2>Hour of day (30 days)</h2><div id="hourBox"></div></div>
+        <div class="panel"><h2>Day of week (30 days)</h2><div class="table-wrap"><table id="dowTable"></table></div></div>
+      </div>
+      <div class="grid two" style="margin-top:14px">
+        <div class="panel"><h2>Devices &amp; networks</h2><div class="table-wrap"><table id="devTable"></table></div></div>
+        <div class="panel"><h2>Locations</h2><div class="table-wrap"><table id="locTable"></table></div></div>
+      </div>
+      <div class="panel" style="margin-top:14px"><h2>Campaign overlap</h2><div id="overlapBox"></div>
+        <p class="small muted">Search terms and keywords that more than one live campaign is paying for. Overlap makes your campaigns bid against each other.</p></div>
+    </section>
+
+    <!-- MARKET -->
+    <section id="tab-market" class="hidden">
+      <div class="panel"><h2>Auction insights: share of the auction</h2><div id="aiBox"></div>
+        <p class="small muted">From the Google Ads "Auction insights" report emailed to you (scheduled report), imported daily at 08:10 IST. Impression share below 10% is shown as "&lt; 10%".</p></div>
+      <div class="panel" style="margin-top:14px"><h2>Keyword gaps &amp; demand</h2><div id="kgSummary"></div><div class="table-wrap"><table id="kgTable"></table></div>
+        <p class="small muted">Weekly (Monday 06:10 IST): Google Keyword Planner ideas for India plus your own search terms, compared with your keywords. Brand, portal and temple-room searches are left out.</p></div>
+      <div class="panel" style="margin-top:14px"><h2>Suppliers</h2><div id="supBox"></div>
+        <p class="small muted">From your "Suppliers" Google Sheet, synced daily at 08:10 IST. Rows you delete from the sheet become inactive here.</p></div>
     </section>
 
     <!-- REPORTS -->
@@ -373,7 +402,7 @@ footer { max-width: 1280px; margin: 0 auto; padding: 0 16px 24px; color: var(--m
   }
 
   // ---------- render ----------
-  function render() { renderDash(); renderRecs(); renderLog(); renderSite(); renderReports(); }
+  function render() { renderDash(); renderRecs(); renderLog(); renderSite(); renderIntel(); renderMarket(); renderReports(); }
 
   function renderDash() {
     const camps = data.campaigns.filter(inScope);
@@ -624,6 +653,89 @@ footer { max-width: 1280px; margin: 0 auto; padding: 0 16px 24px; color: var(--m
     finally { b.disabled = false; b.textContent = 'Run audit now'; }
   };
 
+
+  // ---------- alerts & insights ----------
+  const DAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+  const cap = s => String(s || '').charAt(0).toUpperCase() + String(s || '').slice(1).toLowerCase();
+  const cpaCell = (cost, conv, avg) => { if (!Number(conv)) return Number(cost) > 0 ? '<span class="pill ' + (avg && Number(cost) >= avg ? 'bad' : '') + '">no conv.</span>' : '—';
+    const c = Number(cost) / Number(conv); return '<span class="pill ' + (avg ? (c <= avg * 0.8 ? 'good' : c <= avg * 1.25 ? '' : 'warn') : '') + '">' + inr(c) + '</span>'; };
+  const accBiz = id => { const a = data.accounts.find(x => x.account_id === id); return a ? a.business_id : null; };
+  const inScopeA = x => inScope({ ...x, business_id: x.business_id || accBiz(x.account_id) });
+  function renderIntel() {
+    const alerts = (data.alerts || []).filter(inScope);
+    const open = alerts.filter(a => a.status !== 'resolved');
+    $('#alertCount').textContent = open.length; $('#alertCount').classList.toggle('hidden', !open.length);
+    const campName = (acc, id) => { const c = data.campaigns.find(x => x.account_id === acc && String(x.campaign_id) === String(id)); return c ? c.campaign_name : (id || ''); };
+    $('#alertBox').innerHTML = alerts.length ? '<div class="table-wrap"><table><thead><tr><th>Severity</th><th>Alert</th><th>Likely cause</th><th>Seen</th><th>Status</th></tr></thead><tbody>' +
+      alerts.map(a => '<tr><td><span class="pill ' + (a.status === 'resolved' ? '' : a.severity === 'critical' ? 'bad' : 'warn') + '">' + esc(a.severity) + '</span></td>' +
+        '<td><b>' + esc(a.title) + '</b>' + (a.campaign_id ? '<div class="small muted">' + esc(campName(a.account_id, a.campaign_id)) + '</div>' : '') + '</td>' +
+        '<td>' + ((a.root_cause || []).length ? '<ul class="issues">' + a.root_cause.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' : '<span class="muted">—</span>') + '</td>' +
+        '<td class="small">' + new Date(a.first_seen).toLocaleString() + (a.last_seen !== a.first_seen ? '<br><span class="muted">last ' + new Date(a.last_seen).toLocaleString() + '</span>' : '') + '</td>' +
+        '<td>' + (a.status === 'resolved' ? '<span class="pill good">resolved</span>' : a.notified_at ? '<span class="pill info">emailed</span>' : '<span class="pill warn">open</span>') + '</td></tr>').join('') + '</tbody></table></div>'
+      : '<div class="empty">No live problems found in the last 7 days.</div>';
+
+    const ins = (data.insights || []).filter(inScope).map(x => (x.insights || {}).intelligence).filter(Boolean);
+    const one = ins.length === 1 ? ins[0] : null;
+    const fnd = [].concat(...ins.map(i => i.findings || []));
+    const sevCls = { critical: 'bad', warning: 'warn', info: 'info', opportunity: 'good' };
+    $('#intelFindings').innerHTML = fnd.length ? '<ul class="issues">' + fnd.map(f => '<li><span class="pill ' + (sevCls[f.severity] || '') + '">' + esc(f.severity) + '</span> ' + esc(f.title) + '</li>').join('') + '</ul>' : '<div class="empty">No findings yet. The analysis runs daily at 06:40 IST.</div>';
+    $('#intelWhen').textContent = ins.length ? 'Last analysis ' + ins.map(i => new Date(i.generated_at).toLocaleString()).join(', ') : '';
+
+    const seg = (data.segments || []).filter(inScopeA);
+    const byType = t => { const m = {}; seg.filter(s => s.segment_type === t).forEach(s => { const o = m[s.segment_value] || (m[s.segment_value] = { value: s.segment_value, cost: 0, clicks: 0, conv: 0 }); o.cost += Number(s.cost); o.clicks += Number(s.clicks); o.conv += Number(s.conversions); }); return Object.values(m); };
+    const tot = byType('day_of_week'); const tc = tot.reduce((a, s) => a + s.cost, 0), tv = tot.reduce((a, s) => a + s.conv, 0); const avg = tv ? tc / tv : null;
+    const hours = byType('hour').sort((a, b) => Number(a.value) - Number(b.value)); const maxH = Math.max(1, ...hours.map(h => h.cost));
+    $('#hourBox').innerHTML = hours.length ? '<div class="table-wrap"><table><thead><tr><th>Hour</th><th>Spend</th><th class="num">Clicks</th><th class="num">Conv.</th><th class="num">CPA</th></tr></thead><tbody>' +
+      hours.map(h => '<tr><td>' + String(h.value).padStart(2, '0') + ':00</td><td><div style="display:flex;gap:6px;align-items:center"><div class="bar"><span style="width:' + Math.round(h.cost / maxH * 100) + '%;' + (h.conv ? '' : 'background:var(--bad)') + '"></span></div>' + inr(h.cost) + '</div></td><td class="num">' + num(h.clicks) + '</td><td class="num">' + num(h.conv) + '</td><td class="num">' + cpaCell(h.cost, h.conv, avg && avg / 2) + '</td></tr>').join('') + '</tbody></table></div>'
+      : '<div class="empty">Hour data appears after the daily analysis.</div>';
+    const dows = byType('day_of_week').sort((a, b) => DAYS.indexOf(a.value) - DAYS.indexOf(b.value));
+    const segTable = (rows, label, key) => '<thead><tr><th>' + label + '</th><th class="num">Spend</th><th class="num">Clicks</th><th class="num">Conv.</th><th class="num">CPA</th></tr></thead><tbody>' +
+      (rows.length ? rows.map(r => '<tr><td>' + esc(key(r)) + '</td><td class="num">' + inr(r.cost) + '</td><td class="num">' + num(r.clicks) + '</td><td class="num">' + num(r.conv) + '</td><td class="num">' + cpaCell(r.cost, r.conv, avg) + '</td></tr>').join('') : '<tr><td colspan="5" class="empty">No data yet.</td></tr>') + '</tbody>';
+    $('#dowTable').innerHTML = segTable(dows, 'Day', r => cap(r.value)) + (avg ? '<caption class="small muted" style="caption-side:bottom;text-align:left;padding-top:6px">Account average CPA ' + inr(avg) + '</caption>' : '');
+    const nets = byType('network').map(r => ({ ...r, value: 'Network: ' + String(r.value).replace(/_/g, ' ').toLowerCase().replace('search partners', 'Search partners').replace(/^search$/, 'Google Search') }));
+    $('#devTable').innerHTML = segTable(byType('device').concat(nets).sort((a, b) => b.cost - a.cost), 'Segment', r => cap(r.value.replace(/_/g, ' ')));
+    $('#locTable').innerHTML = segTable(byType('location').sort((a, b) => b.cost - a.cost).slice(0, 15), 'City / region', r => r.value);
+
+    const ov = [].concat(...ins.map(i => ((i.overlap || {}).search_terms || [])));
+    const kov = [].concat(...ins.map(i => ((i.overlap || {}).keywords || [])));
+    $('#overlapBox').innerHTML = (ov.length || kov.length) ?
+      (ov.length ? '<div class="table-wrap"><table><thead><tr><th>Search term</th><th class="num">Spend 30d</th><th>Campaigns paying for it</th></tr></thead><tbody>' +
+        ov.slice(0, 15).map(o => '<tr><td>' + esc(o.term) + '</td><td class="num">' + inr(o.cost) + '</td><td class="small">' + esc((o.split || []).map(x => typeof x === 'string' ? x : (x.campaign_name || x.name || x.campaign_id)).join(' · ')) + '</td></tr>').join('') + '</tbody></table></div>' : '') +
+      (kov.length ? '<div class="small" style="margin-top:8px"><b>Same keyword in several places:</b> ' + kov.slice(0, 15).map(k => esc(k.keyword || k.keyword_text || '') + ' (' + (k.placements || k.ad_groups || k.campaigns || '') + ')').join(', ') + '</div>' : '')
+      : '<div class="empty">No overlap found between live campaigns.</div>';
+  }
+
+  // ---------- market ----------
+  function renderMarket() {
+    const comps = (data.competitors || []).filter(inScopeA);
+    const withShare = comps.filter(c => c.metrics_updated_at);
+    const ai = (data.insights || []).filter(inScope).map(x => (x.insights || {}).auction_insights).filter(Boolean)[0];
+    const share = v => v === null || v === undefined ? '<span class="muted">&lt; 10%</span>' : pct(v);
+    $('#aiBox').innerHTML = withShare.length ?
+      '<div class="small" style="margin-bottom:8px">Your impression share: <b>' + (ai && ai.own_impression_share != null ? pct(ai.own_impression_share) : '&lt; 10%') + '</b>' + (ai && ai.period ? ' · ' + esc(ai.period) : '') + (ai && ai.imported_at ? ' · imported ' + new Date(ai.imported_at).toLocaleDateString() : '') + '</div>' +
+      '<div class="table-wrap"><table><thead><tr><th>Competitor</th><th class="num">Impr. share</th><th class="num">Overlap</th><th class="num">Above you</th><th class="num">Top of page</th><th class="num">Abs. top</th><th class="num">You outrank them</th></tr></thead><tbody>' +
+      withShare.map(c => '<tr><td>' + esc(c.domain) + '</td><td class="num">' + share(c.impression_share) + '</td><td class="num">' + pct(c.overlap_rate) + '</td><td class="num">' + (c.position_above_rate >= 0.6 ? '<span class="pill warn">' + pct(c.position_above_rate) + '</span>' : pct(c.position_above_rate)) + '</td><td class="num">' + pct(c.top_of_page_rate) + '</td><td class="num">' + pct(c.absolute_top_rate) + '</td><td class="num">' + pct(c.outranking_share) + '</td></tr>').join('') + '</tbody></table></div>'
+      : '<div class="empty">Share metrics appear after the first scheduled "Auction insights" email arrives.' + (comps.length ? '<div style="margin-top:10px">Competitors seen: ' + comps.slice(0, 30).map(c => '<span class="pill">' + esc(c.domain) + '</span>').join(' ') + '</div>' : '') + '</div>';
+
+    const kg = (data.insights || []).filter(inScope).map(x => (x.insights || {}).keyword_gap).filter(Boolean)[0];
+    const opp = (data.keyword_opportunities || []).filter(inScopeA);
+    $('#kgSummary').innerHTML = kg ? '<div class="small" style="margin-bottom:8px">' + (kg.planner_ok ? 'Keyword Planner: <b>' + num(kg.planner_ideas) + '</b> ideas' : '<span class="pill warn">Keyword Planner not connected yet</span> (using your search terms only)') +
+      ' · <b>' + num(kg.gaps) + '</b> gaps · ' + num(kg.partial) + ' partly covered · ' + num(kg.covered) + ' covered · last run ' + new Date(kg.run_at).toLocaleString() + '</div>' +
+      ((kg.destinations || []).length ? '<div class="small" style="margin-bottom:8px">Destinations searched that you do not target: ' + kg.destinations.map(d => '<span class="pill info">' + esc(d.place) + ' ~' + num(d.searches) + '/mo</span>').join(' ') + '</div>' : '') : '';
+    const gl = { converting_term: ['good', 'converting search term'], new_destination: ['info', 'new destination'], missing_variant: ['', 'missing variant'], previously_removed: ['', 'removed before'] };
+    $('#kgTable').innerHTML = '<thead><tr><th>Search</th><th>Type</th><th class="num">Searches/mo</th><th>Competition</th><th class="num">Top-of-page bid</th><th class="num">Your clicks</th><th class="num">Your conv.</th><th>Covered by</th></tr></thead><tbody>' +
+      (opp.length ? opp.slice(0, 40).map(o => { const g = gl[o.gap_type] || ['', o.coverage]; return '<tr><td><b>' + esc(o.keyword) + '</b></td><td><span class="pill ' + g[0] + '">' + esc(g[1]) + '</span></td><td class="num">' + (o.avg_monthly_searches == null ? '—' : num(o.avg_monthly_searches)) + '</td><td>' + esc(cap(o.competition || '')) + '</td>' +
+        '<td class="num">' + (o.bid_high ? inr(o.bid_low) + '–' + inr(o.bid_high) : '—') + '</td><td class="num">' + num(o.our_clicks_30d) + '</td><td class="num">' + num(o.our_conversions_30d) + '</td><td class="small muted">' + esc(o.matched_keyword || 'not covered') + '</td></tr>'; }).join('')
+        : '<tr><td colspan="8" class="empty">No gaps found yet. The weekly check runs on Mondays.</td></tr>') + '</tbody>';
+
+    const sup = (data.suppliers || []).filter(s => $('#bizSel').value === 'ALL' || s.business_id === $('#bizSel').value);
+    const soon = d => d && (new Date(d) - Date.now()) < 30 * 864e5;
+    $('#supBox').innerHTML = sup.length ? '<div class="table-wrap"><table><thead><tr><th>Supplier</th><th>Type</th><th>Destination</th><th>Services</th><th class="num">Rate from</th><th>Season</th><th>Contract until</th><th class="num">Rating</th></tr></thead><tbody>' +
+      sup.map(s => '<tr><td><b>' + esc(s.supplier_name) + '</b></td><td>' + esc(s.supplier_type || '') + '</td><td>' + esc(s.destination || '') + '</td><td class="small">' + esc(s.services || '') + '</td><td class="num">' + (s.rate_from ? inr(s.rate_from) + (s.rate_unit ? ' <span class="small muted">/' + esc(s.rate_unit) + '</span>' : '') : '—') + '</td><td>' + esc(s.season || '') + '</td>' +
+        '<td>' + (s.contract_valid_to ? '<span class="pill ' + (soon(s.contract_valid_to) ? 'warn' : '') + '">' + esc(String(s.contract_valid_to).slice(0, 10)) + '</span>' : '—') + '</td><td class="num">' + (s.rating || '—') + '</td></tr>').join('') + '</tbody></table></div>'
+      : '<div class="empty">No suppliers yet. Add rows to your "Suppliers" Google Sheet; they appear here the next morning.</div>';
+  }
+
   // ---------- reports ----------
   function renderReports() {
     const biz = $('#bizSel').value;
@@ -646,7 +758,7 @@ footer { max-width: 1280px; margin: 0 auto; padding: 0 16px 24px; color: var(--m
   $('#tabs').onclick = e => {
     const b = e.target.closest('button[data-tab]'); if (!b) return;
     $$('#tabs button').forEach(x => x.classList.toggle('active', x === b));
-    ['dash', 'recs', 'site', 'reports', 'chat', 'log'].forEach(t => $('#tab-' + t).classList.toggle('hidden', t !== b.dataset.tab));
+    ['dash', 'recs', 'site', 'intel', 'market', 'reports', 'chat', 'log'].forEach(t => $('#tab-' + t).classList.toggle('hidden', t !== b.dataset.tab));
     if (b.dataset.tab === 'chat') $('#chatInput').focus();
   };
 
