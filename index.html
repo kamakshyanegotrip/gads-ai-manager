@@ -172,6 +172,9 @@ footer { max-width: 1280px; margin: 0 auto; padding: 0 16px 24px; color: var(--m
       <button data-tab="site">Site &amp; Tracking <span class="count hidden" id="siteCount"></span></button>
       <button data-tab="intel">Alerts &amp; Insights <span class="count hidden" id="alertCount"></span></button>
       <button data-tab="market">Market</button>
+      <button data-tab="funnel">Funnel &amp; Calls</button>
+      <button data-tab="web">Web &amp; Tags <span class="count hidden" id="webCount"></span></button>
+      <button data-tab="exp">Experiments <span class="count hidden" id="expCount"></span></button>
       <button data-tab="reports">Reports</button>
       <button data-tab="chat">AI Chat</button>
       <button data-tab="log">Change log</button>
@@ -277,6 +280,40 @@ footer { max-width: 1280px; margin: 0 auto; padding: 0 16px 24px; color: var(--m
         <p class="small muted">Weekly (Monday 06:10 IST): Google Keyword Planner ideas for India plus your own search terms, compared with your keywords. Brand, portal and temple-room searches are left out.</p></div>
       <div class="panel" style="margin-top:14px"><h2>Suppliers</h2><div id="supBox"></div>
         <p class="small muted">From your "Suppliers" Google Sheet, synced daily at 08:10 IST. Rows you delete from the sheet become inactive here.</p></div>
+    </section>
+
+    <!-- FUNNEL & CALLS -->
+    <section id="tab-funnel" class="hidden">
+      <div class="grid kpis" id="funKpis"></div>
+      <div class="grid two" style="margin-top:14px">
+        <div class="panel"><h2>Leads by channel (30 days)</h2><div id="funChannels"></div></div>
+        <div class="panel"><h2>Calls</h2><div id="funCalls"></div>
+          <p class="small muted">Calls from ads: clicks on your call asset in Google Ads. Calls from the website: taps on your phone number, captured by the tracking snippet. Choose each call's result in the CRM sheet's "Call outcome" column (answered, missed, called back...); it syncs every hour.</p></div>
+      </div>
+      <div class="panel" style="margin-top:14px"><h2>Campaign funnel (30 days)</h2><div class="table-wrap"><table id="funTable"></table></div>
+        <p class="small muted">Leads, qualified, quoted and booked come from the Status column of your CRM sheet. ROAS = booking value / ad spend.</p></div>
+    </section>
+
+    <!-- WEB & TAGS -->
+    <section id="tab-web" class="hidden">
+      <div class="grid kpis" id="webKpis"></div>
+      <div class="panel" style="margin-top:14px"><h2>What was found</h2><div id="webFindings"></div></div>
+      <div class="grid two" style="margin-top:14px">
+        <div class="panel"><h2>GA4: visits by channel (30 days)</h2><div class="table-wrap"><table id="gaChannels"></table></div></div>
+        <div class="panel"><h2>GA4: Google Ads landing pages</h2><div class="table-wrap"><table id="gaPages"></table></div></div>
+      </div>
+      <div class="grid two" style="margin-top:14px">
+        <div class="panel"><h2>Paid and organic on the same searches</h2><div id="gscOverlap"></div></div>
+        <div class="panel"><h2>Organic searches not covered by ads</h2><div id="gscGaps"></div></div>
+      </div>
+      <div class="panel" style="margin-top:14px"><h2>Google tags on your pages</h2><div class="table-wrap"><table id="tagPages"></table></div><div id="tagContainers" class="small" style="margin-top:8px"></div>
+        <p class="small muted">Tags and calls are checked daily at 07:05 IST; GA4 and Search Console are imported daily at 06:20 IST.</p></div>
+    </section>
+
+    <!-- EXPERIMENTS -->
+    <section id="tab-exp" class="hidden">
+      <div class="panel"><h2>Experiments &amp; A/B tests</h2><div id="expBox"></div>
+        <p class="small muted">Runs daily at 07:40 IST. Every change you approve is measured for 14 days before and after. Ad tests appear in Recommendations and start only after you approve them. Running tests are checked with a significance test, and pausing the losing ad is then proposed for your approval.</p></div>
     </section>
 
     <!-- REPORTS -->
@@ -402,7 +439,7 @@ footer { max-width: 1280px; margin: 0 auto; padding: 0 16px 24px; color: var(--m
   }
 
   // ---------- render ----------
-  function render() { renderDash(); renderRecs(); renderLog(); renderSite(); renderIntel(); renderMarket(); renderReports(); }
+  function render() { renderDash(); renderRecs(); renderLog(); renderSite(); renderIntel(); renderMarket(); renderFunnel(); renderWeb(); renderExp(); renderReports(); }
 
   function renderDash() {
     const camps = data.campaigns.filter(inScope);
@@ -736,6 +773,104 @@ footer { max-width: 1280px; margin: 0 auto; padding: 0 16px 24px; color: var(--m
       : '<div class="empty">No suppliers yet. Add rows to your "Suppliers" Google Sheet; they appear here the next morning.</div>';
   }
 
+  // ---------- funnel & calls ----------
+  const kpiHtml = list => list.map(k => '<div class="panel kpi"><div class="label">' + k[0] + '</div><div class="value">' + k[1] + '</div><div class="sub muted">' + (k[2] || '') + '</div></div>').join('');
+  const sumBy = (rows, f) => rows.reduce((t, r) => t + Number(r[f] || 0), 0);
+  function renderFunnel() {
+    const f = (data.funnel || []).filter(inScopeA);
+    const S = k => sumBy(f, k);
+    const cost = S('cost_30d'), leads = S('leads') - S('spam'), q = S('qualified'), b = S('booked'), rev = S('revenue');
+    $('#funKpis').innerHTML = kpiHtml([
+      ['Ad spend (30 days)', inr(cost), num(S('ads_conversions_30d')) + ' Google Ads conversions'],
+      ['Leads', num(leads), leads ? inr(cost / leads) + ' per lead' : (S('spam') ? num(S('spam')) + ' spam' : 'no leads recorded yet')],
+      ['Qualified', num(q), q ? inr(cost / q) + ' per qualified lead' : 'set Status in the CRM sheet'],
+      ['Booked', num(b), b ? inr(cost / b) + ' per booking' : '—'],
+      ['Booking value', inr(rev), cost && rev ? 'ROAS ' + (rev / cost).toFixed(2) + 'x' : 'enter Booking value in the CRM sheet']
+    ]);
+    const ch = [['Website form', S('form_leads')], ['WhatsApp', S('whatsapp_leads')], ['Phone (website)', S('call_leads')], ['Email', S('email_leads')]];
+    const mx = Math.max(1, ...ch.map(c => c[1]));
+    $('#funChannels').innerHTML = ch.some(c => c[1]) ? '<div class="table-wrap"><table><tbody>' + ch.map(c => '<tr><td>' + c[0] + '</td><td style="width:55%"><div class="bar"><span style="width:' + Math.round(c[1] / mx * 100) + '%"></span></div></td><td class="num">' + num(c[1]) + '</td></tr>').join('') + '</tbody></table></div>'
+      : '<div class="empty">No leads recorded in the last 30 days. Leads arrive from the website tracking snippet and the enquiry inbox.</div>';
+    const tags = (data.insights || []).filter(inScope).map(x => ((x.insights || {}).tags || {}).calls).filter(Boolean);
+    const assets = [].concat(...tags.map(t => t.assets || []));
+    $('#funCalls').innerHTML = '<div class="table-wrap"><table><tbody>' + [
+      ['Call asset on ads', assets.length ? assets.length + ' (' + esc([...new Set(assets.map(a => a.phone))].join(', ')) + ')' : '<span class="pill warn">none</span>'],
+      ['Times the number was shown in ads', num(S('phone_impressions'))],
+      ['Calls from ads (call clicks)', num(S('ad_call_clicks')) + (S('ad_call_cost') ? ' <span class="small muted">' + inr(S('ad_call_cost')) + '</span>' : '')],
+      ['Calls from the website (taps)', num(S('call_leads'))],
+      ['Answered', num(S('calls_answered'))],
+      ['Missed / no answer', S('calls_missed') ? '<span class="pill warn">' + num(S('calls_missed')) + '</span>' : '0'],
+      ['Called back', num(S('calls_called_back'))],
+      ['Call leads without an outcome', S('calls_unlogged') ? '<span class="pill warn">' + num(S('calls_unlogged')) + '</span>' : '0']
+    ].map(r => '<tr><td>' + r[0] + '</td><td class="num">' + r[1] + '</td></tr>').join('') + '</tbody></table></div>';
+    const fc = (data.funnel_campaigns || []).filter(inScopeA);
+    $('#funTable').innerHTML = '<thead><tr><th>Campaign</th><th class="num">Spend</th><th class="num">Ads conv.</th><th class="num">Leads</th><th class="num">Spam</th><th class="num">Qualified</th><th class="num">Booked</th><th class="num">Value</th><th class="num">Cost / lead</th><th class="num">Cost / booking</th><th class="num">ROAS</th></tr></thead><tbody>' +
+      (fc.length ? fc.map(c => '<tr><td>' + esc(c.campaign_name || c.campaign_id) + '</td><td class="num">' + inr(c.cost_30d) + '</td><td class="num">' + num(c.ads_conversions_30d) + '</td><td class="num">' + num(c.leads) + '</td><td class="num">' + num(c.spam) + '</td><td class="num">' + num(c.qualified) + '</td><td class="num">' + num(c.booked) + '</td><td class="num">' + inr(c.revenue) + '</td>' +
+        '<td class="num">' + (c.cost_per_lead == null ? '—' : inr(c.cost_per_lead)) + '</td><td class="num">' + (c.cost_per_booking == null ? '—' : inr(c.cost_per_booking)) + '</td><td class="num">' + (c.roas == null || !Number(c.revenue) ? '—' : Number(c.roas).toFixed(2) + 'x') + '</td></tr>').join('')
+        : '<tr><td colspan="11" class="empty">No campaign data yet.</td></tr>') + '</tbody>';
+  }
+
+  // ---------- web analytics & tags ----------
+  function renderWeb() {
+    const ins = (data.insights || []).filter(inScope).map(x => x.insights || {});
+    const wa = ins.map(i => i.web_analytics).filter(Boolean)[0] || null;
+    const tg = ins.map(i => i.tags).filter(Boolean)[0] || null;
+    const st = (wa && wa.status) || {};
+    const conn = v => v === 'ok' ? '<span class="pill good">connected</span>' : v === 'not_configured' ? '<span class="pill">not set up</span>' : v ? '<span class="pill bad">error</span>' : '—';
+    $('#webKpis').innerHTML = kpiHtml([
+      ['GA4', conn(st.ga4), st.ga4_error ? esc(String(st.ga4_error).slice(0, 80)) : (st.ga4_property_id ? 'property ' + esc(st.ga4_property_id) : '')],
+      ['Search Console', conn(st.gsc), st.gsc_error ? esc(String(st.gsc_error).slice(0, 80)) : esc(st.gsc_site_url || '')],
+      ['Ad clicks that became GA4 visits', wa && wa.click_to_session != null ? wa.click_to_session + '%' : '—', wa && wa.ads_clicks ? num(wa.paid_sessions) + ' visits / ' + num(wa.ads_clicks) + ' clicks' : ''],
+      ['Paid visits engaged', wa && wa.paid_engagement_rate != null ? wa.paid_engagement_rate + '%' : '—', 'stayed 10s+, 2+ pages or converted'],
+      ['Consent mode', tg ? (tg.consent_mode ? '<span class="pill good">on</span>' : '<span class="pill warn">off</span>') : '—', tg && (tg.cmp || []).length ? 'banner: ' + esc(tg.cmp.join(', ')) : 'no cookie banner found']
+    ]);
+    const fnd = [].concat(...ins.map(i => ((i.tags || {}).findings || []).concat((i.web_analytics || {}).findings || [])));
+    const uniq = []; const seen = new Set(); for (const x of fnd) if (!seen.has(x.title)) { seen.add(x.title); uniq.push(x); }
+    const sevCls = { critical: 'bad', warning: 'warn', info: 'info' };
+    const nWarn = uniq.filter(x => x.severity !== 'info').length;
+    $('#webCount').textContent = nWarn; $('#webCount').classList.toggle('hidden', !nWarn);
+    $('#webFindings').innerHTML = uniq.length ? '<ul class="issues">' + uniq.sort((a, b) => (a.severity === 'info') - (b.severity === 'info')).map(x => '<li><span class="pill ' + (sevCls[x.severity] || '') + '">' + esc(x.severity) + '</span> ' + esc(x.title) + (x.detail && x.detail.note ? '<div class="small muted">' + esc(x.detail.note) + '</div>' : '') + '</li>').join('') + '</ul>' : '<div class="empty">Nothing to fix. The checks run every morning.</div>';
+    const chName = { google_ads: 'Google Ads', organic_search: 'Organic search', direct: 'Direct', referral: 'Referral', social: 'Social', other: 'Other' };
+    const chs = ((wa || {}).channels || []).slice().sort((a, b) => b.sessions - a.sessions);
+    $('#gaChannels').innerHTML = '<thead><tr><th>Channel</th><th class="num">Visits</th><th class="num">Engaged</th><th class="num">Key events</th></tr></thead><tbody>' +
+      (chs.length ? chs.map(c => '<tr><td>' + esc(chName[c.channel] || c.channel) + '</td><td class="num">' + num(c.sessions) + '</td><td class="num">' + (c.sessions ? Math.round(c.engaged / c.sessions * 100) + '%' : '—') + '</td><td class="num">' + num(c.key_events) + '</td></tr>').join('') : '<tr><td colspan="4" class="empty">No GA4 data yet.</td></tr>') + '</tbody>';
+    const pp = (wa || {}).paid_pages || [];
+    $('#gaPages').innerHTML = '<thead><tr><th>Landing page</th><th class="num">Visits</th><th class="num">Engaged</th><th class="num">Avg. time</th></tr></thead><tbody>' +
+      (pp.length ? pp.map(p => '<tr><td class="small">' + esc(p.landing_page) + '</td><td class="num">' + num(p.sessions) + '</td><td class="num">' + (p.engagement_rate == null ? '—' : (p.engagement_rate < 40 && p.sessions >= 30 ? '<span class="pill warn">' + p.engagement_rate + '%</span>' : p.engagement_rate + '%')) + '</td><td class="num">' + Math.round(p.avg_duration || 0) + 's</td></tr>').join('') : '<tr><td colspan="4" class="empty">No Google Ads visits recorded in GA4 yet.</td></tr>') + '</tbody>';
+    const ov = (wa || {}).overlap || [];
+    $('#gscOverlap').innerHTML = ov.length ? '<div class="table-wrap"><table><thead><tr><th>Search</th><th class="num">Paid spend</th><th class="num">Paid conv.</th><th class="num">Organic position</th><th class="num">Organic clicks</th></tr></thead><tbody>' +
+      ov.map(o => '<tr><td>' + esc(o.term) + '</td><td class="num">' + inr(o.paid_cost) + '</td><td class="num">' + num(o.paid_conversions) + '</td><td class="num">' + (Number(o.organic_position) <= 3 ? '<span class="pill good">' + o.organic_position + '</span>' : o.organic_position) + '</td><td class="num">' + num(o.organic_clicks) + '</td></tr>').join('') + '</tbody></table></div>'
+      : '<div class="empty">' + (st.gsc === 'ok' ? 'None of your paid search terms also shows up in Search Console yet.' : 'Appears once Search Console is connected.') + '</div>';
+    const gp = (wa || {}).organic_gaps || [];
+    $('#gscGaps').innerHTML = gp.length ? '<div class="table-wrap"><table><thead><tr><th>Search</th><th class="num">Impressions</th><th class="num">Position</th></tr></thead><tbody>' +
+      gp.map(g => '<tr><td>' + esc(g.query) + '<div class="small muted">' + esc(String(g.page || '').replace(/^https?:\/\//, '')) + '</div></td><td class="num">' + num(g.impressions) + '</td><td class="num">' + g.position + '</td></tr>').join('') + '</tbody></table></div>'
+      : '<div class="empty">' + (st.gsc === 'ok' ? 'No uncovered searches with enough impressions.' : 'Appears once Search Console is connected.') + '</div>';
+    const pages = (tg || {}).pages || [];
+    $('#tagPages').innerHTML = '<thead><tr><th>Page</th><th>Type</th><th>Google tags</th><th>Lead tracking</th><th>Conversion event</th><th class="num">Phone / WhatsApp / forms</th></tr></thead><tbody>' +
+      (pages.length ? pages.map(p => '<tr><td class="small">' + esc(String(p.url).replace(/^https?:\/\//, '')) + '</td><td>' + esc(p.kind) + '</td><td class="small">' + ((p.tags || []).length ? esc(p.tags.join(', ')) : '<span class="pill bad">none</span>') + '</td>' +
+        '<td>' + (p.lead_snippet ? '<span class="pill good">yes</span>' : '<span class="pill warn">missing</span>') + '</td><td>' + (p.conversion_event ? '<span class="pill good">yes</span>' : '<span class="pill">no</span>') + '</td><td class="num">' + num(p.tel) + ' / ' + num(p.whatsapp) + ' / ' + num(p.forms) + '</td></tr>').join('') : '<tr><td colspan="6" class="empty">The tag check has not run yet.</td></tr>') + '</tbody>';
+    const cs = (tg || {}).containers || [];
+    $('#tagContainers').innerHTML = cs.length ? cs.map(c => '<div><b>' + esc(c.id) + '</b> (' + esc(c.type === 'gtm' ? 'Tag Manager' : 'Google tag') + ') sends to: ' + ((c.destinations || []).length ? c.destinations.map(d => '<span class="pill ' + (d.startsWith('AW-') ? 'info' : 'good') + '">' + esc(d) + '</span>').join(' ') : '<span class="pill warn">nothing found</span>') + ((c.events || []).length ? ' · events: ' + esc(c.events.join(', ')) : '') + '</div>').join('') : '';
+  }
+
+  // ---------- experiments ----------
+  function renderExp() {
+    const ex = (data.experiments || []).filter(inScopeA);
+    const live = ex.filter(e => ['running', 'measuring', 'proposed'].includes(e.status)).length;
+    $('#expCount').textContent = live; $('#expCount').classList.toggle('hidden', !live);
+    const stCls = { running: 'info', measuring: 'info', proposed: 'warn', completed: 'good', cancelled: '', stopped: '' };
+    const typ = { change_impact: 'Change impact', ad_copy: 'Ad copy A/B', ad_pause: 'Pause weak ad' };
+    const win = w => !w ? '' : ' <span class="pill ' + (/improved|variant/.test(w) ? 'good' : /worse|control/.test(w) ? 'bad' : '') + '">' + esc(String(w).replace(/_/g, ' ')) + '</span>';
+    const campName = (acc, id) => { const c = data.campaigns.find(x => x.account_id === acc && String(x.campaign_id) === String(id)); return c ? c.campaign_name : (id || ''); };
+    $('#expBox').innerHTML = ex.length ? '<div class="table-wrap"><table><thead><tr><th>Status</th><th>Type</th><th>Experiment</th><th>Result so far</th><th>Dates</th></tr></thead><tbody>' +
+      ex.map(e => '<tr><td><span class="pill ' + (stCls[e.status] || '') + '">' + esc(e.status) + '</span>' + win(e.winner) + '</td><td>' + esc(typ[e.experiment_type] || e.experiment_type || '') + '</td>' +
+        '<td style="max-width:420px"><b>' + esc(e.title || '') + '</b><div class="small muted">' + esc(campName(e.account_id, e.campaign_id)) + (e.ad_group_id ? ' · ad group ' + esc(e.ad_group_id) : '') + '</div>' + (e.hypothesis ? '<div class="small">' + esc(e.hypothesis) + '</div>' : '') +
+        (e.status === 'proposed' && e.recommendation_id ? '<div class="small"><a href="#" data-goto-recs="1">Review in Recommendations (' + esc(e.recommendation_id) + ')</a></div>' : '') + '</td>' +
+        '<td class="small" style="min-width:220px;max-width:360px;white-space:normal">' + esc(e.summary || '') + '</td><td class="small" style="white-space:nowrap">' + (e.start_date ? esc(String(e.start_date).slice(0, 10)) + (e.end_date ? ' → ' + esc(String(e.end_date).slice(0, 10)) : '') : '—') + '</td></tr>').join('') + '</tbody></table></div>'
+      : '<div class="empty">No experiments yet. They appear after you approve a change or when an ad test is proposed.</div>';
+    $('#expBox').querySelectorAll('[data-goto-recs]').forEach(a => a.addEventListener('click', ev => { ev.preventDefault(); const btn = document.querySelector('button[data-tab="recs"]'); if (btn) btn.click(); }));
+  }
+
   // ---------- reports ----------
   function renderReports() {
     const biz = $('#bizSel').value;
@@ -758,7 +893,7 @@ footer { max-width: 1280px; margin: 0 auto; padding: 0 16px 24px; color: var(--m
   $('#tabs').onclick = e => {
     const b = e.target.closest('button[data-tab]'); if (!b) return;
     $$('#tabs button').forEach(x => x.classList.toggle('active', x === b));
-    ['dash', 'recs', 'site', 'intel', 'market', 'reports', 'chat', 'log'].forEach(t => $('#tab-' + t).classList.toggle('hidden', t !== b.dataset.tab));
+    ['dash', 'recs', 'site', 'intel', 'market', 'funnel', 'web', 'exp', 'reports', 'chat', 'log'].forEach(t => $('#tab-' + t).classList.toggle('hidden', t !== b.dataset.tab));
     if (b.dataset.tab === 'chat') $('#chatInput').focus();
   };
 
