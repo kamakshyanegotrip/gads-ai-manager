@@ -129,6 +129,50 @@ details.kw summary { cursor: pointer; color: var(--accent); margin-top: 10px; fo
 .spin { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: s 0.8s linear infinite; vertical-align: -2px; }
 @keyframes s { to { transform: rotate(360deg); } }
 footer { max-width: 1280px; margin: 0 auto; padding: 0 16px 24px; color: var(--muted); font-size: 12px; }
+/* phase 5: advice boxes, clickable findings, drawer */
+.btn.sm { padding: 5px 10px; font-size: 12.5px; }
+.advice { margin-top: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); padding: 8px 10px; }
+.advice-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+.panel > .advice:first-child { margin-top: 0; }
+details.fx { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin: 6px 0; }
+details.fx > summary { cursor: pointer; padding: 8px 10px; list-style: none; display: flex; gap: 6px; align-items: flex-start; flex-wrap: wrap; }
+details.fx > summary::-webkit-details-marker { display: none; }
+details.fx > summary::before { content: '▸'; color: var(--muted); margin-right: 2px; transition: transform .15s; }
+details.fx[open] > summary::before { transform: rotate(90deg); }
+details.fx > summary:hover { background: var(--bg); border-radius: 8px; }
+.fx-t { flex: 1; min-width: 200px; }
+.fx-b { padding: 2px 12px 12px 26px; font-size: 13.5px; }
+.fx-b p { margin: 8px 0 0; }
+.steps-h { font-weight: 600; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-top: 10px; }
+ol.steps { margin: 6px 0 0; padding-left: 20px; } ol.steps li { margin-bottom: 4px; }
+ul.plain { margin: 4px 0 0; padding-left: 18px; } ul.plain li { margin-bottom: 3px; }
+table.kv { width: auto; margin-top: 6px; } table.kv td { padding: 3px 12px 3px 0; border: 0; white-space: normal; font-size: 12.5px; } table.kv td:first-child { color: var(--muted); }
+.area { margin-bottom: 12px; } .area-h { font-weight: 600; font-size: 12px; color: var(--muted); margin: 8px 0 4px; }
+.ai-answer { white-space: pre-wrap; background: var(--info-bg); border-radius: 8px; padding: 8px 10px; margin-top: 8px; }
+.ai-steps { margin-top: 8px; }
+.change { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin: 8px 0; font-size: 13px; }
+.modal.wide { max-width: 640px; } .modal-body { max-height: 65vh; overflow-y: auto; }
+.modal .row { flex-wrap: wrap; }
+.callout { background: var(--info-bg); border-radius: 8px; padding: 10px 12px; margin: 8px 0; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 10px; margin: 10px 0; }
+.card { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: var(--panel); }
+.card-h { display: flex; justify-content: space-between; gap: 6px; align-items: center; }
+.card p { margin: 6px 0 0; }
+.exp-list { display: grid; gap: 12px; }
+.exp { border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; background: var(--panel); }
+.exp-h { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; }
+.exp-title { font-weight: 600; font-size: 15px; margin-top: 8px; }
+.exp p { margin: 8px 0 0; }
+table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, table.mini th { padding: 6px 12px 6px 0; }
+.prog { height: 6px; background: var(--bg); border-radius: 4px; overflow: hidden; margin-top: 10px; max-width: 420px; } .prog > span { display: block; height: 100%; background: var(--accent); }
+.up { color: var(--warn); } .down { color: var(--good); }
+.impl-h { font-weight: 600; margin: 16px 0 6px; } .impl-h:first-child { margin-top: 0; } .pad { padding: 6px 2px; }
+.drawer { position: fixed; top: 0; right: 0; height: 100vh; width: min(440px, 100vw); background: var(--panel); border-left: 1px solid var(--line); box-shadow: -8px 0 24px rgba(0,0,0,.12); z-index: 25; display: grid; grid-template-rows: auto 1fr auto auto auto; transform: translateX(105%); transition: transform .2s ease; }
+.drawer.open { transform: none; }
+.drawer-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px; border-bottom: 1px solid var(--line); }
+.drawer .msgs { padding: 12px; } .drawer .msg { max-width: 92%; }
+.fab { position: fixed; right: 18px; bottom: 18px; z-index: 15; background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 999px; padding: 11px 18px; font-weight: 600; cursor: pointer; box-shadow: 0 6px 18px rgba(0,0,0,.2); }
+@media (max-width: 600px) { .fx-b { padding-left: 12px; } .fab { right: 12px; bottom: 12px; } }
 </style>
 </head>
 <body>
@@ -204,6 +248,7 @@ footer { max-width: 1280px; margin: 0 auto; padding: 0 16px 24px; color: var(--m
         <button data-f="proposed" class="active">Needs approval</button>
         <button data-f="advisory">Manual checks</button>
         <button data-f="done">Decided / applied</button>
+        <button data-f="impl">Implementation</button>
         <button data-f="all">All</button>
       </div>
       <div class="recs" id="recList"></div>
@@ -238,76 +283,79 @@ footer { max-width: 1280px; margin: 0 auto; padding: 0 16px 24px; color: var(--m
       <div class="grid kpis" id="siteKpis" style="margin-top:14px"></div>
       <div class="panel" style="margin-top:14px"><h2>Findings</h2><div id="auditFindings"></div></div>
       <div class="panel" style="margin-top:14px"><h2>Final URLs &amp; landing pages</h2><div class="table-wrap"><table id="lpTable"></table></div>
-        <p class="small muted">Checked daily at 07:30 IST: HTTP status, redirects, Google tag, enquiry form / call / WhatsApp, and mobile PageSpeed for the busiest pages.</p></div>
+        <p class="small muted">Checked daily at 07:30 IST: HTTP status, redirects, Google tag, enquiry form / call / WhatsApp, and mobile PageSpeed for the busiest pages.</p><div id="adv-lp"></div></div>
       <div class="grid two" style="margin-top:14px">
-        <div class="panel"><h2>Ads &amp; message match</h2><div class="table-wrap"><table id="adTable"></table></div></div>
-        <div class="panel"><h2>Tracking setup</h2><div id="trackBox"></div></div>
+        <div class="panel"><h2>Ads &amp; message match</h2><div class="table-wrap"><table id="adTable"></table></div><div id="adv-ads"></div></div>
+        <div class="panel"><h2>Tracking setup</h2><div id="trackBox"></div><div id="adv-track"></div></div>
       </div>
-      <div class="panel" style="margin-top:14px"><h2>Conversion actions</h2><div class="table-wrap"><table id="convTable"></table></div></div>
+      <div class="panel" style="margin-top:14px"><h2>Conversion actions</h2><div class="table-wrap"><table id="convTable"></table></div><div id="adv-conv"></div></div>
       <div class="grid two" style="margin-top:14px">
         <div class="panel"><h2>Leads by goal (30 days)</h2><div class="table-wrap"><table id="goalTable"></table></div>
           <p class="small muted">"Counted" = in the Conversions column used for bidding. "Recorded" = All conversions. A gap means the goal is not used by the campaigns.</p></div>
-        <div class="panel"><h2>Target CPA &amp; bidding</h2><div id="bidBox"></div></div>
+        <div class="panel"><h2>Target CPA &amp; bidding</h2><div id="bidBox"></div><div id="adv-bid"></div></div>
       </div>
       <div class="panel" style="margin-top:14px"><h2>Keywords &amp; Quality Score</h2><div class="table-wrap"><table id="kwTable"></table></div>
-        <p class="small muted">Quality Score and its three parts (expected CTR, ad relevance, landing page experience) as reported by Google Ads, latest value in the last 30 days.</p></div>
+        <p class="small muted">Quality Score and its three parts (expected CTR, ad relevance, landing page experience) as reported by Google Ads, latest value in the last 30 days.</p><div id="adv-kw"></div></div>
       <div class="panel" style="margin-top:14px"><h2>Competitors in your auctions</h2><div id="compBox"></div>
-        <p class="small muted">Domains from Google Ads Auction Insights (last 30 days). The top direct competitors' home pages are checked daily and compared with your main landing page.</p></div>
+        <p class="small muted">Domains from Google Ads Auction Insights (last 30 days). The top direct competitors' home pages are checked daily and compared with your main landing page.</p><div id="adv-comp"></div></div>
     </section>
 
     <!-- ALERTS & INSIGHTS -->
     <section id="tab-intel" class="hidden">
-      <div class="panel"><h2>Live alerts</h2><div id="alertBox"></div>
+      <div class="panel"><h2>Live alerts &amp; solutions</h2><p class="small muted" style="margin-top:0">Click an alert to see the solution and, where possible, a Fix button.</p><div id="alertBox"></div>
         <p class="small muted">Checked every 2 hours from 07:20 to 23:20 IST: spend spikes or stops, CPC spikes, conversions stopping, budget running out early, disapproved ads, campaigns or account not serving. Each new or worse problem is emailed once.</p></div>
-      <div class="panel" style="margin-top:14px"><h2>What the daily analysis found</h2><div id="intelFindings"></div><div class="small muted" id="intelWhen"></div></div>
+      <div class="panel" style="margin-top:14px"><h2>What the daily analysis found</h2><p class="small muted" style="margin-top:0">Click a finding for the steps and Fix buttons.</p><div id="intelFindings"></div><div class="small muted" id="intelWhen"></div></div>
       <div class="grid two" style="margin-top:14px">
-        <div class="panel"><h2>Hour of day (30 days)</h2><div id="hourBox"></div></div>
-        <div class="panel"><h2>Day of week (30 days)</h2><div class="table-wrap"><table id="dowTable"></table></div></div>
+        <div class="panel"><h2>Hour of day (30 days)</h2><div id="hourBox"></div><div id="adv-hour"></div></div>
+        <div class="panel"><h2>Day of week (30 days)</h2><div class="table-wrap"><table id="dowTable"></table></div><div id="adv-dow"></div></div>
       </div>
       <div class="grid two" style="margin-top:14px">
-        <div class="panel"><h2>Devices &amp; networks</h2><div class="table-wrap"><table id="devTable"></table></div></div>
-        <div class="panel"><h2>Locations</h2><div class="table-wrap"><table id="locTable"></table></div></div>
+        <div class="panel"><h2>Devices &amp; networks</h2><div class="table-wrap"><table id="devTable"></table></div><div id="adv-dev"></div></div>
+        <div class="panel"><h2>Locations</h2><div class="table-wrap"><table id="locTable"></table></div><div id="adv-loc"></div></div>
       </div>
       <div class="panel" style="margin-top:14px"><h2>Campaign overlap</h2><div id="overlapBox"></div>
-        <p class="small muted">Search terms and keywords that more than one live campaign is paying for. Overlap makes your campaigns bid against each other.</p></div>
+        <p class="small muted">Search terms and keywords that more than one live campaign is paying for. Overlap makes your campaigns bid against each other.</p><div id="adv-overlap"></div></div>
     </section>
 
     <!-- MARKET -->
     <section id="tab-market" class="hidden">
+      <div class="panel" style="margin-bottom:14px"><h2>Competitor ads &amp; strategy</h2><div id="compAdsBox"></div></div>
       <div class="panel"><h2>Auction insights: share of the auction</h2><div id="aiBox"></div>
-        <p class="small muted">From the Google Ads "Auction insights" report emailed to you (scheduled report), imported daily at 08:10 IST. Impression share below 10% is shown as "&lt; 10%".</p></div>
+        <p class="small muted">From the Google Ads "Auction insights" report emailed to you (scheduled report), imported daily at 08:10 IST. Impression share below 10% is shown as "&lt; 10%".</p><div id="adv-ai"></div></div>
       <div class="panel" style="margin-top:14px"><h2>Keyword gaps &amp; demand</h2><div id="kgSummary"></div><div class="table-wrap"><table id="kgTable"></table></div>
-        <p class="small muted">Weekly (Monday 06:10 IST): Google Keyword Planner ideas for India plus your own search terms, compared with your keywords. Brand, portal and temple-room searches are left out.</p></div>
+        <p class="small muted">Weekly (Monday 06:10 IST): Google Keyword Planner ideas for India plus your own search terms, compared with your keywords. Brand, portal and temple-room searches are left out.</p><div id="adv-kg"></div></div>
       <div class="panel" style="margin-top:14px"><h2>Suppliers</h2><div id="supBox"></div>
-        <p class="small muted">From your "Suppliers" Google Sheet, synced daily at 08:10 IST. Rows you delete from the sheet become inactive here.</p></div>
+        <p class="small muted">From your "Suppliers" Google Sheet, synced daily at 08:10 IST. Rows you delete from the sheet become inactive here.</p><div id="adv-sup"></div></div>
     </section>
 
     <!-- FUNNEL & CALLS -->
     <section id="tab-funnel" class="hidden">
       <div class="grid kpis" id="funKpis"></div>
+      <div class="panel" style="margin-top:14px"><div id="adv-funnel"></div></div>
       <div class="grid two" style="margin-top:14px">
-        <div class="panel"><h2>Leads by channel (30 days)</h2><div id="funChannels"></div></div>
+        <div class="panel"><h2>Leads by channel (30 days)</h2><div id="funChannels"></div><div id="adv-channels"></div></div>
         <div class="panel"><h2>Calls</h2><div id="funCalls"></div>
-          <p class="small muted">Calls from ads: clicks on your call asset in Google Ads. Calls from the website: taps on your phone number, captured by the tracking snippet. Choose each call's result in the CRM sheet's "Call outcome" column (answered, missed, called back...); it syncs every hour.</p></div>
+          <p class="small muted">Calls from ads: clicks on your call asset in Google Ads. Calls from the website: taps on your phone number, captured by the tracking snippet. Choose each call's result in the CRM sheet's "Call outcome" column (answered, missed, called back...); it syncs every hour.</p><div id="adv-calls"></div></div>
       </div>
       <div class="panel" style="margin-top:14px"><h2>Campaign funnel (30 days)</h2><div class="table-wrap"><table id="funTable"></table></div>
-        <p class="small muted">Leads, qualified, quoted and booked come from the Status column of your CRM sheet. ROAS = booking value / ad spend.</p></div>
+        <p class="small muted">Leads, qualified, quoted and booked come from the Status column of your CRM sheet. ROAS = booking value / ad spend.</p><div id="adv-funtable"></div></div>
     </section>
 
     <!-- WEB & TAGS -->
     <section id="tab-web" class="hidden">
       <div class="grid kpis" id="webKpis"></div>
-      <div class="panel" style="margin-top:14px"><h2>What was found</h2><div id="webFindings"></div></div>
+      <div id="adv-web-top" style="margin-top:14px"></div>
+      <div class="panel" style="margin-top:14px"><h2>What was found</h2><p class="small muted" style="margin-top:0">Click a finding for the steps.</p><div id="webFindings"></div></div>
       <div class="grid two" style="margin-top:14px">
-        <div class="panel"><h2>GA4: visits by channel (30 days)</h2><div class="table-wrap"><table id="gaChannels"></table></div></div>
-        <div class="panel"><h2>GA4: Google Ads landing pages</h2><div class="table-wrap"><table id="gaPages"></table></div></div>
+        <div class="panel"><h2>GA4: visits by channel (30 days)</h2><div class="table-wrap"><table id="gaChannels"></table></div><div id="adv-gach"></div></div>
+        <div class="panel"><h2>GA4: Google Ads landing pages</h2><div class="table-wrap"><table id="gaPages"></table></div><div id="adv-gapages"></div></div>
       </div>
       <div class="grid two" style="margin-top:14px">
-        <div class="panel"><h2>Paid and organic on the same searches</h2><div id="gscOverlap"></div></div>
-        <div class="panel"><h2>Organic searches not covered by ads</h2><div id="gscGaps"></div></div>
+        <div class="panel"><h2>Paid and organic on the same searches</h2><div id="gscOverlap"></div><div id="adv-overlap2"></div></div>
+        <div class="panel"><h2>Organic searches not covered by ads</h2><div id="gscGaps"></div><div id="adv-gaps2"></div></div>
       </div>
       <div class="panel" style="margin-top:14px"><h2>Google tags on your pages</h2><div class="table-wrap"><table id="tagPages"></table></div><div id="tagContainers" class="small" style="margin-top:8px"></div>
-        <p class="small muted">Tags and calls are checked daily at 07:05 IST; GA4 and Search Console are imported daily at 06:20 IST.</p></div>
+        <p class="small muted">Tags and calls are checked daily at 07:05 IST; GA4 and Search Console are imported daily at 06:20 IST.</p><div id="adv-tags"></div></div>
     </section>
 
     <!-- EXPERIMENTS -->
@@ -439,7 +487,8 @@ footer { max-width: 1280px; margin: 0 auto; padding: 0 16px 24px; color: var(--m
   }
 
   // ---------- render ----------
-  function render() { renderDash(); renderRecs(); renderLog(); renderSite(); renderIntel(); renderMarket(); renderFunnel(); renderWeb(); renderExp(); renderReports(); }
+  function render() { REG.clear(); renderDash(); renderRecs(); renderLog(); renderSite(); renderIntel(); renderMarket(); renderFunnel(); renderWeb(); renderExp(); renderReports();
+    for (const f of [renderSiteAdvice, renderIntelAdvice, renderMarketAdvice, renderFunnelAdvice, renderWebAdvice]) { try { f(); } catch (e) { console.error(f.name, e); } } }
 
   function renderDash() {
     const camps = data.campaigns.filter(inScope);
@@ -509,6 +558,7 @@ footer { max-width: 1280px; margin: 0 auto; padding: 0 16px 24px; color: var(--m
     const all = data.recommendations.filter(inScope);
     const pending = all.filter(r => r.status === 'proposed').length;
     $('#recCount').textContent = pending; $('#recCount').classList.toggle('hidden', !pending);
+    if (recFilter === 'impl') { renderImplementation(); return; }
     const list = all.filter(r => recFilter === 'all' ? true : recFilter === 'done' ? !['proposed', 'advisory'].includes(r.status) : r.status === recFilter);
     const accName = id => { const a = data.accounts.find(x => x.account_id === id); return a ? (a.label || a.name) : id; };
     const campName = (acc, id) => { const c = data.campaigns.find(x => x.account_id === acc && String(x.campaign_id) === String(id)); return c ? c.campaign_name : id; };
@@ -526,9 +576,13 @@ footer { max-width: 1280px; margin: 0 auto; padding: 0 16px 24px; color: var(--m
         '<div class="pc"><div><b>Pros</b>' + esc(r.pros || '—') + '</div><div><b>Cons</b>' + esc(r.cons || '—') + '</div></div>' +
         (kws ? '<details class="kw"><summary>Show the ' + kws.length + ' negative keywords (' + esc(kws[0].match_type || 'EXACT').toLowerCase() + ' match)</summary><div class="kwlist">' + kws.map(k => '<span>' + esc(k.text) + '</span>').join('') + '</div></details>' : '') +
         (r.result_note && !canAct ? '<p class="small muted">' + esc(r.result_note) + '</p>' : '') +
+        (() => { const x = recHow(r); if (x.auto) return '<details class="kw"><summary>How it is implemented</summary><p class="small">' + esc(x.text) + '</p>' + (r.action_params && r.status === 'proposed' ? '<div class="change small">' + changeHtml(r) + '</div>' : '') + '</details>';
+          const pb = x.pb || {}; return '<details class="kw"' + (r.status === 'advisory' ? ' open' : '') + '><summary>How to do it, step by step</summary>' + ((pb.steps || []).length ? '<ol class="steps">' + pb.steps.map(s => '<li>' + esc(s) + '</li>').join('') + '</ol>' : '<div class="ai-steps"><button class="btn sm" data-aistepsbtn="' + reg({ section: 'Recommendation ' + r.recommendation_id, ctx: { recommendation: r } }) + '">Get step-by-step instructions from AI</button></div>') +
+            ((pb.fixes || []).length ? '<div class="rec-actions">' + pb.fixes.map(f => '<button class="btn good sm" data-fix="' + reg(f) + '">' + esc(f.label) + '</button>').join('') + '</div>' : '') + '</details>'; })() +
         (canAct && canExec ? '<div class="rec-actions">' + (r.status === 'proposed'
             ? '<button class="btn good" data-act="approve" data-id="' + esc(r.recommendation_id) + '">Approve &amp; apply</button><button class="btn bad" data-act="decline" data-id="' + esc(r.recommendation_id) + '">Decline</button>'
             : '<button class="btn" data-act="approve" data-id="' + esc(r.recommendation_id) + '">Mark done</button><button class="btn" data-act="decline" data-id="' + esc(r.recommendation_id) + '">Dismiss</button>') +
+          '<button class="btn sm" data-ask="' + reg({ section: 'Recommendation ' + r.recommendation_id, ctx: { recommendation: r } }) + '">Discuss with AI</button>' +
           '<span class="small muted">Expires ' + new Date(r.expires_at).toLocaleDateString() + '</span></div>' : '') +
         (canAct && !canExec ? '<p class="small muted">You have read-only access to this account.</p>' : '') +
         '</article>';
@@ -760,9 +814,9 @@ footer { max-width: 1280px; margin: 0 auto; padding: 0 16px 24px; color: var(--m
       ' · <b>' + num(kg.gaps) + '</b> gaps · ' + num(kg.partial) + ' partly covered · ' + num(kg.covered) + ' covered · last run ' + new Date(kg.run_at).toLocaleString() + '</div>' +
       ((kg.destinations || []).length ? '<div class="small" style="margin-bottom:8px">Destinations searched that you do not target: ' + kg.destinations.map(d => '<span class="pill info">' + esc(d.place) + ' ~' + num(d.searches) + '/mo</span>').join(' ') + '</div>' : '') : '';
     const gl = { converting_term: ['good', 'converting search term'], new_destination: ['info', 'new destination'], missing_variant: ['', 'missing variant'], previously_removed: ['', 'removed before'] };
-    $('#kgTable').innerHTML = '<thead><tr><th>Search</th><th>Type</th><th class="num">Searches/mo</th><th>Competition</th><th class="num">Top-of-page bid</th><th class="num">Your clicks</th><th class="num">Your conv.</th><th>Covered by</th></tr></thead><tbody>' +
+    $('#kgTable').innerHTML = '<thead><tr><th>Search</th><th>Type</th><th class="num">Searches/mo</th><th>Competition</th><th class="num">Top-of-page bid</th><th class="num">Your clicks</th><th class="num">Your conv.</th><th>Covered by</th><th></th></tr></thead><tbody>' +
       (opp.length ? opp.slice(0, 40).map(o => { const g = gl[o.gap_type] || ['', o.coverage]; return '<tr><td><b>' + esc(o.keyword) + '</b></td><td><span class="pill ' + g[0] + '">' + esc(g[1]) + '</span></td><td class="num">' + (o.avg_monthly_searches == null ? '—' : num(o.avg_monthly_searches)) + '</td><td>' + esc(cap(o.competition || '')) + '</td>' +
-        '<td class="num">' + (o.bid_high ? inr(o.bid_low) + '–' + inr(o.bid_high) : '—') + '</td><td class="num">' + num(o.our_clicks_30d) + '</td><td class="num">' + num(o.our_conversions_30d) + '</td><td class="small muted">' + esc(o.matched_keyword || 'not covered') + '</td></tr>'; }).join('')
+        '<td class="num">' + (o.bid_high ? inr(o.bid_low) + '–' + inr(o.bid_high) : '—') + '</td><td class="num">' + num(o.our_clicks_30d) + '</td><td class="num">' + num(o.our_conversions_30d) + '</td><td class="small muted">' + esc(o.matched_keyword || 'not covered') + '</td><td>' + (canExec(o.account_id) ? '<button class="btn good sm" data-fix="' + reg({ label: 'Add', kind: 'add_keywords', account_id: o.account_id, params: { keywords: [{ text: o.keyword, match_type: 'PHRASE' }], reason: 'Keyword gap: ' + (o.avg_monthly_searches || '?') + ' searches a month.' } }) + '">Add as keyword</button>' : '') + '</td></tr>'; }).join('')
         : '<tr><td colspan="8" class="empty">No gaps found yet. The weekly check runs on Mondays.</td></tr>') + '</tbody>';
 
     const sup = (data.suppliers || []).filter(s => $('#bizSel').value === 'ALL' || s.business_id === $('#bizSel').value);
@@ -853,24 +907,6 @@ footer { max-width: 1280px; margin: 0 auto; padding: 0 16px 24px; color: var(--m
     $('#tagContainers').innerHTML = cs.length ? cs.map(c => '<div><b>' + esc(c.id) + '</b> (' + esc(c.type === 'gtm' ? 'Tag Manager' : 'Google tag') + ') sends to: ' + ((c.destinations || []).length ? c.destinations.map(d => '<span class="pill ' + (d.startsWith('AW-') ? 'info' : 'good') + '">' + esc(d) + '</span>').join(' ') : '<span class="pill warn">nothing found</span>') + ((c.events || []).length ? ' · events: ' + esc(c.events.join(', ')) : '') + '</div>').join('') : '';
   }
 
-  // ---------- experiments ----------
-  function renderExp() {
-    const ex = (data.experiments || []).filter(inScopeA);
-    const live = ex.filter(e => ['running', 'measuring', 'proposed'].includes(e.status)).length;
-    $('#expCount').textContent = live; $('#expCount').classList.toggle('hidden', !live);
-    const stCls = { running: 'info', measuring: 'info', proposed: 'warn', completed: 'good', cancelled: '', stopped: '' };
-    const typ = { change_impact: 'Change impact', ad_copy: 'Ad copy A/B', ad_pause: 'Pause weak ad' };
-    const win = w => !w ? '' : ' <span class="pill ' + (/improved|variant/.test(w) ? 'good' : /worse|control/.test(w) ? 'bad' : '') + '">' + esc(String(w).replace(/_/g, ' ')) + '</span>';
-    const campName = (acc, id) => { const c = data.campaigns.find(x => x.account_id === acc && String(x.campaign_id) === String(id)); return c ? c.campaign_name : (id || ''); };
-    $('#expBox').innerHTML = ex.length ? '<div class="table-wrap"><table><thead><tr><th>Status</th><th>Type</th><th>Experiment</th><th>Result so far</th><th>Dates</th></tr></thead><tbody>' +
-      ex.map(e => '<tr><td><span class="pill ' + (stCls[e.status] || '') + '">' + esc(e.status) + '</span>' + win(e.winner) + '</td><td>' + esc(typ[e.experiment_type] || e.experiment_type || '') + '</td>' +
-        '<td style="max-width:420px"><b>' + esc(e.title || '') + '</b><div class="small muted">' + esc(campName(e.account_id, e.campaign_id)) + (e.ad_group_id ? ' · ad group ' + esc(e.ad_group_id) : '') + '</div>' + (e.hypothesis ? '<div class="small">' + esc(e.hypothesis) + '</div>' : '') +
-        (e.status === 'proposed' && e.recommendation_id ? '<div class="small"><a href="#" data-goto-recs="1">Review in Recommendations (' + esc(e.recommendation_id) + ')</a></div>' : '') + '</td>' +
-        '<td class="small" style="min-width:220px;max-width:360px;white-space:normal">' + esc(e.summary || '') + '</td><td class="small" style="white-space:nowrap">' + (e.start_date ? esc(String(e.start_date).slice(0, 10)) + (e.end_date ? ' → ' + esc(String(e.end_date).slice(0, 10)) : '') : '—') + '</td></tr>').join('') + '</tbody></table></div>'
-      : '<div class="empty">No experiments yet. They appear after you approve a change or when an ad test is proposed.</div>';
-    $('#expBox').querySelectorAll('[data-goto-recs]').forEach(a => a.addEventListener('click', ev => { ev.preventDefault(); const btn = document.querySelector('button[data-tab="recs"]'); if (btn) btn.click(); }));
-  }
-
   // ---------- reports ----------
   function renderReports() {
     const biz = $('#bizSel').value;
@@ -885,9 +921,703 @@ footer { max-width: 1280px; margin: 0 auto; padding: 0 16px 24px; color: var(--m
         (r.emailed_to ? '<span class="pill good">emailed to ' + esc(r.emailed_to) + '</span>' : '<span class="pill">saved</span>') + '</div></div></div>' +
         '<div class="table-wrap" style="margin-top:10px"><table style="max-width:520px"><thead><tr><th>Metric</th><th class="num">This period</th><th class="num">Previous</th><th class="num">Change</th></tr></thead><tbody>' +
         row('Spend', t.cost, p.cost, inr) + row('Clicks', t.clicks, p.clicks, num) + row('Conversions', t.conversions, p.conversions, num) + row('CPA', d.cpa, d.prev_cpa, inr) + '</tbody></table></div>' +
-        '<details class="kw" open><summary>AI review</summary><p style="white-space:pre-wrap">' + esc(r.summary || '') + '</p></details></article>';
+        '<details class="kw" open><summary>AI review</summary><p style="white-space:pre-wrap">' + esc(r.summary || '') + '</p></details>' +
+        box('Suggestions & actions for this period', reportAdvice(r), { ask: { section: (r.period_type === 'monthly' ? 'Monthly' : 'Weekly') + ' review ' + String(r.period_start).slice(0, 10), ctx: { review: r.data, ai_review: r.summary } } }) +
+        '<div class="rec-actions"><button class="btn sm" data-ask="' + reg({ section: 'Review ' + String(r.period_start).slice(0, 10), ctx: { review: r.data, ai_review: r.summary }, question: 'Give me a step-by-step action plan for next week based on this review. Say which steps the app can do with a Fix / Apply button.' }) + '">Get an AI action plan</button></div></article>';
     }).join('') : '<div class="panel empty">No reviews yet. The first weekly review is created on Monday at 09:00 IST.</div>';
   }
+
+
+  // =====================================================================
+  // Phase 5: clickable findings, recommendation boxes, Fix / Apply, Ask AI
+  // =====================================================================
+  const REG = new Map(); let regN = 0;
+  const reg = o => { const id = 'k' + (++regN); REG.set(id, o); return id; };
+  const act = fields => post('gads-webapp-actions', { ...fields, ...creds() });
+  const campName2 = (acc, id) => { const c = data.campaigns.find(x => x.account_id === acc && String(x.campaign_id) === String(id)); return c ? c.campaign_name : (id || ''); };
+  const scopeAcc = () => { const a = $('#accSel').value; if (a && a !== 'ALL') return a; const l = data.accounts.filter(x => inScope({ business_id: x.business_id, account_id: x.account_id })); return l.length ? l[0].account_id : (data.accounts[0] || {}).account_id; };
+  const canExec = acc => { const a = data.accounts.find(x => x.account_id === acc); return !!(a && a.can_execute); };
+  const accOf = x => x.account_id || x.google_ads_account_id || scopeAcc();
+  const rsx = v => 'Rs ' + Math.round(Number(v || 0)).toLocaleString('en-IN');
+  const trunc = (s, n) => { s = String(s || ''); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
+
+  // ---------- generic modal with several buttons ----------
+  function modal(title, html, buttons, wide) {
+    return new Promise(resolve => {
+      const root = $('#modalRoot');
+      root.innerHTML = '<div class="modal-bg"><div class="modal' + (wide ? ' wide' : '') + '" role="dialog" aria-modal="true"><h3>' + esc(title) + '</h3><div class="modal-body">' + html +
+        '</div><div class="row">' + buttons.map(b => '<button class="btn ' + (b.cls || '') + '" data-m="' + esc(b.key) + '">' + esc(b.label) + '</button>').join('') + '</div></div></div>';
+      root.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { root.innerHTML = ''; resolve(b.dataset.m); });
+    });
+  }
+
+  // ---------- describe a proposed change in plain words ----------
+  function changeHtml(r) {
+    const p = r.action_params || {};
+    const list = a => '<ul class="plain">' + a.map(x => '<li>' + x + '</li>').join('') + '</ul>';
+    let h = '';
+    if (r.action_type === 'create_responsive_search_ad') h = '<b>Headlines</b>' + list((p.headlines || []).map(esc)) + '<b>Descriptions</b>' + list((p.descriptions || []).map(esc)) + '<div class="small muted">Landing page: ' + esc(p.final_url || '') + (p.path1 ? ' · display path /' + esc(p.path1) + (p.path2 ? '/' + esc(p.path2) : '') : '') + '</div>';
+    else if (r.action_type === 'push_keywords') h = '<b>Keywords to add</b>' + list((p.keywords || []).map(k => esc(k.text) + ' <span class="muted small">(' + esc(String(k.match_type).toLowerCase()) + ' match)</span>'));
+    else if (r.action_type === 'push_negative_keywords') h = '<b>Searches to block</b>' + list((p.keywords || []).map(k => esc(k.text) + ' <span class="muted small">(' + esc(String(k.match_type || 'exact').toLowerCase()) + ')</span>'));
+    else if (r.action_type === 'update_keywords') h = '<b>Keywords</b>' + list((((r.pre_state || {}).keywords) || (p.updates || []).map(u => ({ text: u.criterion_id }))).map(k => esc(k.text) + ' → ' + esc(((p.updates || [])[0] || {}).status || '')));
+    else if (r.action_type === 'set_campaign_budget') h = '<b>New daily budget:</b> ' + rsx(Number(p.amount_micros || 0) / 1e6) + ' (now ' + rsx((r.pre_state || {}).daily_budget) + ')';
+    else if (r.action_type === 'set_ad_schedule') { const days = {}; (p.schedule || []).forEach(w => (days[w.day_of_week] = days[w.day_of_week] || []).push(String(w.start_hour).padStart(2, '0') + ':' + String(w.start_minute || 0).padStart(2, '0') + '–' + String(w.end_hour).padStart(2, '0') + ':' + String(w.end_minute || 0).padStart(2, '0'))); h = '<b>New ad schedule (ads show only in these hours)</b>' + list(Object.keys(days).map(d => cap(d) + ': ' + days[d].join(', '))); }
+    else if (r.action_type === 'pause_ad') h = '<b>Ad to pause:</b> ' + esc(p.ad_id);
+    return '<p>' + esc(r.title) + '</p>' + (r.rationale ? '<p class="small">' + esc(r.rationale) + '</p>' : '') + (h ? '<div class="change">' + h + '</div>' : '') +
+      '<div class="pc"><div><b>Pros</b>' + esc(r.pros || '—') + '</div><div><b>Cons</b>' + esc(r.cons || '—') + '</div></div>';
+  }
+
+  // ---------- apply an existing recommendation (approve -> execution engine) ----------
+  async function applyRec(id) {
+    const r = (data.recommendations || []).find(x => x.recommendation_id === id) || (window.__lastRec && window.__lastRec.recommendation_id === id ? window.__lastRec : null);
+    if (!r) { toast('Recommendation not found. Refresh and try again.'); return; }
+    if (!r.action_type) {
+      const k = await modal('Mark this as done?', '<p>' + esc(r.title) + '</p><p class="small muted">This is a manual task (the app cannot change this setting through Google Ads\' API). Mark it done after you have followed the steps.</p>', [{ key: 'no', label: 'Cancel' }, { key: 'yes', label: 'Mark done', cls: 'primary' }]);
+      if (k !== 'yes') return;
+    } else {
+      const k = await modal('Apply this change to Google Ads?', changeHtml(r) + '<p class="small muted">It is checked again (ownership, permission, current state) and then applied to account ' + esc(r.account_id || r.google_ads_account_id) + ' only. Every change is logged in the Change log.</p>',
+        [{ key: 'no', label: 'Cancel' }, { key: 'yes', label: 'Apply now', cls: 'good' }], true);
+      if (k !== 'yes') return;
+    }
+    toast('Applying… this can take up to a minute.', 60000);
+    try { const res = await post('gads-webapp-api', { action: 'decide', recommendation_id: id, decision: 'approve', ...creds() }); $$('.toast').forEach(t => t.remove()); toast(res.message || res.error || 'Done', 9000); }
+    catch (e) { $$('.toast').forEach(t => t.remove()); toast('Failed: ' + e.message); }
+    await reload();
+  }
+  async function declineRec(id) {
+    const r = (data.recommendations || []).find(x => x.recommendation_id === id); if (!r) return;
+    const k = await modal(r.action_type ? 'Decline this recommendation?' : 'Dismiss this task?', '<p>' + esc(r.title) + '</p>', [{ key: 'no', label: 'Cancel' }, { key: 'yes', label: r.action_type ? 'Decline' : 'Dismiss', cls: 'bad' }]);
+    if (k !== 'yes') return;
+    try { const res = await post('gads-webapp-api', { action: 'decide', recommendation_id: id, decision: 'decline', ...creds() }); toast(res.message || 'Done', 6000); } catch (e) { toast('Failed: ' + e.message); }
+    await reload();
+  }
+
+  // ---------- quick fix: prepare a proposal, show it, apply on confirm ----------
+  async function runFix(f) {
+    const acc = f.account_id || scopeAcc();
+    if (!canExec(acc)) { toast('You have read-only access to this account.'); return; }
+    toast(f.kind === 'new_ad' ? 'Writing the ad with AI… (about 20 seconds)' : 'Preparing the change…', 60000);
+    let res;
+    try { res = await act({ action: 'quick_fix', account_id: acc, kind: f.kind, params: JSON.stringify(f.params || {}) }); }
+    catch (e) { $$('.toast').forEach(t => t.remove()); toast('Failed: ' + e.message); return; }
+    $$('.toast').forEach(t => t.remove());
+    if (!res.ok) { await modal('Cannot prepare this change', '<p>' + esc(res.error || 'Unknown error') + '</p>', [{ key: 'ok', label: 'OK', cls: 'primary' }]); return; }
+    const r = res.recommendation; window.__lastRec = r;
+    const k = await modal(res.existed ? 'This change is already prepared' : 'Review the change', changeHtml(r) +
+      '<p class="small muted">Prepared as ' + esc(r.recommendation_id) + '. Nothing has changed in Google Ads yet. "Apply now" sends it to Google Ads after a final safety check. "Later" keeps it in Recommendations → Needs approval for 3 days.</p>',
+      [{ key: 'later', label: 'Later' }, { key: 'decline', label: 'Discard', cls: 'bad' }, { key: 'apply', label: 'Apply now', cls: 'good' }], true);
+    if (k === 'apply') {
+      toast('Applying… this can take up to a minute.', 60000);
+      try { const d2 = await post('gads-webapp-api', { action: 'decide', recommendation_id: r.recommendation_id, decision: 'approve', ...creds() }); $$('.toast').forEach(t => t.remove()); toast(d2.message || d2.error || 'Done', 9000); }
+      catch (e) { $$('.toast').forEach(t => t.remove()); toast('Failed: ' + e.message); }
+    } else if (k === 'decline') {
+      try { await post('gads-webapp-api', { action: 'decide', recommendation_id: r.recommendation_id, decision: 'decline', ...creds() }); toast('Discarded. Nothing was changed.'); } catch (e) {}
+    } else toast('Saved in Recommendations → Needs approval.', 5000);
+    await reload();
+  }
+
+  // ---------- Ask AI drawer ----------
+  let askState = null;
+  function askAI(section, ctx, question) {
+    askState = { section, ctx, history: [] };
+    let d = $('#askDrawer');
+    if (!d) {
+      d = document.createElement('aside'); d.id = 'askDrawer'; d.className = 'drawer';
+      d.innerHTML = '<div class="drawer-head"><div><div class="small muted">Discuss with AI</div><b id="askTitle"></b></div><button class="btn" id="askClose" aria-label="Close">Close</button></div>' +
+        '<div class="msgs" id="askMsgs"></div><div class="suggest" id="askSuggest"></div>' +
+        '<form class="composer" id="askForm"><textarea id="askInput" placeholder="Ask anything about this…"></textarea><button class="btn primary" id="askSend" type="submit">Ask</button></form>' +
+        '<div class="small muted" style="padding:0 12px 10px">Answers use the numbers on this screen. To make a change, use the Fix / Apply buttons, or <a href="#" id="askFull">open the full AI Chat</a>.</div>';
+      document.body.appendChild(d);
+      $('#askClose').onclick = () => d.classList.remove('open');
+      $('#askForm').onsubmit = e => { e.preventDefault(); askSend($('#askInput').value); };
+      $('#askInput').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); askSend($('#askInput').value); } });
+      $('#askSuggest').onclick = e => { const b = e.target.closest('button'); if (b) askSend(b.textContent); };
+      $('#askFull').onclick = e => { e.preventDefault(); d.classList.remove('open'); const b = document.querySelector('button[data-tab="chat"]'); if (b) b.click(); };
+    }
+    $('#askTitle').textContent = section; $('#askMsgs').innerHTML = '';
+    $('#askSuggest').innerHTML = ['What does this mean for my business?', 'What should I do first? Give me the steps.', 'Which of these can the app fix for me?'].map(q => '<button type="button">' + esc(q) + '</button>').join('');
+    d.classList.add('open');
+    if (question) askSend(question); else setTimeout(() => $('#askInput').focus(), 50);
+  }
+  function askMsg(who, text) { const m = document.createElement('div'); m.className = 'msg ' + who; m.textContent = text; $('#askMsgs').appendChild(m); $('#askMsgs').scrollTop = $('#askMsgs').scrollHeight; return m; }
+  async function askSend(q) {
+    q = String(q || '').trim(); if (!q || !askState) return;
+    $('#askInput').value = ''; askMsg('me', q); $('#askSuggest').innerHTML = '';
+    const t = askMsg('ai typing', 'Thinking…'); $('#askSend').disabled = true;
+    let ctx = ''; try { ctx = JSON.stringify(askState.ctx); } catch (e) { ctx = String(askState.ctx); }
+    if (ctx.length > 15000) ctx = ctx.slice(0, 15000);
+    try {
+      const r = await act({ action: 'ask', account_id: scopeAcc(), section: askState.section, question: q, context: ctx, history: JSON.stringify(askState.history.slice(-6)) });
+      t.remove(); const a = r.ok ? r.answer : ('Sorry — ' + (r.error || 'no answer'));
+      askMsg('ai', a); askState.history.push({ role: 'user', content: q }, { role: 'assistant', content: a });
+    } catch (e) { t.remove(); askMsg('ai', 'Sorry — ' + e.message); }
+    finally { $('#askSend').disabled = false; }
+  }
+  // ask the AI for steps and show them inside the card
+  async function aiSteps(el, section, ctx) {
+    el.innerHTML = '<span class="spin"></span> Asking AI for step-by-step instructions…';
+    try {
+      const r = await act({ action: 'ask', account_id: scopeAcc(), section, question: 'Give me exact step-by-step instructions (numbered, one action per step, with Google Ads / GA4 / website menu names) to fix this. Say first whether the app can do it with a Fix or Apply button.', context: JSON.stringify(ctx).slice(0, 12000) });
+      el.innerHTML = r.ok ? '<div class="ai-answer">' + esc(r.answer) + '</div>' : '<span class="muted">' + esc(r.error || 'No answer') + '</span>';
+    } catch (e) { el.innerHTML = '<span class="muted">' + esc(e.message) + '</span>'; }
+  }
+
+  // ---------- one advice / finding item ----------
+  // it = { sev, title, sub, why, steps[], fixes[{label,kind,params,account_id,cls}], recs[rec objects], ask:{section,ctx}, open, evidence(html) }
+  const SEV = { critical: 'bad', high: 'bad', warning: 'warn', medium: 'warn', info: 'info', opportunity: 'good', tip: 'good', done: 'good' };
+  function item(it) {
+    const fixes = (it.fixes || []).filter(Boolean);
+    const recs = (it.recs || []).filter(Boolean);
+    const askId = it.ask ? reg(it.ask) : null;
+    const btns = [];
+    for (const f of fixes) btns.push('<button class="btn ' + (f.cls || 'good') + ' sm" data-fix="' + reg(f) + '">' + esc(f.label) + '</button>');
+    for (const r of recs) {
+      if (r.status === 'proposed') btns.push('<button class="btn good sm" data-apply="' + esc(r.recommendation_id) + '">' + (r.action_type ? 'Apply' : 'Mark done') + ': ' + esc(trunc(r.title, 60)) + '</button>');
+      else if (r.status === 'advisory') btns.push('<button class="btn sm" data-apply="' + esc(r.recommendation_id) + '">Mark done</button>');
+    }
+    if (askId) btns.push('<button class="btn sm" data-ask="' + askId + '">Discuss with AI</button>');
+    const steps = (it.steps || []).filter(Boolean);
+    return '<details class="fx"' + (it.open ? ' open' : '') + '><summary><span class="pill ' + (SEV[it.sev] || '') + '">' + esc(it.sevLabel || it.sev || 'tip') + '</span> <span class="fx-t">' + esc(it.title) + '</span>' +
+      (fixes.length || recs.some(r => r.status === 'proposed' && r.action_type) ? ' <span class="pill good">fixable</span>' : '') + '</summary><div class="fx-b">' +
+      (it.sub ? '<div class="small muted">' + esc(it.sub) + '</div>' : '') + (it.evidence || '') +
+      (it.why ? '<p><b>Why it matters:</b> ' + esc(it.why) + '</p>' : '') +
+      (steps.length ? '<div class="steps-h">' + (fixes.length || recs.some(r => r.action_type) ? 'If you prefer to do it by hand' : 'Step by step') + '</div><ol class="steps">' + steps.map(s => '<li>' + esc(s) + '</li>').join('') + '</ol>' : '') +
+      (!steps.length && askId ? '<div class="ai-steps" data-aisteps="' + askId + '"><button class="btn sm" data-aistepsbtn="' + askId + '">Get step-by-step instructions from AI</button></div>' : '') +
+      (btns.length ? '<div class="rec-actions">' + btns.join('') + '</div>' : '') + '</div></details>';
+  }
+  function box(title, items, opts) {
+    opts = opts || {};
+    const l = items.filter(Boolean);
+    const askBtn = opts.ask ? '<button class="btn sm" data-ask="' + reg(opts.ask) + '">Discuss with AI</button>' : '';
+    return '<div class="advice"><div class="advice-h"><span>' + esc(title || 'Recommendation & strategy') + '</span>' + askBtn + '</div>' +
+      (l.length ? l.map(item).join('') : '<div class="small muted" style="padding:6px 2px">' + esc(opts.empty || 'Nothing to change here right now.') + '</div>') + '</div>';
+  }
+  const askBtnHtml = (section, ctx, label) => '<button class="btn sm" data-ask="' + reg({ section, ctx }) + '">' + esc(label || 'Discuss with AI') + '</button>';
+  function evid(obj) {
+    const skip = new Set(['title', 'note', 'fix']);
+    const rows = Object.entries(obj || {}).filter(([k, v]) => !skip.has(k) && v !== null && v !== undefined && v !== '' && typeof v !== 'object');
+    const arrs = Object.entries(obj || {}).filter(([k, v]) => Array.isArray(v) && v.length);
+    const lab = k => cap(String(k).replace(/_/g, ' '));
+    const val = (k, v) => /cost|spend|cpa|target/i.test(k) && typeof v === 'number' ? rsx(v) : /url|page/i.test(k) && /^https?:/.test(String(v)) ? '<a href="' + esc(v) + '" target="_blank" rel="noopener">' + esc(String(v).replace(/^https?:\/\//, '')) + '</a>' : esc(v);
+    let h = rows.length ? '<table class="kv"><tbody>' + rows.map(([k, v]) => '<tr><td>' + esc(lab(k)) + '</td><td>' + val(k, v) + '</td></tr>').join('') + '</tbody></table>' : '';
+    for (const [k, v] of arrs) h += '<div class="small" style="margin-top:6px"><b>' + esc(lab(k)) + ':</b> ' + v.slice(0, 12).map(x => typeof x === 'object' ? esc(x.text || x.keyword || x.query || x.term || x.title || JSON.stringify(x).slice(0, 80)) : esc(x)).join(' · ') + '</div>';
+    return h;
+  }
+
+  // ---------- helpers used by the playbooks ----------
+  const recsWhere = f => (data.recommendations || []).filter(r => ['proposed', 'advisory'].includes(r.status) && inScope(r) && f(r));
+  const liveCamps = () => data.campaigns.filter(c => inScope(c) && String(c.status).toUpperCase() === 'ENABLED');
+  const mainCamp = acc => { const l = data.campaigns.filter(c => c.account_id === acc && String(c.status).toUpperCase() === 'ENABLED').sort((a, b) => Number(b.cost) - Number(a.cost)); return l[0] || null; };
+  const agsFor = acc => (data.ad_groups || []).filter(g => g.account_id === acc);
+  function weakestAd(acc, ag) {
+    const l = (data.ads || []).filter(a => a.account_id === acc && (!ag || String(a.ad_group_id) === String(ag)));
+    if (l.length < 2) return null;
+    return l.slice().sort((a, b) => (Number(a.conversions_30d) - Number(b.conversions_30d)) || (Number(b.cost_30d) - Number(a.cost_30d)))[0];
+  }
+  function newAdFixes(acc, brief, finalUrl, label) {
+    const c = mainCamp(acc); if (!c) return [];
+    const g = agsFor(acc).filter(x => String(x.campaign_id) === String(c.campaign_id)).sort((a, b) => Number(b.conversions_30d) - Number(a.conversions_30d))[0];
+    if (!g) return [];
+    if (Number(g.live_ads) >= 3) {
+      const w = weakestAd(acc, g.ad_group_id);
+      return [w ? { label: 'Step 1: pause the weakest ad (' + w.ad_id + ')', kind: 'pause_ad', account_id: acc, params: { ad_id: w.ad_id, reason: 'Makes room for a new test ad (Google allows 3 responsive search ads per ad group).' }, cls: '' } : null,
+        { label: (label || 'Write a new test ad with AI') + ' (after step 1)', kind: 'new_ad', account_id: acc, params: { ad_group_id: g.ad_group_id, brief, final_url: finalUrl } }];
+    }
+    return [{ label: label || 'Write a new test ad with AI', kind: 'new_ad', account_id: acc, params: { ad_group_id: g.ad_group_id, brief, final_url: finalUrl } }];
+  }
+  const kwByText = (acc, texts) => { const s = new Set(texts.map(t => String(t).toLowerCase())); return (data.keywords || []).filter(k => k.account_id === acc && s.has(String(k.keyword_text).toLowerCase())); };
+
+  // ---------- the playbook: what each finding means and how to fix it ----------
+  const GA = 'Google Ads (ads.google.com)';
+  function playbook(title, x) {
+    const t = String(title || ''), acc = accOf(x || {}), det = (x && x.detail) || {};
+    const P = (why, steps, fixes, recs) => ({ why, steps, fixes: fixes || [], recs: recs || [] });
+    let m;
+    if (/final url.*untracked|no UTM|final url suffix/i.test(t)) return P('Without UTM tags your CRM, WhatsApp and email leads cannot tell which campaign, keyword or ad they came from.',
+      ['Open ' + GA + ' and click Admin (gear icon) in the left menu.', 'Click Account settings.', 'Open the Tracking section.', 'In "Final URL suffix" paste: utm_source=google&utm_medium=cpc&utm_campaign={campaignid}&utm_term={keyword}&utm_content={creative}', 'Click Save.', 'If it is already there (it was added on 25 Sep), nothing to do: the check reads Google data through Windsor, which can lag. Press "Mark done".'],
+      [], recsWhere(r => /final_url_suffix|final URL suffix/i.test((r.dedupe_key || '') + r.title)));
+    if (/excluded from the campaigns' conversion goals|not counted in bidding/i.test(t)) return P('These leads are recorded but Google\'s bidding ignores them, so it cannot learn which clicks bring enquiries.',
+      ['Open ' + GA + ' > Campaigns and click the campaign name.', 'Click Settings, then open "Goals".', 'Check which conversion goals the campaign uses (e.g. Phone call leads, Page views, Submit lead forms).', 'Add the goal that contains "' + (det.action || 'this action') + '" or choose "Use account-level goals".', 'Click Save.', 'Go to Goals > Conversions > Summary and confirm the action shows "Primary".']);
+    if (/Many per click|counts every page view|counts every conversion/i.test(t)) return P('Counting every repeat visit inflates conversions, so Google thinks ads work better than they do.',
+      ['Open ' + GA + ' > Goals > Conversions > Summary.', 'Click the conversion action named in the finding.', 'Click Edit settings.', 'Set "Count" to "One".', 'Click Save.']);
+    if (/double counting|2 primary conversion actions/i.test(t)) return P('The same enquiry is counted twice, which misleads bidding.',
+      ['Open ' + GA + ' > Goals > Conversions > Summary.', 'Find the two actions that fire on the same page.', 'Keep the one that fires only on a real enquiry as Primary.', 'Open the other one > Edit settings > set "Action optimisation" to Secondary > Save.']);
+    if (/conversions stopped|0 conversions in the last 7 days/i.test(t)) return P('If tracking broke, bidding goes blind and wastes budget.',
+      ['Open your website on a phone and submit a test enquiry.', 'Check that the thank-you page opens after sending.', 'In Google Ads > Goals > Conversions > Summary, check the "Last conversion" column the next day.', 'Press "Run audit now" on the Site & Tracking tab to re-check tags and pages.']);
+    if (/WEBSITE DOWN|return an error|no response/i.test(t)) return P('Paid clicks land on an error page and are wasted.',
+      ['Open the page in a browser and confirm it loads.', 'If it fails, contact your web host / developer (hosting, PHP error, plugin conflict).', 'After it is fixed, press "Run audit now".', 'If it stays down for hours, pause the campaign from Recommendations.']);
+    if ((m = t.match(/Ads between (\d+):00-(\d+):00 spent/i)) || (m = t.match(/Pause ads (\d+):00-(\d+):00/i))) {
+      const c = mainCamp(acc);
+      return P('These hours spent money without a single lead in 30 days.', ['Open ' + GA + ' > Campaigns > click the campaign.', 'Open "Ad schedule" in the left menu.', 'Click the pencil icon and remove ' + m[1] + ':00–' + m[2] + ':00 from every day.', 'Click Save. Review again in 30 days.'],
+        c ? [{ label: 'Fix: stop ads ' + m[1] + ':00–' + m[2] + ':00 every day', kind: 'ad_schedule', account_id: acc, params: { campaign_id: c.campaign_id, from_hour: +m[1], to_hour: +m[2], reason: t } }] : [], recsWhere(r => /hours:/.test(r.dedupe_key || '')));
+    }
+    if (/Search partners/i.test(t)) return P('Search partner sites spent money with no leads. Windsor\'s API cannot change this setting, so it is a 1-minute manual change.',
+      ['Open ' + GA + ' > Campaigns and click the campaign.', 'Click Settings.', 'Open "Networks".', 'Untick "Include Google search partners".', 'Click Save.', 'Come back and press "Mark done".'], [], recsWhere(r => /net:partners/.test(r.dedupe_key || '')));
+    if (/(Mondays|Tuesdays|Wednesdays|Thursdays|Fridays|Saturdays|Sundays) spent/i.test(t)) return P('Only about 4 days of data per weekday: too little to act on safely.',
+      ['Do nothing for now.', 'Check this again after 8 weeks of data.', 'If the same day still has no leads with Rs 3,000+ spend, remove it in Campaign > Ad schedule.']);
+    if (/best day|best location/i.test(t)) return P('This is where your ads work best.', ['Keep the campaign running on this day / in this place.', 'If the budget runs out early, raise it a little (Fix on the Alerts tab) so the best times get more clicks.']);
+    if (/costs Rs .* per conversion vs/i.test(t)) return P('This city costs much more per lead than the average. With automated bidding, location bid adjustments are ignored, so the only real option is to exclude it or accept it.',
+      ['Watch it for 2 more weeks.', 'If it stays above 2x your average, open ' + GA + ' > Campaigns > Locations.', 'Click the pencil > Exclude > type the city > Save.', 'Or keep it if you sell many trips to people from this city.']);
+    if (/landing page experience BELOW/i.test(t)) return P('Google charges more and shows your ads less when it rates the page below average.',
+      ['Make the page load in under 3 seconds on mobile (compress images, remove heavy sliders).', 'Put the destination name from the keyword in the page heading.', 'Show price range, itinerary and an enquiry form or WhatsApp button without scrolling.', 'Create a separate page for each main trip (Puri, Konark, Chilika) and point matching ads there.', 'Press "Run audit now" after changes; Google updates the rating over 1–2 weeks.'],
+      newAdFixes(acc, 'Match the landing page closely: use the page\'s trip name, duration and inclusions in headlines.', null, 'Write a better-matching ad with AI'));
+    if ((m = t.match(/^(.*?) spent Rs [\d,]+ in 30 days with 0 conversions/i))) return P('This page gets paid clicks but no enquiries.',
+      ['Open the page on a phone and check it loads fast and the enquiry form / WhatsApp button is visible.', 'Check the price and itinerary match what the ad promises.', 'Compare with /odisha-tour-packages/ (your converting page) and copy what works there.', 'If it still does not convert in 2 weeks, point the ads to the converting page instead.']);
+    if (/All \d+ live ads send traffic to one page/i.test(t)) {
+      const ad = (data.ads || []).find(a => a.account_id === acc && a.suggested_url && String(a.suggested_url).replace(/\/$/, '') !== String((a.final_urls || [])[0] || '').replace(/\/$/, ''));
+      return P('A Puri searcher who lands on a general Odisha page is less likely to enquire than one who lands on the Puri trip page.',
+        ['Pick the trip each ad talks about most (e.g. Puri–Konark).', 'Create an ad that points to that trip\'s own page.', 'Keep the general page for general "Odisha tour" ads.'],
+        newAdFixes(acc, 'Specific trip ad for the page ' + ((ad && ad.suggested_url) || '') + '; mention the trip name, duration and what is included.', ad && ad.suggested_url, 'Write an ad for the specific trip page'));
+    }
+    if (/Quality Score 4 or lower/i.test(t)) {
+      const kws = kwByText(acc, (det.keywords || []).map(k => k.text || k)).filter(k => !Number(k.conversions_30d));
+      const byAg = {}; kws.forEach(k => (byAg[k.ad_group_id] = byAg[k.ad_group_id] || []).push(k));
+      return P('Low Quality Score makes each click more expensive.', ['Check whether the keyword really matches a trip you sell.', 'If yes, add it to a headline and to the landing page.', 'If no, pause it.'],
+        Object.entries(byAg).map(([ag, l]) => ({ label: 'Fix: pause ' + l.length + ' low-QS keyword(s) with no leads', kind: 'pause_keywords', account_id: acc, params: { ad_group_id: ag, criterion_ids: l.map(k => k.criterion_id), reason: t } })));
+    }
+    if (/sitelink/i.test(t)) return P('A sitelink that says "Koraput" but opens a general page loses the click.',
+      ['Open ' + GA + ' > Campaigns > Assets.', 'Filter by Sitelinks.', 'Hover the sitelink > pencil icon.', 'Change "Final URL" to the matching trip page (or remove the sitelink if you have no page).', 'Click Save.']);
+    if (/actual CPA .* x the target|CPA .* vs target|high CPA/i.test(t)) return P('Google is told to get leads at your target but actually pays much more; with a target this far below reality it may stop showing ads.',
+      ['Do not lower the target further.', 'First fix conversion counting (Tracking findings) so Google sees all leads.', 'Then improve the landing page (see landing page findings).', 'If spend drops sharply, raise the Target CPA in Google Ads > Campaign > Settings > Bidding to about Rs 600 for 2 weeks, then lower it step by step.'],
+      [], recsWhere(r => /CPA_ABOVE_TARGET/.test(r.dedupe_key || '')));
+    if (/to ad rank|to Ad Rank|Improve Ad Rank/i.test(t)) return P('Competitors with better ads/pages or higher bids win most auctions, so your ads show for only a small share of searches.',
+      ['Improve ad relevance: put the searched trip name in headlines (the AI ad writer does this).', 'Improve the landing page (speed, matching heading, enquiry form on top).', 'Only then consider a higher Target CPA.'], newAdFixes(acc, 'Raise relevance: repeat the top keywords in headlines and add a clear free-quote call to action.'), recsWhere(r => /RANK_LIMITED/.test(r.dedupe_key || '')));
+    if (/GA4 is not linked|not linked to Google Ads/i.test(t)) return P('Without the link GA4 cannot show campaigns, keywords and cost, and cannot share audiences or key events with Google Ads.',
+      ['Open ' + GA + '.', 'Click Tools (wrench) > Data manager.', 'Click "Google Analytics (GA4) & Firebase".', 'Find property "Negotrip.in" (471650969) and click Link.', 'Keep "Import app and web metrics" on and click Link / Done.', 'Next day, GA4 > Reports > Acquisition > Google Ads shows campaigns.']);
+    if (/no key events|records no key events/i.test(t)) return P('GA4 cannot show which pages or channels produce enquiries.',
+      ['Open analytics.google.com and choose the Negotrip.in property.', 'Click Admin (gear, bottom left).', 'Under "Data display" click Events.', 'Find "generate_lead" (after a test enquiry it appears within 24 hours).', 'Switch on "Mark as key event" in that row.', 'Do the same for any WhatsApp or call click events you see.']);
+    if (/consent/i.test(t)) return P('Needed if you target Europe/UK; for India-only ads it is optional but future-proof (DPDP Act).',
+      ['In WordPress, go to Plugins > Add New and install "CookieYes" or "Complianz" (both support Google Consent Mode v2).', 'Run the plugin\'s setup wizard and choose "Google Consent Mode v2".', 'Keep your existing Google tag; the plugin sends consent signals to it.', 'Open the site in a private window and check the banner shows.', 'Press "Mark done".'], [], recsWhere(r => /consent/.test(r.dedupe_key || '')));
+    if (/became GA4 visits|click-to-session|clicks .* lost/i.test(t)) return P('Clicks that never become visits are paid for but the page did not load or tracking dropped.',
+      ['Test the landing page speed at pagespeed.web.dev (mobile).', 'Remove redirects (use the final page address in ads).', 'Check that the Google tag fires on the landing page (Tag Assistant).']);
+    if (/engage/i.test(t)) return P('Most paid visitors leave without scrolling or clicking.', ['Show trip price range, photos and itinerary at the top.', 'Add a sticky WhatsApp / Call button on mobile.', 'Make sure the page heading matches the ad.']);
+    if (/irrelevant search terms/i.test(t)) return P('Money is spent on searches unrelated to your trips.', ['Open ' + GA + ' > Campaigns > Insights and reports > Search terms.', 'Tick irrelevant searches.', 'Click "Add as negative keyword" > choose the campaign > Save.'], [], recsWhere(r => r.action_type === 'push_negative_keywords'));
+    if ((m = t.match(/^"(.+?)" cost/))) return P('This search cost money without any enquiry.', ['Check whether it is a trip you sell.', 'If not, block it as a negative keyword.'],
+      [{ label: 'Fix: block "' + m[1] + '"', kind: 'negatives', account_id: acc, params: { campaign_id: (mainCamp(acc) || {}).campaign_id, keywords: [{ text: m[1], match_type: 'EXACT' }], reason: t } }]);
+    if (/trigger more than one campaign/i.test(t)) return P('Two of your campaigns bid against each other for the same search.', ['See the Campaign overlap table below.', 'Decide which campaign should own each search.', 'Add the search as a negative keyword in the other campaign.']);
+    if (/new competitor/i.test(t)) return P('New advertisers are bidding on your searches.', ['Open the Market tab to see their ads and what they promote.', 'Check whether your ads still show at the top (Auction insights).']);
+    if (/converting search terms as keywords/i.test(t)) {
+      const terms = (((insOf(acc) || {}).keyword_gap || {}).converting_terms || []).map(k => ({ text: k.keyword, match_type: 'PHRASE' }));
+      return P('These exact searches already brought leads but are not keywords yet.', ['Open ' + GA + ' > Campaigns > Keywords.', 'Click + and add each search as a phrase-match keyword to the main ad group.'],
+        terms.length ? [{ label: 'Fix: add ' + terms.length + ' converting search(es) as keywords', kind: 'add_keywords', account_id: acc, params: { keywords: terms, reason: t } }] : [], recsWhere(r => /converting-terms/.test(r.dedupe_key || '')));
+    }
+    if (/high-volume searches have no matching keyword/i.test(t)) {
+      const g = (((insOf(acc) || {}).keyword_gap || {}).top_gaps || []).filter(k => k.type === 'missing_variant').slice(0, 8).map(k => ({ text: k.keyword, match_type: 'PHRASE' }));
+      return P('Many people search these phrases every month and your ads cannot show for them.', ['Review the list on the Market tab.', 'Add the ones that match trips you sell as phrase-match keywords.'],
+        g.length ? [{ label: 'Fix: add ' + g.length + ' high-volume searches as keywords', kind: 'add_keywords', account_id: acc, params: { keywords: g, reason: t } }] : [], recsWhere(r => /planner-gaps/.test(r.dedupe_key || '')));
+    }
+    if (/Destinations people search that you do not target|destinations/i.test(t)) return P('New demand you are not advertising for.', ['Check with suppliers that you can run trips there.', 'Create a package page on the website for each destination.', 'Then add a new ad group with those searches as keywords (the app can add keywords once the page exists).'], [], recsWhere(r => /destinations/.test(r.dedupe_key || '')));
+    return P('', [], [], []);
+  }
+  function insOf(acc) { const x = (data.insights || []).find(i => i.account_id === acc); return x ? (x.insights || {}) : {}; }
+
+  // ---------- small context builders for the AI ----------
+  const pick = (o, keys) => { const r = {}; keys.forEach(k => { if (o && o[k] !== undefined) r[k] = o[k]; }); return r; };
+  const ctxBase = () => ({ business: (data.businesses.find(b => b.business_id === $('#bizSel').value) || data.businesses[0] || {}).business_name, target_cpa: targetCpa(), period_days: data.days,
+    campaigns: data.campaigns.filter(inScope).map(c => pick(c, ['campaign_name', 'status', 'cost', 'clicks', 'conversions', 'daily_budget', 'bidding_strategy_type', 'search_is', 'budget_lost_is', 'rank_lost_is'])) });
+  const findingItem = (f, section) => { const t = (f.detail || {}).title || f.title || f.issue_type; const pb = playbook(t, f);
+    return { sev: f.severity, title: t, sub: (f.detail || {}).note, evidence: evid(f.detail || {}), why: pb.why, steps: pb.steps, fixes: pb.fixes, recs: pb.recs, ask: { section: section + ': ' + trunc(t, 80), ctx: { ...ctxBase(), finding: f.detail || f } } }; };
+
+  // ---------- SITE & TRACKING ----------
+  function renderSiteAdvice() {
+    const acc = scopeAcc();
+    const aud = data.issues.filter(i => inScope(i) && String(i.issue_type || '').startsWith('audit_'));
+    const AREA = { audit_landing_page: 'Final URLs & landing pages', audit_tracking: 'Tracking & conversions', audit_ads: 'Ads & message match', audit_keywords: 'Keywords & Quality Score', audit_bidding: 'Target CPA, bidding & competition', audit_assets: 'Sitelinks & callouts', audit_data: 'Data' };
+    const order = { critical: 0, warning: 1, info: 2 };
+    $('#auditFindings').innerHTML = aud.length ? '<p class="small muted" style="margin-top:0">Click any finding to see what it means, the exact steps, and a Fix button when the app can make the change for you.</p>' + Object.keys(AREA).map(a => {
+      const l = aud.filter(i => i.issue_type === a).sort((x, y) => (order[x.severity] ?? 3) - (order[y.severity] ?? 3));
+      return l.length ? '<div class="area"><div class="area-h">' + AREA[a] + '</div>' + l.map(i => item(findingItem(i, 'Site audit'))).join('') + '</div>' : '';
+    }).join('') : '<div class="empty">' + (data.last_audit_at ? 'No open audit findings in this scope. Nice.' : 'Run the audit to check your final URLs, tracking, ads and keywords.') + '</div>';
+
+    // landing pages
+    const lps = (data.landing_pages || []).filter(inScope);
+    const lpItems = [];
+    lps.filter(p => Number(p.cost_30d) >= 500 && !Number(p.conversions_30d) && p.http_status < 300).slice(0, 3).forEach(p => lpItems.push({ sev: 'warning', title: shortUrl(p.url) + ': ' + rsx(p.cost_30d) + ' spent, no enquiries', why: 'Paid visitors reach this page but do not enquire.', steps: playbook('x spent Rs 1 in 30 days with 0 conversions').steps, ask: { section: 'Landing page ' + shortUrl(p.url), ctx: { ...ctxBase(), page: p } } }));
+    lps.filter(p => p.pagespeed_mobile !== null && p.pagespeed_mobile !== undefined && p.pagespeed_mobile < 50).slice(0, 3).forEach(p => lpItems.push({ sev: 'warning', title: shortUrl(p.url) + ' is slow on mobile (score ' + p.pagespeed_mobile + ')', why: 'Slow pages lose visitors before they see your offer and lower Quality Score.',
+      steps: ['Open pagespeed.web.dev and test the page (Mobile).', 'Compress large images (WordPress: install "Smush" or use LiteSpeed Cache image optimisation).', 'Turn off sliders / pop-ups above the fold.', 'In LiteSpeed Cache enable CSS/JS minify and "Load JS deferred".', 'Purge the cache and test again.'], ask: { section: 'Page speed', ctx: { page: p } } }));
+    lps.filter(p => p.http_status >= 200 && p.http_status < 300 && !p.has_form && !p.has_whatsapp).slice(0, 2).forEach(p => lpItems.push({ sev: 'warning', title: shortUrl(p.url) + ' has no enquiry form or WhatsApp button', steps: ['Edit the page in Elementor.', 'Add a form or WhatsApp button near the top.', 'Save and press "Run audit now".'] }));
+    lps.filter(p => !p.http_status || p.http_status >= 400).forEach(p => lpItems.push({ sev: 'critical', title: shortUrl(p.url) + ' does not load (' + (p.http_status || 'no response') + ')', steps: playbook('WEBSITE DOWN').steps }));
+    $('#adv-lp').innerHTML = box('Recommendation & strategy: landing pages', lpItems, { ask: { section: 'Landing pages', ctx: { ...ctxBase(), pages: lps.slice(0, 20) } }, empty: 'All checked pages load, have an enquiry option and are fast enough.' });
+
+    // ads
+    const ads = (data.ads || []).filter(inScope);
+    const adItems = [];
+    const groups = {}; ads.forEach(a => (groups[a.ad_group_id] = groups[a.ad_group_id] || []).push(a));
+    Object.entries(groups).forEach(([ag, l]) => {
+      if (l.length < 2) return;
+      const tot = l.reduce((s, a) => s + Number(a.conversions_30d || 0), 0), totC = l.reduce((s, a) => s + Number(a.cost_30d || 0), 0);
+      const w = l.slice().sort((a, b) => (Number(a.conversions_30d) - Number(b.conversions_30d)) || (Number(b.cost_30d) - Number(a.cost_30d)))[0];
+      if (tot >= 4 && !Number(w.conversions_30d) && Number(w.cost_30d) >= totC * 0.15) adItems.push({ sev: 'warning', title: 'Ad ' + w.ad_id + ' spent ' + rsx(w.cost_30d) + ' with no leads while its sister ads got ' + tot, why: 'Pausing it moves the budget to ads that convert and makes room for a new test ad.',
+        steps: ['Open ' + GA + ' > Campaigns > Ads.', 'Find ad ' + w.ad_id + '.', 'Tick it and choose Edit > Pause.'], fixes: [{ label: 'Fix: pause ad ' + w.ad_id, kind: 'pause_ad', account_id: w.account_id, params: { ad_id: w.ad_id, reason: 'No conversions in 30 days while sister ads converted.' } }] });
+    });
+    ads.filter(a => /AVERAGE|POOR/.test(String(a.ad_strength || '').toUpperCase())).slice(0, 2).forEach(a => adItems.push({ sev: 'info', title: 'Ad ' + a.ad_id + ' has ' + String(a.ad_strength).toLowerCase() + ' ad strength', why: 'Google shows stronger ads more often.', steps: ['Open the ad in Google Ads and click Edit.', 'Add headlines until you have 12–15, each different (trip names, durations, trust, price, call to action).', 'Add 4 descriptions.', 'Save.'] }));
+    ads.filter(a => a.match_score !== null && a.match_score !== undefined && a.match_score < 7).slice(0, 2).forEach(a => adItems.push({ sev: 'info', title: 'Ad ' + a.ad_id + ' only partly matches its page (' + a.match_score + '/10)', sub: a.match_note, steps: ['Point the ad to ' + (a.suggested_url || 'a page that matches its headlines') + ', or', 'Rewrite the headlines to match the page.'], fixes: newAdFixes(a.account_id, 'Match this page closely: ' + (a.suggested_url || ''), a.suggested_url, 'Write a matching ad with AI') }));
+    adItems.push({ sev: 'tip', sevLabel: 'strategy', title: 'Keep testing one new ad at a time', why: 'Each ad group can run 3 responsive search ads. Keep the 2 best, and test 1 new idea every month; the Experiments tab measures it.', fixes: newAdFixes(acc, 'Test a clearly different angle (trust and experience, or itinerary detail) from the current ads.') });
+    $('#adv-ads').innerHTML = box('Recommendation & strategy: ads', adItems, { ask: { section: 'Ads & message match', ctx: { ...ctxBase(), ads: ads.map(a => pick(a, ['ad_id', 'ad_strength', 'final_urls', 'match_score', 'match_note', 'cost_30d', 'conversions_30d', 'headlines'])) } } });
+
+    // tracking + conversion actions + goals
+    const trk = (data.tracking || []).filter(inScope), conv = (data.conversion_actions || []).filter(inScope);
+    const tItems = [];
+    if (trk.some(t => !t.final_url_suffix && !t.tracking_url_template)) tItems.push({ sev: 'warning', title: 'Add the final URL suffix (UTM tags)', ...playbook('final url suffix') });
+    if (trk.some(t => t.auto_tagging === false)) tItems.push({ sev: 'critical', title: 'Turn on auto-tagging', steps: ['Open ' + GA + ' > Admin > Account settings.', 'Open "Auto-tagging".', 'Tick "Tag the URL that people click through from my ad".', 'Click Save.'] });
+    if (trk.some(t => t.enhanced_conversions_leads === false)) tItems.push({ sev: 'info', title: 'Turn on enhanced conversions for leads', why: 'Recovers leads that cookies miss, so bidding learns faster.', steps: ['Open ' + GA + ' > Goals > Settings.', 'Open "Enhanced conversions for leads".', 'Tick the box and choose "Google tag" as the method.', 'Accept the terms and Save.'] });
+    $('#adv-track').innerHTML = box('Recommendation & strategy: tracking', tItems, { ask: { section: 'Tracking setup', ctx: { tracking: trk } }, empty: 'Tracking settings look right.' });
+    const cItems = [];
+    conv.filter(c => c.status === 'ENABLED' && c.primary_for_goal && c.counting_type === 'MANY_PER_CLICK' && /LEAD|CONTACT|PAGE_VIEW|SUBMIT/i.test(String(c.category))).forEach(c => cItems.push({ sev: 'warning', title: '"' + c.action_name + '" counts every repeat', ...playbook('Many per click') }));
+    conv.filter(c => c.status === 'ENABLED' && Number(c.all_conversions_30d) >= 3 && !Number(c.conversions_30d)).forEach(c => cItems.push({ sev: 'critical', title: '"' + c.action_name + '" is recorded but not counted for bidding', ...playbook('excluded from the campaigns\' conversion goals', { detail: { action: c.action_name } }) }));
+    conv.filter(c => c.status === 'ENABLED' && c.primary_for_goal && !c.last_conversion_date).forEach(c => cItems.push({ sev: 'info', title: '"' + c.action_name + '" recorded nothing in 30 days', steps: ['If you still use it, test it (submit a form, click WhatsApp).', 'If not, open Goals > Conversions > Summary > the action > Edit settings > set it to Secondary, so it does not confuse bidding.'] }));
+    $('#adv-conv').innerHTML = box('Recommendation & strategy: conversion actions', cItems, { ask: { section: 'Conversion actions', ctx: { conversion_actions: conv } }, empty: 'Conversion actions look right.' });
+
+    // bidding
+    const ins = insOf(acc); const camps = (ins.campaigns || []).filter(c => c.cost_30d > 0);
+    const bItems = [];
+    camps.forEach(c => {
+      const tgt = c.tcpa || ins.system_target_cpa;
+      if (c.cpa_30d && tgt && c.cpa_30d > 2 * tgt) bItems.push({ sev: 'warning', title: c.name + ': cost per lead ' + rsx(c.cpa_30d) + ' is ' + (c.cpa_30d / tgt).toFixed(1) + 'x the target ' + rsx(tgt), ...playbook('actual CPA 3x the target', { account_id: acc }) });
+      if (c.rank_lost_is >= 0.5) bItems.push({ sev: 'warning', title: c.name + ': ' + Math.round(c.rank_lost_is * 100) + '% of searches lost to ad rank', ...playbook('to Ad Rank', { account_id: acc }) });
+      const cc = data.campaigns.find(x => String(x.campaign_id) === String(c.campaign_id));
+      if (c.budget_lost_is >= 0.1 && c.cpa_30d && tgt && c.cpa_30d <= tgt * 1.2 && cc) bItems.push({ sev: 'opportunity', title: c.name + ': losing ' + Math.round(c.budget_lost_is * 100) + '% of searches to budget while cost per lead is on target', why: 'More budget here should bring more leads at a similar cost.', fixes: [{ label: 'Fix: raise daily budget +20%', kind: 'budget', account_id: acc, params: { campaign_id: c.campaign_id, pct: 20, reason: 'Budget-limited with CPA on target.' } }] });
+    });
+    $('#adv-bid').innerHTML = box('Recommendation & strategy: bidding', bItems, { ask: { section: 'Target CPA & bidding', ctx: { ...ctxBase(), bidding: camps } }, empty: 'Bidding targets look consistent with results.' });
+
+    // keywords
+    const kws = (data.keywords || []).filter(inScope);
+    const kItems = [];
+    const bad = kws.filter(k => k.quality_score && k.quality_score <= 4 && !Number(k.conversions_30d) && Number(k.cost_30d) > 0);
+    if (bad.length) { const byAg = {}; bad.forEach(k => (byAg[k.ad_group_id] = byAg[k.ad_group_id] || []).push(k));
+      Object.entries(byAg).forEach(([ag, l]) => kItems.push({ sev: 'warning', title: l.length + ' keyword(s) with Quality Score 4 or lower and no leads: ' + l.map(k => '"' + k.keyword_text + '"').join(', '), why: 'Low Quality Score makes every click more expensive.', steps: ['Open Campaigns > Keywords.', 'Tick these keywords.', 'Edit > Pause.'], fixes: [{ label: 'Fix: pause these keywords', kind: 'pause_keywords', account_id: l[0].account_id, params: { ad_group_id: ag, criterion_ids: l.map(k => k.criterion_id), reason: 'Quality Score 4 or lower with no conversions.' } }] })); }
+    const waste = kws.filter(k => Number(k.cost_30d) >= 800 && !Number(k.conversions_30d) && !(k.quality_score && k.quality_score <= 4));
+    if (waste.length) { const byAg = {}; waste.forEach(k => (byAg[k.ad_group_id] = byAg[k.ad_group_id] || []).push(k));
+      Object.entries(byAg).forEach(([ag, l]) => kItems.push({ sev: 'warning', title: l.length + ' keyword(s) spent ' + rsx(l.reduce((s, k) => s + Number(k.cost_30d), 0)) + ' with no leads: ' + l.slice(0, 4).map(k => '"' + k.keyword_text + '"').join(', '), steps: ['Check the search terms these keywords bring (Campaigns > Insights and reports > Search terms).', 'Block irrelevant searches as negatives, or pause the keyword.'], fixes: [{ label: 'Fix: pause these keywords', kind: 'pause_keywords', account_id: l[0].account_id, params: { ad_group_id: ag, criterion_ids: l.map(k => k.criterion_id), reason: 'Rs 800+ with no conversions in 30 days.' } }] })); }
+    const lpBad = kws.filter(k => /BELOW/.test(String(k.lp_experience || '').toUpperCase()));
+    if (lpBad.length) kItems.push({ sev: 'info', title: lpBad.length + ' keyword(s) have a below-average landing page experience', ...playbook('landing page experience BELOW', { account_id: acc }) });
+    const relBad = kws.filter(k => /BELOW/.test(String(k.ad_relevance || '').toUpperCase()));
+    if (relBad.length) kItems.push({ sev: 'info', title: relBad.length + ' keyword(s) have below-average ad relevance: ' + relBad.slice(0, 4).map(k => '"' + k.keyword_text + '"').join(', '), steps: ['Put these exact words in at least 2 headlines of the ad in that ad group.'], fixes: newAdFixes(acc, 'Use these keywords in headlines: ' + relBad.slice(0, 6).map(k => k.keyword_text).join(', ')) });
+    $('#adv-kw').innerHTML = box('Recommendation & strategy: keywords', kItems, { ask: { section: 'Keywords & Quality Score', ctx: { keywords: kws.slice(0, 40).map(k => pick(k, ['keyword_text', 'match_type', 'quality_score', 'expected_ctr', 'ad_relevance', 'lp_experience', 'clicks_30d', 'conversions_30d', 'cost_30d'])) } } });
+
+    $('#adv-comp').innerHTML = box('Recommendation & strategy: competitors', [
+      { sev: 'tip', sevLabel: 'strategy', title: 'See what your competitors advertise and learn from it', why: 'The Market tab shows their live ads, how long each has run, the destinations they push, and AI lessons for you.', steps: ['Open the Market tab.', 'Read "Competitor ads & strategy".', 'Use "Create this ad" on an idea you like.'] }
+    ], { ask: { section: 'Competitors in your auctions', ctx: { competitors: (ins.competitors || []).slice(0, 15), pages: ins.competitor_pages, own: ins.own_main_page } } });
+  }
+
+  // ---------- ALERTS & INSIGHTS ----------
+  function alertSolution(a) {
+    const acc = a.account_id, rc = (a.root_cause || []).join(' '), c = data.campaigns.find(x => x.account_id === acc && String(x.campaign_id) === String(a.campaign_id));
+    const fx = [], steps = []; let why = '';
+    const budgetUp = c ? { label: 'Fix: raise daily budget +20% (' + rsx(c.daily_budget) + ' → ' + rsx(Number(c.daily_budget) * 1.2) + ')', kind: 'budget', account_id: acc, params: { campaign_id: c.campaign_id, pct: 20, reason: a.title } } : null;
+    const budgetDown = c ? { label: 'Fix: lower daily budget -20%', kind: 'budget', account_id: acc, params: { campaign_id: c.campaign_id, pct: -20, reason: a.title }, cls: '' } : null;
+    const audit = { label: 'Run the site & tracking audit now', audit: true, cls: '' };
+    switch (a.alert_type) {
+      case 'spend_stopped':
+        why = 'Your ads almost stopped showing today, so you get fewer enquiries.';
+        steps.push('Open ' + GA + ' > Campaigns and check the Status column of "' + (c ? c.campaign_name : 'the campaign') + '".');
+        if (/budget/i.test(rc)) steps.push('"Limited by budget" with almost no spend usually means the Target CPA is far below what leads really cost, so Google holds back. Check Campaign > Settings > Bidding.');
+        if (/no response|down|error/i.test(rc)) steps.push('Open your landing page on a phone. If it does not load, contact your web host, then press "Run audit now".');
+        if (/Recent changes/i.test(rc)) steps.push('A change was made shortly before (see Change log). If spend stays low for 2 days, undo it from the Change log / Recommendations.');
+        steps.push('Check Billing > Summary in Google Ads for payment problems.', 'Look again at the next check (every 2 hours); the alert clears itself when spend returns.');
+        fx.push(audit); if (/budget/i.test(rc) && budgetUp) fx.push(budgetUp);
+        break;
+      case 'budget_exhausted': why = 'The budget runs out before evening, so later searchers never see your ads.'; steps.push('If cost per lead is on target, raise the budget.', 'If not, first fix cost per lead (Site & Tracking tab).'); if (budgetUp) fx.push(budgetUp); break;
+      case 'spend_spike': why = 'Spend is far above normal today.'; steps.push('Open Campaigns > Insights and reports > Search terms (Today) and look for irrelevant searches.', 'Block them as negatives.', 'If the spike continues without leads, lower the budget.'); if (budgetDown) fx.push(budgetDown); break;
+      case 'cpc_spike': why = 'Each click costs twice as much as usual, often because a competitor raised bids.'; steps.push('Open Campaigns > Auction insights to see who is new or more aggressive.', 'Check the Market tab for their latest ads.', 'Do not raise bids to match; improve ad relevance instead.'); break;
+      case 'conversions_stopped': why = 'No leads recorded for 3 days even though clicks continue — often a tracking problem.'; steps.push(...playbook('conversions stopped').steps); fx.push(audit); break;
+      case 'ad_disapproved': why = 'A disapproved ad cannot show.'; steps.push('Open Campaigns > Ads and hover the "Disapproved" status to see the policy reason.', 'Edit the ad to remove the problem text (for example unverifiable claims or phone numbers in text).', 'Save; Google re-reviews within a day.'); fx.push(...newAdFixes(acc, 'Replacement for a disapproved ad: avoid unverifiable claims, prices and phone numbers in the text.', null, 'Write a replacement ad with AI')); break;
+      case 'campaign_not_eligible': case 'account_not_enabled': why = 'Ads are not showing at all.'; steps.push('Open ' + GA + ' and read the red banner at the top.', 'Check Billing > Summary for a failed payment.', 'Check Campaigns > Status for "Paused", "Ended" or "Limited".'); break;
+      default: steps.push('Open ' + GA + ' and check the campaign status.');
+    }
+    return { why, steps, fixes: fx.filter(Boolean) };
+  }
+  function renderIntelAdvice() {
+    const alerts = (data.alerts || []).filter(inScope);
+    $('#alertBox').innerHTML = alerts.length ? alerts.map(a => {
+      const s = alertSolution(a); const resolved = a.status === 'resolved';
+      const d = a.detail || {};
+      const ev = '<div class="small">' + (a.campaign_id ? 'Campaign: <b>' + esc(campName2(a.account_id, a.campaign_id)) + '</b> · ' : '') + 'first seen ' + new Date(a.first_seen).toLocaleString() + (a.last_seen !== a.first_seen ? ' · last ' + new Date(a.last_seen).toLocaleString() : '') + ' · ' + (resolved ? 'resolved' : a.notified_at ? 'emailed' : 'open') + '</div>' +
+        ((a.root_cause || []).length ? '<div class="steps-h">Likely cause</div><ul class="plain">' + a.root_cause.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' : '') +
+        (Object.keys(d).length ? '<details class="kw"><summary>Numbers</summary>' + evid(d) + '</details>' : '');
+      return item({ sev: resolved ? 'done' : a.severity, sevLabel: resolved ? 'resolved' : a.severity, title: a.title, evidence: ev, why: s.why, steps: resolved ? ['Nothing to do: this problem is no longer found.'] : s.steps, fixes: resolved ? [] : s.fixes, open: !resolved && alerts.indexOf(a) === 0,
+        ask: { section: 'Alert: ' + trunc(a.title, 70), ctx: { ...ctxBase(), alert: a } } });
+    }).join('') : '<div class="empty">No live problems found in the last 7 days.</div>';
+
+    const ins = (data.insights || []).filter(inScope).map(x => ({ acc: x.account_id, i: (x.insights || {}).intelligence })).filter(x => x.i);
+    const fnd = [].concat(...ins.map(x => (x.i.findings || []).map(f => ({ ...f, account_id: x.acc }))));
+    $('#intelFindings').innerHTML = fnd.length ? fnd.map(f => { const pb = playbook(f.title, f); return item({ sev: f.severity, title: f.title, why: pb.why, steps: pb.steps, fixes: pb.fixes, recs: pb.recs, ask: { section: 'Daily analysis: ' + trunc(f.title, 70), ctx: { ...ctxBase(), finding: f } } }); }).join('')
+      : '<div class="empty">No findings yet. The analysis runs daily at 06:40 IST.</div>';
+
+    const acc = scopeAcc(), c = mainCamp(acc);
+    const seg = (data.segments || []).filter(inScopeA);
+    const agg = t => { const m = {}; seg.filter(s => s.segment_type === t).forEach(s => { const o = m[s.segment_value] || (m[s.segment_value] = { value: s.segment_value, cost: 0, clicks: 0, conv: 0 }); o.cost += Number(s.cost); o.clicks += Number(s.clicks); o.conv += Number(s.conversions); }); return Object.values(m); };
+    const hours = agg('hour').sort((a, b) => Number(a.value) - Number(b.value)); const tot = hours.reduce((s, h) => s + h.cost, 0);
+    const hItems = [];
+    // find the most expensive run of consecutive hours with no conversions
+    let best = null;
+    for (let i = 0; i < hours.length; i++) { let cost = 0, j = i; while (j < hours.length && !hours[j].conv && (j === i || Number(hours[j].value) === Number(hours[j - 1].value) + 1) && j - i < 6) { cost += hours[j].cost; j++; if (!best || cost > best.cost) best = { from: Number(hours[i].value), to: Number(hours[j - 1].value) + 1, cost }; } }
+    if (best && tot && best.cost / tot >= 0.08 && c) hItems.push({ sev: 'warning', title: String(best.from).padStart(2, '0') + ':00–' + String(best.to).padStart(2, '0') + ':00 spent ' + rsx(best.cost) + ' (' + Math.round(best.cost / tot * 100) + '%) with no leads', why: 'Removing these hours moves the same budget into hours that bring enquiries. With automated bidding, removing hours works; bid adjustments do not.',
+      steps: playbook('Ads between ' + best.from + ':00-' + best.to + ':00 spent', { account_id: acc }).steps, fixes: [{ label: 'Fix: stop ads ' + String(best.from).padStart(2, '0') + ':00–' + String(best.to).padStart(2, '0') + ':00', kind: 'ad_schedule', account_id: acc, params: { campaign_id: c.campaign_id, from_hour: best.from, to_hour: best.to, reason: 'No conversions in these hours in 30 days.' } }] });
+    const topH = hours.filter(h => h.conv).sort((a, b) => (a.cost / a.conv) - (b.cost / b.conv)).slice(0, 3);
+    if (topH.length) hItems.push({ sev: 'tip', sevLabel: 'strategy', title: 'Best hours: ' + topH.map(h => String(h.value).padStart(2, '0') + ':00').join(', '), why: 'Make sure your phone and WhatsApp are answered quickly at these times; fast replies turn leads into bookings.' });
+    $('#adv-hour').innerHTML = box('Recommendation & strategy: hours', hItems, { ask: { section: 'Hour of day', ctx: { hours } } });
+    const dows = agg('day_of_week');
+    const dItems = dows.filter(d => !d.conv && d.cost > 1500).map(d => ({ sev: 'info', title: cap(d.value) + ': ' + rsx(d.cost) + ' with no leads', ...playbook(cap(d.value) + 's spent') }));
+    $('#adv-dow').innerHTML = box('Recommendation & strategy: days', dItems, { ask: { section: 'Day of week', ctx: { days: dows } }, empty: 'No day stands out yet.' });
+    const dev = agg('device').concat(agg('network').map(n => ({ ...n, value: 'network ' + n.value })));
+    const devItems = [];
+    const sp = agg('network').find(n => /PARTNER/i.test(n.value)); if (sp && sp.cost > 500 && !sp.conv) devItems.push({ sev: 'warning', title: 'Search partners: ' + rsx(sp.cost) + ' with no leads', ...playbook('Search partners', { account_id: acc }) });
+    const avgC = (() => { const a = agg('device'); const cc = a.reduce((s, x) => s + x.cost, 0), vv = a.reduce((s, x) => s + x.conv, 0); return vv ? cc / vv : null; })();
+    agg('device').filter(d => avgC && d.cost > 1000 && (!d.conv || d.cost / d.conv > 2 * avgC)).forEach(d => devItems.push({ sev: 'info', title: cap(d.value) + ' costs ' + (d.conv ? rsx(d.cost / d.conv) + ' per lead' : rsx(d.cost) + ' with no leads'), steps: ['Automated bidding already lowers bids on weak devices.', 'Only if it continues for 60 days: Campaigns > Devices > set a -100% bid adjustment on that device to exclude it.'] }));
+    $('#adv-dev').innerHTML = box('Recommendation & strategy: devices & networks', devItems, { ask: { section: 'Devices & networks', ctx: { segments: dev } }, empty: 'No device or network is clearly wasting money.' });
+    const locs = agg('location').sort((a, b) => b.cost - a.cost);
+    const lTot = locs.reduce((s, l) => s + l.cost, 0), lConv = locs.reduce((s, l) => s + l.conv, 0), lAvg = lConv ? lTot / lConv : null;
+    const lItems = [];
+    locs.filter(l => lAvg && l.cost > 1500 && l.conv && l.cost / l.conv > 2 * lAvg).forEach(l => lItems.push({ sev: 'info', title: l.value + ' costs ' + rsx(l.cost / l.conv) + ' per lead (average ' + rsx(lAvg) + ')', ...playbook('costs Rs 1 per conversion vs') }));
+    locs.filter(l => lAvg && l.conv >= 2 && l.cost / l.conv < 0.7 * lAvg).forEach(l => lItems.push({ sev: 'opportunity', title: l.value + ' brings leads cheaply (' + rsx(l.cost / l.conv) + ' each)', why: 'People from this city book with you at a low cost.', steps: ['Mention trips popular with people from ' + l.value + ' (e.g. "Puri tour from ' + l.value + '") in a new ad.', 'Consider a separate campaign targeting ' + l.value + ' only with its own budget.'], fixes: newAdFixes(acc, 'Speak to travellers from ' + l.value + ': mention travel from ' + l.value + ' to Odisha, pickup from Bhubaneswar airport/railway station.', null, 'Write an ad for ' + l.value + ' travellers') }));
+    locs.filter(l => !l.conv && l.cost > 1500).forEach(l => lItems.push({ sev: 'info', title: l.value + ': ' + rsx(l.cost) + ' with no leads', steps: ['Watch it for 2 more weeks.', 'If still no leads, exclude it: Campaigns > Locations > Exclude.'] }));
+    $('#adv-loc').innerHTML = box('Recommendation & strategy: locations', lItems, { ask: { section: 'Locations', ctx: { locations: locs.slice(0, 20), average_cost_per_lead: lAvg } }, empty: 'No city stands out yet.' });
+    const ov = [].concat(...ins.map(x => ((x.i.overlap || {}).search_terms || [])));
+    const oItems = ov.slice(0, 5).map(o => ({ sev: 'info', title: '"' + o.term + '" triggers ' + (o.split || []).length + ' campaigns (' + rsx(o.cost) + ')', ...playbook('trigger more than one campaign') }));
+    $('#adv-overlap').innerHTML = box('Recommendation & strategy: overlap', oItems, { ask: { section: 'Campaign overlap', ctx: { overlap: ov.slice(0, 15) } }, empty: 'No overlap to fix.' });
+  }
+
+  // ---------- MARKET ----------
+  function renderMarketAdvice() {
+    const acc = scopeAcc();
+    const comps = (data.competitors || []).filter(inScopeA);
+    const ai = insOf(acc).auction_insights;
+    const aItems = [];
+    comps.filter(c => c.position_above_rate >= 0.6).slice(0, 3).forEach(c => aItems.push({ sev: 'warning', title: c.domain + ' shows above you ' + Math.round(c.position_above_rate * 100) + '% of the time', why: 'They win the top spot, where most clicks go.', steps: ['Look at their ads in "Competitor ads & strategy" below.', 'Make your ad more relevant (trip name + duration + inclusions in headlines).', 'Improve landing page experience before raising bids.'], fixes: newAdFixes(acc, 'Compete with ' + c.domain + ': stronger relevance, clear inclusions and a free quote call to action.') }));
+    if (!comps.some(c => c.metrics_updated_at)) aItems.push({ sev: 'info', title: 'Auction share numbers are waiting for the first scheduled report email', steps: ['Open ' + GA + ' > Campaigns > Auction insights.', 'Click the download icon > Schedule.', 'Choose Daily, format .csv, send to kn0733@gmail.com.', 'The app imports it every morning at 08:10 IST.'] });
+    $('#adv-ai').innerHTML = box('Recommendation & strategy: auction', aItems, { ask: { section: 'Auction insights', ctx: { competitors: comps.slice(0, 20), own: ai } } });
+
+    const opp = (data.keyword_opportunities || []).filter(inScopeA);
+    const kg = insOf(acc).keyword_gap || {};
+    const kItems = [];
+    const conv = (kg.converting_terms || []);
+    if (conv.length) kItems.push({ sev: 'opportunity', title: conv.length + ' search(es) already brought leads but are not keywords: ' + conv.map(k => '"' + k.keyword + '"').join(', '), why: 'Making them keywords lets you bid on them on purpose.', fixes: [{ label: 'Fix: add them as keywords', kind: 'add_keywords', account_id: acc, params: { keywords: conv.map(k => ({ text: k.keyword, match_type: 'PHRASE' })), reason: 'Search terms that converted.' } }], recs: recsWhere(r => /converting-terms/.test(r.dedupe_key || '')) });
+    const mv = opp.filter(o => o.gap_type === 'missing_variant' && Number(o.avg_monthly_searches) >= 300).slice(0, 8);
+    if (mv.length) kItems.push({ sev: 'opportunity', title: mv.length + ' high-volume searches you do not cover: ' + mv.slice(0, 4).map(o => '"' + o.keyword + '"').join(', ') + (mv.length > 4 ? '…' : ''), why: 'People search these every month (' + num(mv.reduce((s, o) => s + Number(o.avg_monthly_searches || 0), 0)) + ' searches in total).', steps: ['Review each search: keep only trips you sell.', 'Add them as phrase-match keywords to the main ad group.', 'After 1 week check Search terms for waste.'], fixes: [{ label: 'Fix: add these ' + mv.length + ' searches as keywords', kind: 'add_keywords', account_id: acc, params: { keywords: mv.map(o => ({ text: o.keyword, match_type: 'PHRASE' })), reason: 'Keyword Planner gaps with 300+ searches a month.' } }] });
+    (kg.destinations || []).slice(0, 4).forEach(d => kItems.push({ sev: 'info', title: 'Demand for ' + d.place + ' (~' + num(d.searches) + ' searches/month), e.g. "' + d.example + '"', ...playbook('Destinations people search that you do not target') }));
+    $('#adv-kg').innerHTML = box('Recommendation & strategy: keywords & demand', kItems, { ask: { section: 'Keyword gaps & demand', ctx: { summary: pick(kg, ['gaps', 'partial', 'covered', 'top_gaps', 'destinations', 'converting_terms']), opportunities: opp.slice(0, 30) } } });
+
+    const sup = (data.suppliers || []).filter(s => $('#bizSel').value === 'ALL' || s.business_id === $('#bizSel').value);
+    const sItems = [];
+    if (!sup.length) sItems.push({ sev: 'info', title: 'Add your suppliers so the AI can match ads to what you can deliver', steps: ['Open the Google Sheet "Negotrip - Suppliers (AI Google Ads Manager)".', 'Add one row per hotel, cab or guide: name, type, destination, services, rate from, season, contract end date.', 'The app syncs it every morning at 08:10 IST.'] });
+    sup.filter(s => s.contract_valid_to && (new Date(s.contract_valid_to) - Date.now()) < 30 * 864e5).forEach(s => sItems.push({ sev: 'warning', title: s.supplier_name + ': contract ends ' + String(s.contract_valid_to).slice(0, 10), steps: ['Renew the contract or find another supplier for ' + (s.destination || 'this destination') + '.', 'Update the date in the Suppliers sheet.'] }));
+    $('#adv-sup').innerHTML = box('Recommendation & strategy: suppliers', sItems, { ask: { section: 'Suppliers', ctx: { suppliers: sup.slice(0, 40) } }, empty: 'Supplier list looks fine.' });
+
+    // competitor ads & strategy
+    const ca = (data.competitor_ads || []).filter(inScopeA);
+    const ci = insOf(acc).competitor_ads || null; const A = (ci && ci.ai) || null;
+    let h = '';
+    if (!ci && !ca.length) h = '<div class="empty">Competitor ads appear after the next daily scan (09:40 IST).</div>';
+    else {
+      h += '<div class="small muted" style="margin-bottom:10px">Source: Google Ads Transparency Center, scanned daily for your monitored competitors (' + num((ci || {}).ads_total || ca.length) + ' ads, ' + num((ci || {}).ads_live || ca.filter(x => x.live).length) + ' live). Google does not publish competitors\' clicks, costs or bookings, so "working well" = still running after many weeks (advertisers stop ads that lose money). Destinations are what each ad promotes. Target region: India (country level).' + (ci && ci.generated_at ? ' Updated ' + new Date(ci.generated_at).toLocaleString() + '.' : '') + '</div>';
+      if (A && A.summary) h += '<div class="callout">' + esc(A.summary) + '</div>';
+      const cstats = (ci && ci.competitors) || [];
+      if (cstats.length) h += '<div class="cards">' + cstats.slice(0, 8).map(c => { const a = ((A && A.competitors) || []).find(x => x.domain === c.domain) || {};
+        const best = ca.filter(x => x.domain === c.domain).sort((p, q) => (q.live - p.live) || (Number(q.days_running) - Number(p.days_running))).slice(0, 3);
+        return '<div class="card"><div class="card-h"><b>' + esc(c.domain) + '</b><span class="pill ' + (c.live ? 'info' : '') + '">' + c.live + ' live / ' + c.ads + ' ads</span></div>' +
+          '<div class="small muted">' + esc(c.advertiser || '') + ' · longest running ' + num(c.longest_days) + ' days · shown on ' + esc((c.surfaces || []).map(s => s.toLowerCase()).join(', ') || '—') + '</div>' +
+          ((c.top_destinations || []).length ? '<div class="small" style="margin-top:6px"><b>Promotes:</b> ' + c.top_destinations.map(d => '<span class="pill">' + esc(d) + '</span>').join(' ') + '</div>' : '') +
+          (a.what_they_push ? '<p class="small"><b>What they push:</b> ' + esc(a.what_they_push) + '</p>' : '') + (a.why_it_likely_works ? '<p class="small"><b>Why it likely works:</b> ' + esc(a.why_it_likely_works) + '</p>' : '') +
+          (best.length ? '<div class="small"><b>Their longest-running ads:</b><ul class="plain">' + best.map(x => '<li>' + esc(trunc(x.offer_summary || x.format, 110)) + ' <span class="muted">(' + num(x.days_running) + ' days' + (x.live ? ', live' : '') + ')</span> ' + (x.ad_url ? '<a href="' + esc(x.ad_url) + '" target="_blank" rel="noopener">view</a>' : '') + '</li>').join('') + '</ul></div>' : '') + '</div>'; }).join('') + '</div>';
+      const L = [];
+      ((A && A.lessons) || []).forEach(l => L.push({ sev: 'tip', sevLabel: 'lesson', title: l.title, why: l.why, steps: l.steps, ask: { section: 'Competitor lesson: ' + l.title, ctx: { lesson: l, competitors: cstats } } }));
+      ((A && A.ad_ideas) || []).forEach(i => L.push({ sev: 'opportunity', sevLabel: 'ad idea', title: 'Ad idea: ' + i.angle, why: i.brief, evidence: (i.example_headlines || []).length ? '<div class="small">Example headlines: ' + i.example_headlines.map(x => '<span class="pill">' + esc(x) + '</span>').join(' ') + '</div>' : '', fixes: newAdFixes(acc, i.brief + ' Example headlines: ' + (i.example_headlines || []).join(' | '), null, 'Create this ad with AI') }));
+      ((A && A.gaps) || []).forEach(g => L.push({ sev: 'info', sevLabel: 'gap', title: g.title, why: g.why, steps: ['Check you can deliver this trip with your suppliers.', 'Create a page for it on the website.', 'Then add matching keywords and an ad (Keyword gaps box above).'] }));
+      if (ci && ci.ai_error) L.push({ sev: 'info', title: 'AI lessons could not be written this time (' + ci.ai_error + '). They are retried at the next daily run.' });
+      h += box('Lessons & strategy from competitors', L, { ask: { section: 'Competitor ads & strategy', ctx: { summary: A && A.summary, competitors: cstats, top_ads: ca.slice(0, 25).map(x => pick(x, ['domain', 'offer_summary', 'destinations', 'surface', 'days_running', 'live'])) } } });
+      h += '<details class="kw" style="margin-top:10px"><summary>All competitor ads (' + ca.length + ')</summary><div class="table-wrap"><table><thead><tr><th>Competitor</th><th>What the ad offers</th><th>Destinations</th><th>Shown on</th><th class="num">Days running</th><th>Status</th><th></th></tr></thead><tbody>' +
+        ca.slice(0, 120).map(x => '<tr><td>' + esc(x.domain) + '</td><td style="white-space:normal;min-width:260px">' + esc(x.offer_summary || '—') + '</td><td style="white-space:normal;max-width:200px" class="small">' + esc(x.destinations || '') + '</td><td>' + esc(String(x.surface || '').toLowerCase()) + '</td><td class="num">' + num(x.days_running) + '</td><td>' + (x.live ? '<span class="pill info">live</span>' : '<span class="pill">stopped</span>') + '</td><td>' + (x.ad_url ? '<a href="' + esc(x.ad_url) + '" target="_blank" rel="noopener">view</a>' : '') + '</td></tr>').join('') + '</tbody></table></div></details>';
+    }
+    $('#compAdsBox').innerHTML = h;
+  }
+
+  // ---------- FUNNEL & CALLS ----------
+  function renderFunnelAdvice() {
+    const acc = scopeAcc();
+    const f = (data.funnel || []).filter(inScopeA); const S = k => sumBy(f, k);
+    const cost = S('cost_30d'), leads = S('leads') - S('spam'), q = S('qualified'), b = S('booked'), tgt = targetCpa();
+    const ctx = { ...ctxBase(), funnel: f.map(x => pick(x, ['cost_30d', 'ads_conversions_30d', 'leads', 'spam', 'qualified', 'quoted', 'booked', 'lost', 'revenue', 'form_leads', 'whatsapp_leads', 'call_leads', 'email_leads', 'phone_impressions', 'ad_call_clicks', 'calls_answered', 'calls_missed', 'calls_unlogged', 'cost_per_lead', 'roas'])) };
+    const k = [];
+    if (leads && !q && !b) k.push({ sev: 'warning', title: 'No lead has a status yet, so the app cannot tell good leads from bad ones', why: 'Once statuses are filled, Google Ads receives "Qualified lead" and "Booking" conversions and learns to find buyers, not just enquirers.', steps: ['Open the Google Sheet "Negotrip Leads - AI Google Ads Manager".', 'Go to the Leads tab.', 'For each lead choose a Status in column K (contacted, qualified, quoted, booked, lost, spam).', 'For bookings enter the Booking value in column M.', 'It syncs every hour.'] });
+    if (leads && cost && tgt && cost / leads > tgt * 1.5) k.push({ sev: 'warning', title: 'Cost per lead ' + rsx(cost / leads) + ' is well above your target ' + rsx(tgt), steps: ['Fix the Site & Tracking findings first (they affect every lead).', 'Stop hours and searches that do not convert (Alerts & Insights tab).', 'Test a new ad (Experiments tab).'] });
+    if (leads && S('spam') / (leads + S('spam')) > 0.3) k.push({ sev: 'warning', title: 'Many leads are spam', steps: ['Add a simple captcha (e.g. Cloudflare Turnstile) to the website form.', 'Keep marking spam in the CRM sheet so it is excluded.'] });
+    if (!leads) k.push({ sev: 'info', title: 'No leads recorded in the last 30 days', steps: ['Submit a test enquiry on the website.', 'Check it appears in the CRM sheet within a minute.', 'If not, open the Site & Tracking tab and run the audit.'] });
+    $('#adv-funnel').innerHTML = box('Recommendation & strategy: funnel', k, { ask: { section: 'Funnel', ctx }, empty: 'The funnel looks healthy. Keep updating lead statuses in the CRM sheet.' });
+    const ch = [];
+    if (S('whatsapp_leads') > S('form_leads') * 1.5) ch.push({ sev: 'tip', sevLabel: 'strategy', title: 'WhatsApp brings most of your leads', why: 'Make WhatsApp the main button on landing pages and answer within 5 minutes.', steps: ['Keep the floating WhatsApp button on every page.', 'Set a WhatsApp Business quick reply with your top packages and prices.', 'Log each WhatsApp enquiry\'s outcome in the CRM sheet.'] });
+    if (S('form_leads') > S('whatsapp_leads') * 1.5) ch.push({ sev: 'tip', sevLabel: 'strategy', title: 'The website form brings most of your leads', why: 'Call form leads back within 15 minutes; speed doubles the chance of a booking.' });
+    ch.push({ sev: 'tip', sevLabel: 'strategy', title: 'Reply fast to every channel', steps: ['Turn on email / WhatsApp notifications for new leads (the owner already gets an email for each).', 'Reply within 15 minutes during office hours.', 'Mark the result in the CRM sheet.'] });
+    $('#adv-channels').innerHTML = box('Recommendation & strategy: channels', ch, { ask: { section: 'Leads by channel', ctx } });
+    const tags = insOf(acc).tags || {}; const calls = tags.calls || {};
+    const c = [];
+    if (S('calls_unlogged')) c.push({ sev: 'warning', title: S('calls_unlogged') + ' phone lead(s) have no call outcome', steps: ['Open the CRM sheet > Leads tab.', 'For each phone lead choose column P "Call outcome": answered, missed, called back, no answer, voicemail, busy or wrong number.', 'It syncs every hour and shows here.'] });
+    if (S('calls_missed')) c.push({ sev: 'warning', title: S('calls_missed') + ' call(s) were missed', steps: ['Call them back today.', 'Set a missed-call SMS / WhatsApp auto-reply on the business phone.', 'Change the outcome to "called back" in the CRM sheet.'] });
+    if (Number(calls.phone_impressions || S('phone_impressions')) > 200 && Number(calls.call_clicks || S('ad_call_clicks')) < 5) c.push({ sev: 'info', title: 'Your number was shown ' + num(calls.phone_impressions || S('phone_impressions')) + ' times but got only ' + num(calls.call_clicks || S('ad_call_clicks')) + ' call clicks', why: 'Most people prefer WhatsApp or the form, or the call button is not attractive.', steps: ['Keep the call asset (it costs nothing unless clicked).', 'Add a headline like "Call a Local Expert Now".', 'Make sure the phone is answered 8am–10pm.'], fixes: newAdFixes(acc, 'Call-focused angle: invite people to call a local Odisha travel expert for a free itinerary; mention quick replies.', null, 'Write a call-focused ad with AI') });
+    c.push({ sev: 'info', sevLabel: 'note', title: 'Why "Calls from ads" can look low in India', why: 'Google does not offer call-tracking numbers in India, so only taps on the call button are counted, not the call itself. The CRM "Call outcome" column fills the gap.' });
+    $('#adv-calls').innerHTML = box('Recommendation & strategy: calls', c, { ask: { section: 'Calls', ctx: { ...ctx, call_assets: calls } } });
+    const fc = (data.funnel_campaigns || []).filter(inScopeA);
+    const fcItems = fc.filter(x => Number(x.cost_30d) > 1000 && !Number(x.leads)).map(x => ({ sev: 'warning', title: (x.campaign_name || x.campaign_id) + ': ' + rsx(x.cost_30d) + ' with no recorded leads', steps: ['Check that the campaign\'s ads point to pages with the tracking snippet (Web & Tags tab).', 'If tracking is fine, review its search terms and landing page.'] }));
+    $('#adv-funtable').innerHTML = box('Recommendation & strategy: campaigns', fcItems, { ask: { section: 'Campaign funnel', ctx: { campaigns: fc } }, empty: 'No campaign spends without leads.' });
+  }
+
+  // ---------- WEB & TAGS ----------
+  function renderWebAdvice() {
+    const acc = scopeAcc();
+    const I = insOf(acc); const wa = I.web_analytics || {}; const tg = I.tags || {};
+    const fnd = ((tg.findings || []).concat(wa.findings || []));
+    const seen = new Set(); const uniq = fnd.filter(x => { if (seen.has(x.title)) return false; seen.add(x.title); return true; });
+    $('#webFindings').innerHTML = uniq.length ? uniq.sort((a, b) => (a.severity === 'info') - (b.severity === 'info')).map(x => { const pb = playbook(x.title, { ...x, account_id: acc });
+      return item({ sev: x.severity, title: x.title, sub: (x.detail || {}).note, evidence: evid(x.detail || {}), why: pb.why, steps: pb.steps, fixes: pb.fixes, recs: pb.recs, ask: { section: 'Web & Tags: ' + trunc(x.title, 70), ctx: { finding: x } } }); }).join('')
+      : '<div class="empty">' + ((wa.status || {}).ga4 ? 'Nothing to fix. The checks run every morning.' : 'The GA4 and tag checks have not saved results for this account yet. They run daily at 06:20 and 07:05 IST.') + '</div>';
+    const ch = [];
+    if (wa.click_to_session != null && wa.click_to_session < 70) ch.push({ sev: 'warning', title: 'Only ' + wa.click_to_session + '% of ad clicks became GA4 visits', ...playbook('became GA4 visits') });
+    const gadsCh = (wa.channels || []).find(c => c.channel === 'google_ads'); const noKE = (wa.channels || []).every(c => !Number(c.key_events));
+    if (noKE && (wa.channels || []).length) ch.push({ sev: 'warning', title: 'GA4 counts no key events on any channel', ...playbook('no key events') });
+    if (gadsCh && gadsCh.sessions && gadsCh.engaged / gadsCh.sessions < 0.5) ch.push({ sev: 'info', title: 'Only ' + Math.round(gadsCh.engaged / gadsCh.sessions * 100) + '% of Google Ads visitors engage', ...playbook('engage') });
+    $('#adv-gach').innerHTML = box('Recommendation & strategy: GA4 channels', ch, { ask: { section: 'GA4 channels', ctx: { channels: wa.channels, click_to_session: wa.click_to_session } }, empty: 'GA4 channel data looks healthy.' });
+    const pp = wa.paid_pages || [];
+    const pItems = pp.filter(p => p.sessions >= 20 && p.engagement_rate < 40).map(p => ({ sev: 'warning', title: p.landing_page + ': only ' + p.engagement_rate + '% of paid visitors engage', ...playbook('engage') }));
+    $('#adv-gapages').innerHTML = box('Recommendation & strategy: paid landing pages', pItems, { ask: { section: 'GA4 paid landing pages', ctx: { pages: pp } }, empty: 'No paid landing page stands out as weak.' });
+    const ov = wa.overlap || [];
+    const oItems = [];
+    const top3 = ov.filter(o => Number(o.organic_position) <= 3 && Number(o.paid_cost) > 300);
+    if (top3.length) oItems.push({ sev: 'info', title: top3.length + ' paid search(es) where you already rank in the top 3 for free', why: 'You may be paying for clicks you would get anyway. Test lowering spend on them rather than stopping (ads still take the top spot above competitors).', steps: ['Keep them running for brand protection if competitors bid on them.', 'Otherwise add them as negative keywords for 2 weeks and watch total leads.'] });
+    const weak = ov.filter(o => Number(o.organic_position) > 20 && Number(o.paid_cost) > 100);
+    if (weak.length) oItems.push({ sev: 'tip', sevLabel: 'strategy', title: weak.length + ' paid search(es) where your organic ranking is weak (e.g. "' + weak[0].term + '" at position ' + weak[0].organic_position + ')', why: 'Ads carry these searches alone. Better website content would bring free clicks too.', steps: ['Write a detailed page / blog for the top search (itinerary, price, FAQs).', 'Link it from the home page.', 'Submit it in Search Console > URL inspection > Request indexing.'] });
+    $('#adv-overlap2').innerHTML = box('Recommendation & strategy: paid vs organic', oItems, { ask: { section: 'Paid and organic on the same searches', ctx: { overlap: ov.slice(0, 20) } }, empty: 'Nothing to change.' });
+    const gp = wa.organic_gaps || [];
+    const gItems = gp.length ? [{ sev: 'opportunity', title: gp.length + ' searches show your site on page 2+ with no ads', why: 'People search them but see neither your ad nor a good organic result.', fixes: [{ label: 'Fix: add the top ' + Math.min(8, gp.length) + ' as keywords', kind: 'add_keywords', account_id: acc, params: { keywords: gp.slice(0, 8).map(g => ({ text: g.query, match_type: 'PHRASE' })), reason: 'Search Console: organic page 2+, not covered by ads.' } }] }] : [];
+    $('#adv-gaps2').innerHTML = box('Recommendation & strategy: organic gaps', gItems, { ask: { section: 'Organic searches not covered by ads', ctx: { gaps: gp } }, empty: 'No uncovered searches with enough impressions.' });
+    const pages = tg.pages || []; const tItems = [];
+    pages.filter(p => !(p.tags || []).length).forEach(p => tItems.push({ sev: 'critical', title: shortUrl(p.url) + ' has no Google tag', steps: ['In WordPress > Elementor > Custom Code, open "Google Tag – GA4 + Google Ads".', 'Set it to load on "Entire site".', 'Purge LiteSpeed / AirLift cache.', 'Run the audit again.'] }));
+    pages.filter(p => !p.lead_snippet).forEach(p => tItems.push({ sev: 'warning', title: shortUrl(p.url) + ' is missing the lead tracking snippet', steps: ['In Elementor > Custom Code, open "AI Ads Manager - Lead journey tracking".', 'Make sure it is set to "Entire site".', 'Purge the cache.'] }));
+    if (!tg.consent_mode) tItems.push({ sev: 'info', title: 'No cookie banner / consent mode', ...playbook('consent') });
+    $('#adv-tags').innerHTML = box('Recommendation & strategy: tags', tItems, { ask: { section: 'Google tags on your pages', ctx: { pages, containers: tg.containers } }, empty: 'Tags are fine.' });
+    // KPI tiles for GA4 not linked
+    const kp = [];
+    if ((wa.findings || []).some(f => /not linked/i.test(f.title))) kp.push({ sev: 'warning', title: 'Link GA4 to Google Ads (5 minutes)', ...playbook('GA4 is not linked'), open: true });
+    $('#adv-web-top').innerHTML = kp.length ? box('Do this first', kp) : '';
+  }
+
+  // ---------- EXPERIMENTS ----------
+  function renderExp() {
+    const ex = (data.experiments || []).filter(inScopeA);
+    const live = ex.filter(e => ['running', 'measuring', 'proposed'].includes(e.status)).length;
+    $('#expCount').textContent = live; $('#expCount').classList.toggle('hidden', !live);
+    const acc = scopeAcc();
+    const stCls = { running: 'info', measuring: 'info', proposed: 'warn', completed: 'good', cancelled: '', stopped: '' };
+    const typ = { change_impact: 'Before / after check of a change', ad_copy: 'Ad A/B test', ad_pause: 'Pause a weak ad' };
+    const fmt = (v, k) => v === null || v === undefined ? '—' : (/cost|cpa/.test(k) ? rsx(v) : (Math.round(Number(v) * 100) / 100).toLocaleString('en-IN'));
+    const ch = (a, b, good) => { if (a === null || a === undefined || b === null || b === undefined) return ''; a = Number(a); b = Number(b); if (!isFinite(a) || !isFinite(b) || !b) return ''; const v = Math.round((a - b) / b * 100); const better = good === 'up' ? v > 0 : v < 0; return '<span class="' + (v === 0 ? '' : better ? 'down' : 'up') + '">' + (v > 0 ? '+' : '') + v + '%</span>'; };
+    const cards = ex.map(e => {
+      const s = e.start_date ? new Date(e.start_date) : null, en = e.end_date ? new Date(e.end_date) : null;
+      const pct = s && en ? Math.max(0, Math.min(100, Math.round((Date.now() - s) / (en - s) * 100))) : null;
+      const b = (e.baseline || {}).per_day || {}, r = (e.result || {}).per_day || {};
+      const rows = e.experiment_type === 'change_impact' && (e.baseline || e.result) ? [['Spend per day', 'cost'], ['Clicks per day', 'clicks'], ['Conversions per day', 'conversions']].map(([l, k]) => '<tr><td>' + l + '</td><td class="num">' + fmt(b[k], k) + '</td><td class="num">' + fmt(r[k], k) + '</td><td class="num">' + ch(r[k], b[k], k === 'cost' ? 'down' : 'up') + '</td></tr>').join('') +
+        '<tr><td>Cost per conversion</td><td class="num">' + fmt((e.baseline || {}).cpa, 'cpa') + '</td><td class="num">' + fmt((e.result || {}).cpa, 'cpa') + '</td><td class="num">' + ch((e.result || {}).cpa, (e.baseline || {}).cpa) + '</td></tr>' : '';
+      const cv = (e.control || e.variant) ? ['control', 'variant'].map(k => { const o = e[k] || {}; return '<tr><td>' + (k === 'control' ? 'Current ad' : 'New ad') + (o.ad_id ? ' <span class="small muted">' + esc(o.ad_id) + '</span>' : '') + '</td><td class="num">' + num(o.clicks) + '</td><td class="num">' + num(o.conversions) + '</td><td class="num">' + (o.ctr != null ? o.ctr + '%' : '—') + '</td><td class="num">' + (o.cvr != null ? o.cvr + '%' : '—') + '</td></tr>'; }).join('') : '';
+      const rec = e.recommendation_id ? (data.recommendations || []).find(x => x.recommendation_id === e.recommendation_id) : null;
+      const adv = [];
+      if (e.status === 'measuring') adv.push({ sev: 'info', sevLabel: 'what to do', title: 'Keep the campaign stable until ' + String(e.end_date || '').slice(0, 10), why: 'Other big changes during the test would make the result impossible to read.', steps: ['Avoid budget or bidding changes on this campaign until the end date.', 'Come back after the end date for the verdict.', 'Small fixes (tracking, landing page) are fine.'] });
+      if (e.status === 'completed' && /worse/.test(String(e.winner)) && rec && rec.action_type === 'update_keywords') {
+        const ids = ((rec.action_params || {}).updates || []).map(u => u.criterion_id);
+        adv.push({ sev: 'warning', title: 'The change made results worse: undo it', fixes: [{ label: 'Fix: turn the keywords back on', kind: 'enable_keywords', account_id: e.account_id, params: { ad_group_id: (rec.action_params || {}).ad_group_id, criterion_ids: ids, reason: 'Experiment ' + e.experiment_id + ' showed the pause made results worse.' } }] });
+      } else if (e.status === 'completed' && /worse/.test(String(e.winner))) adv.push({ sev: 'warning', title: 'The change made results worse', steps: ['Open the Change log to see exactly what was changed.', 'Undo it in Google Ads (or ask the AI to prepare the reverse change).'] });
+      if (e.status === 'completed' && /improved|variant/.test(String(e.winner))) adv.push({ sev: 'done', sevLabel: 'keep', title: 'It worked: keep the change', steps: ['Nothing to undo.', 'Apply the same idea to similar campaigns or ad groups.'] });
+      if (e.status === 'proposed' && rec) adv.push({ sev: 'warning', sevLabel: 'needs approval', title: 'This test starts only after you approve it', recs: [rec] });
+      const recs = (data.recommendations || []).filter(x => x.status === 'proposed' && /^exp/.test(x.dedupe_key || '') && String(x.dedupe_key).includes(e.experiment_id));
+      if (recs.length) adv.push({ sev: 'opportunity', title: 'Next step prepared from this test', recs });
+      return '<article class="exp"><div class="exp-h"><div><span class="pill ' + (stCls[e.status] || '') + '">' + esc(e.status) + '</span> ' + (e.winner ? '<span class="pill ' + (/improved|variant/.test(e.winner) ? 'good' : /worse|control/.test(e.winner) ? 'bad' : '') + '">' + esc(String(e.winner).replace(/_/g, ' ')) + '</span> ' : '') + '<span class="small muted">' + esc(typ[e.experiment_type] || e.experiment_type || '') + ' · ' + esc(e.experiment_id) + '</span></div>' +
+        '<div class="small muted">' + (s ? esc(String(e.start_date).slice(0, 10)) + ' → ' + esc(String(e.end_date || '').slice(0, 10)) : '') + '</div></div>' +
+        '<div class="exp-title">' + esc(e.title || '') + '</div><div class="small muted">' + esc(campName2(e.account_id, e.campaign_id)) + (e.ad_group_id ? ' · ad group ' + esc(e.ad_group_id) : '') + '</div>' +
+        (pct !== null && ['measuring', 'running'].includes(e.status) ? '<div class="prog"><span style="width:' + pct + '%"></span></div><div class="small muted">' + pct + '% of the measuring period done</div>' : '') +
+        (e.hypothesis ? '<p class="small"><b>Idea being tested:</b> ' + esc(e.hypothesis) + '</p>' : '') +
+        (rows ? '<div class="table-wrap"><table class="mini"><thead><tr><th></th><th class="num">Before (14 days)</th><th class="num">After</th><th class="num">Change</th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '') +
+        (cv ? '<div class="table-wrap"><table class="mini"><thead><tr><th>Ad</th><th class="num">Clicks</th><th class="num">Conv.</th><th class="num">CTR</th><th class="num">Conv. rate</th></tr></thead><tbody>' + cv + '</tbody></table></div>' : '') +
+        (e.summary ? '<div class="callout small"><b>Result so far:</b> ' + esc(e.summary) + '</div>' : '') +
+        box('Recommendation', adv, { ask: { section: 'Experiment ' + e.experiment_id, ctx: { experiment: e } } }) + '</article>';
+    });
+    const startItems = [{ sev: 'tip', sevLabel: 'start a test', title: 'Start a new ad A/B test', why: 'The AI writes a new ad with a different angle; Google rotates it with your current ads and this tab compares them with a significance test.', steps: ['Press the button below. If the ad group already has 3 ads, first pause the weakest (button shown).', 'Review the ad text and press "Apply now".', 'Leave it running 2–4 weeks; the verdict appears here.'], fixes: newAdFixes(acc, 'Test a clearly different angle from the current ads (e.g. trust and local expertise, or detailed itinerary with inclusions).') }];
+    $('#expBox').innerHTML = (cards.length ? '<div class="exp-list">' + cards.join('') + '</div>' : '<div class="empty">No experiments yet. They appear after you approve a change or start an ad test.</div>') + box('Start a new test', startItems, { ask: { section: 'Experiments', ctx: { experiments: ex, ads: (data.ads || []).filter(inScope).map(a => pick(a, ['ad_id', 'ad_group_id', 'ad_strength', 'cost_30d', 'conversions_30d', 'clicks_30d'])) } } });
+  }
+
+  // ---------- REPORTS ----------
+  function reportAdvice(r) {
+    const d = r.data || {}, t = d.totals || {}, p = d.prev_totals || {};
+    const L = [];
+    const ch = (a, b) => b ? (a - b) / b : null;
+    const cpaCh = ch(Number(d.cpa || 0), Number(d.prev_cpa || 0)), convCh = ch(Number(t.conversions || 0), Number(p.conversions || 0)), costCh = ch(Number(t.cost || 0), Number(p.cost || 0));
+    if (convCh !== null && convCh <= -0.3) L.push({ sev: 'warning', title: 'Conversions fell ' + Math.round(-convCh * 100) + '%', steps: ['Open Alerts & Insights for live problems (tracking, spend stopping).', 'Open Site & Tracking and fix any critical finding.', 'Check the CRM sheet: did real enquiries drop too, or only tracking?'] });
+    if (cpaCh !== null && cpaCh >= 0.3) L.push({ sev: 'warning', title: 'Cost per conversion rose ' + Math.round(cpaCh * 100) + '%', steps: ['Stop hours and searches with no leads (Alerts & Insights tab has Fix buttons).', 'Pause keywords with spend and no leads (Site & Tracking > Keywords).', 'Test a new ad (Experiments tab).'] });
+    if (costCh !== null && costCh >= 0.3 && (convCh === null || convCh <= 0)) L.push({ sev: 'warning', title: 'Spend rose ' + Math.round(costCh * 100) + '% without more conversions', steps: ['Check Search terms for new irrelevant searches.', 'Block them as negatives.'] });
+    if (convCh !== null && convCh >= 0.2 && (cpaCh === null || cpaCh <= 0)) L.push({ sev: 'opportunity', title: 'More conversions at a lower or equal cost', why: 'What changed is working. If the campaign is limited by budget, a small budget increase can bring more leads.', fixes: (() => { const c = mainCamp(scopeAcc()); return c ? [{ label: 'Fix: raise daily budget +15%', kind: 'budget', account_id: c.account_id, params: { campaign_id: c.campaign_id, pct: 15, reason: 'Weekly review: more conversions at lower cost.' } }] : []; })() });
+    const pend = (data.recommendations || []).filter(x => x.status === 'proposed' && x.business_id === r.business_id);
+    if (pend.length) L.push({ sev: 'opportunity', title: pend.length + ' prepared change(s) waiting for your approval', recs: pend.slice(0, 5) });
+    const crit = (d.open_issues || []).filter(i => i.severity === 'critical');
+    const stillOpen = crit.filter(i => data.issues.some(x => ((x.detail || {}).title || '') === i.title));
+    if (stillOpen.length) L.push({ sev: 'critical', title: stillOpen.length + ' critical problem(s) from this review are still open', steps: stillOpen.map(i => i.title).concat(['Open the Site & Tracking tab; each finding has step-by-step instructions.']) });
+    if (!L.length) L.push({ sev: 'done', sevLabel: 'ok', title: 'No urgent action from this review', steps: ['Keep the current setup.', 'Check the next weekly review on Monday.'] });
+    return L;
+  }
+
+  // ---------- RECOMMENDATIONS: implementation ----------
+  function recHow(r) {
+    if (r.action_type) {
+      const auto = { set_campaign_budget: 'changes the daily budget', push_negative_keywords: 'adds negative keywords', update_keywords: 'pauses / enables keywords', create_responsive_search_ad: 'creates a new responsive search ad', pause_ad: 'pauses an ad', enable_ad: 'turns an ad back on', pause_campaign: 'pauses the campaign', enable_campaign: 'turns the campaign on', push_keywords: 'adds keywords', set_ad_schedule: 'changes the hours ads can show', set_target_cpa: 'changes the Target CPA' };
+      return { auto: true, text: 'The app does this for you: it ' + (auto[r.action_type] || r.action_type.replace(/_/g, ' ')) + ' in account ' + r.account_id + ' after a final safety check, then logs it and measures the effect for 14 days (Experiments tab).' };
+    }
+    const pb = playbook(r.title, r);
+    return { auto: false, pb };
+  }
+  function renderImplementation() {
+    const all = data.recommendations.filter(inScope);
+    const ready = all.filter(r => r.status === 'proposed' && r.action_type);
+    const manual = all.filter(r => r.status === 'advisory' || (r.status === 'proposed' && !r.action_type));
+    const prog = all.filter(r => ['approved', 'executing', 'applied', 'verified', 'failed', 'stale'].includes(r.status));
+    const led = id => (data.ledger || []).filter(l => l.recommendation_id === id);
+    const exp = id => (data.experiments || []).find(e => e.recommendation_id === id);
+    let h = '<div class="impl-h">1. Ready to apply <span class="small muted">(the app makes the change for you)</span></div>';
+    h += ready.length ? ready.map(r => item({ sev: 'opportunity', sevLabel: 'ready', title: r.title, sub: recHow(r).text, evidence: '<div class="change small">' + changeHtml(r) + '</div>', recs: [r], ask: { section: 'Recommendation ' + r.recommendation_id, ctx: { recommendation: r } } })).join('') : '<div class="small muted pad">Nothing waiting.</div>';
+    h += '<div class="impl-h">2. Do it yourself <span class="small muted">(follow the steps, then press "Mark done"; where a Fix button is shown, the app can make the change for you)</span></div>';
+    h += manual.length ? manual.map(r => { const x = recHow(r); const pb = x.pb || {}; return item({ sev: (pb.fixes || []).length ? 'opportunity' : 'warning', sevLabel: (pb.fixes || []).length ? 'Fix button available' : 'manual', title: r.title, sub: r.rationale, why: pb.why, steps: pb.steps, fixes: pb.fixes, recs: [r], ask: { section: 'Recommendation ' + r.recommendation_id, ctx: { recommendation: r } } }); }).join('') : '<div class="small muted pad">Nothing to do by hand.</div>';
+    h += '<div class="impl-h">3. Applied and being measured</div>';
+    h += prog.length ? '<div class="table-wrap"><table><thead><tr><th>Change</th><th>Status</th><th>Google Ads result</th><th>Effect</th></tr></thead><tbody>' + prog.map(r => {
+      const l = led(r.recommendation_id)[0]; const e = exp(r.recommendation_id);
+      return '<tr><td style="white-space:normal;max-width:420px">' + esc(r.title) + '<div class="small muted">' + esc(r.recommendation_id) + (r.decided_at ? ' · approved ' + new Date(r.decided_at).toLocaleDateString() : '') + '</div></td><td>' + recStatusPill(r.status) + '</td>' +
+        '<td class="small" style="white-space:normal;max-width:260px">' + (l ? '<span class="pill ' + ({ verified: 'good', applied: 'good', failed: 'bad', blocked: 'warn', no_op: '' }[l.status] || '') + '">' + esc(l.status) + '</span> ' : '') + esc(trunc(r.result_note || '', 160)) + '</td>' +
+        '<td class="small" style="white-space:normal;max-width:260px">' + (e ? esc(trunc(e.summary || e.status, 160)) : '—') + '</td></tr>';
+    }).join('') + '</tbody></table></div>' : '<div class="small muted pad">No changes applied in the last 14 days.</div>';
+    $('#recList').innerHTML = h;
+  }
+
+  // ---------- global click handling ----------
+  document.addEventListener('click', e => {
+    const f = e.target.closest('[data-fix]'); if (f) { e.preventDefault(); const o = REG.get(f.dataset.fix); if (!o) return; if (o.audit) { $('#auditBtn').click(); return; } runFix(o); return; }
+    const a = e.target.closest('[data-apply]'); if (a) { e.preventDefault(); applyRec(a.dataset.apply); return; }
+    const d = e.target.closest('[data-decline]'); if (d) { e.preventDefault(); declineRec(d.dataset.decline); return; }
+    const k = e.target.closest('[data-ask]'); if (k) { e.preventDefault(); const o = REG.get(k.dataset.ask); if (o) askAI(o.section, o.ctx, o.question); return; }
+    const s = e.target.closest('[data-aistepsbtn]'); if (s) { e.preventDefault(); const o = REG.get(s.dataset.aistepsbtn); if (o) aiSteps(s.parentElement, o.section, o.ctx); return; }
+    const g = e.target.closest('[data-goto]'); if (g) { e.preventDefault(); const b = document.querySelector('button[data-tab="' + g.dataset.goto + '"]'); if (b) b.click(); }
+  });
+  const TAB_NAMES = { dash: 'Dashboard', recs: 'Recommendations', site: 'Site & Tracking', intel: 'Alerts & Insights', market: 'Market', funnel: 'Funnel & Calls', web: 'Web & Tags', exp: 'Experiments', reports: 'Reports', log: 'Change log' };
+  function tabContext(t) {
+    const acc = scopeAcc(), I = insOf(acc);
+    switch (t) {
+      case 'site': return { ...ctxBase(), findings: data.issues.filter(i => inScope(i) && /^audit_/.test(i.issue_type)).map(i => ({ severity: i.severity, ...(i.detail || {}) })), tracking: data.tracking, conversion_actions: data.conversion_actions };
+      case 'intel': return { ...ctxBase(), alerts: (data.alerts || []).filter(inScope), findings: (I.intelligence || {}).findings };
+      case 'market': return { ...ctxBase(), competitors: (data.competitors || []).slice(0, 20), keyword_gap: I.keyword_gap, competitor_ads: I.competitor_ads };
+      case 'funnel': return { ...ctxBase(), funnel: data.funnel, calls: (I.tags || {}).calls };
+      case 'web': return { ...ctxBase(), web_analytics: I.web_analytics, tags: I.tags };
+      case 'exp': return { ...ctxBase(), experiments: data.experiments };
+      case 'reports': return { ...ctxBase(), reports: (data.reports || []).slice(0, 2).map(r => ({ period: r.period_type, start: r.period_start, data: r.data, summary: r.summary })) };
+      case 'recs': return { ...ctxBase(), recommendations: data.recommendations.filter(inScope).slice(0, 30).map(r => pick(r, ['recommendation_id', 'title', 'status', 'action_type', 'rationale'])) };
+      default: return ctxBase();
+    }
+  }
+  const fab = document.createElement('button'); fab.className = 'fab'; fab.textContent = 'Ask AI'; fab.title = 'Discuss this screen with AI';
+  fab.onclick = () => { const t = (document.querySelector('#tabs button.active') || {}).dataset; const tab = (t && t.tab) || 'dash'; askAI(TAB_NAMES[tab] || 'App', tabContext(tab)); };
+  document.body.appendChild(fab);
 
   // ---------- tabs ----------
   $('#tabs').onclick = e => {
