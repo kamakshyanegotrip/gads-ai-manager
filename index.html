@@ -322,8 +322,8 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
     <!-- MARKET -->
     <section id="tab-market" class="hidden">
       <div class="panel" style="margin-bottom:14px"><h2>Competitor ads &amp; strategy</h2><div id="compAdsBox"></div></div>
-      <div class="panel"><h2>Auction insights: share of the auction</h2><div id="aiBox"></div>
-        <p class="small muted">From the Google Ads "Auction insights" report emailed to you (scheduled report), imported daily at 08:10 IST. Impression share below 10% is shown as "&lt; 10%".</p><div id="adv-ai"></div></div>
+      <div class="panel"><h2>Auction insights: share of the auction</h2><div class="lead-bar"><span class="small muted">Upload the Auction insights file from Google Ads once a week.</span><span><button class="btn primary" id="aiUpBtn">Upload Auction insights file</button><input type="file" id="aiFile" accept=".csv,.tsv,text/csv,text/tab-separated-values" hidden></span></div><div id="aiBox"></div>
+        <details class="small" style="margin-top:8px"><summary>How to get the file</summary><ol><li>Open Google Ads and choose the account.</li><li>Go to <b>Insights &amp; reports</b> &gt; <b>Auction insights</b>.</li><li>Set the date range to <b>Last 30 days</b>.</li><li>Click the <b>Download</b> icon and choose <b>.csv</b>.</li><li>Come back here and press <b>Upload Auction insights file</b>.</li></ol></details><p class="small muted">Impression share below 10% is shown as "&lt; 10%". Uploading the same file twice does nothing.</p><div id="adv-ai"></div></div>
       <div class="panel" style="margin-top:14px"><h2>Keyword gaps &amp; demand</h2><div id="kgSummary"></div><div class="table-wrap"><table id="kgTable"></table></div>
         <p class="small muted">Weekly (Monday 06:10 IST): Google Keyword Planner ideas for India plus your own search terms, compared with your keywords. Brand, portal and temple-room searches are left out.</p><div id="adv-kg"></div></div>
       <div class="panel" style="margin-top:14px"><h2>Suppliers</h2><div id="supBox"></div>
@@ -810,7 +810,7 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
       '<div class="small" style="margin-bottom:8px">Your impression share: <b>' + (ai && ai.own_impression_share != null ? pct(ai.own_impression_share) : '&lt; 10%') + '</b>' + (ai && ai.period ? ' · ' + esc(ai.period) : '') + (ai && ai.imported_at ? ' · imported ' + new Date(ai.imported_at).toLocaleDateString() : '') + '</div>' +
       '<div class="table-wrap"><table><thead><tr><th>Competitor</th><th class="num">Impr. share</th><th class="num">Overlap</th><th class="num">Above you</th><th class="num">Top of page</th><th class="num">Abs. top</th><th class="num">You outrank them</th></tr></thead><tbody>' +
       withShare.map(c => '<tr><td>' + esc(c.domain) + '</td><td class="num">' + share(c.impression_share) + '</td><td class="num">' + pct(c.overlap_rate) + '</td><td class="num">' + (c.position_above_rate >= 0.6 ? '<span class="pill warn">' + pct(c.position_above_rate) + '</span>' : pct(c.position_above_rate)) + '</td><td class="num">' + pct(c.top_of_page_rate) + '</td><td class="num">' + pct(c.absolute_top_rate) + '</td><td class="num">' + pct(c.outranking_share) + '</td></tr>').join('') + '</tbody></table></div>'
-      : '<div class="empty">Share metrics appear after the first scheduled "Auction insights" email arrives.' + (comps.length ? '<div style="margin-top:10px">Competitors seen: ' + comps.slice(0, 30).map(c => '<span class="pill">' + esc(c.domain) + '</span>').join(' ') + '</div>' : '') + '</div>';
+      : '<div class="empty">No share figures yet. Press <b>Upload Auction insights file</b> above to add them.' + (comps.length ? '<div style="margin-top:10px">Competitors seen: ' + comps.slice(0, 30).map(c => '<span class="pill">' + esc(c.domain) + '</span>').join(' ') + '</div>' : '') + '</div>';
 
     const kg = (data.insights || []).filter(inScope).map(x => (x.insights || {}).keyword_gap).filter(Boolean)[0];
     const opp = (data.keyword_opportunities || []).filter(inScopeA);
@@ -1384,7 +1384,7 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
     const ai = insOf(acc).auction_insights;
     const aItems = [];
     comps.filter(c => c.position_above_rate >= 0.6).slice(0, 3).forEach(c => aItems.push({ sev: 'warning', title: c.domain + ' shows above you ' + Math.round(c.position_above_rate * 100) + '% of the time', why: 'They win the top spot, where most clicks go.', steps: ['Look at their ads in "Competitor ads & strategy" below.', 'Make your ad more relevant (trip name + duration + inclusions in headlines).', 'Improve landing page experience before raising bids.'], fixes: newAdFixes(acc, 'Compete with ' + c.domain + ': stronger relevance, clear inclusions and a free quote call to action.') }));
-    if (!comps.some(c => c.metrics_updated_at)) aItems.push({ sev: 'info', title: 'Auction share numbers are waiting for the first scheduled report email', steps: ['Open ' + GA + ' > Campaigns > Auction insights.', 'Click the download icon > Schedule.', 'Choose Daily, format .csv, send to kn0733@gmail.com.', 'The app imports it every morning at 08:10 IST.'] });
+    if (!comps.some(c => c.metrics_updated_at)) aItems.push({ sev: 'info', title: 'Upload your Auction insights file to see how often competitors beat you', steps: ['Open ' + GA + ' > Insights & reports > Auction insights.', 'Set the date range to Last 30 days.', 'Click the download icon and choose .csv.', 'Press "Upload Auction insights file" above. Repeat once a week.'] });
     $('#adv-ai').innerHTML = box('Recommendation & strategy: auction', aItems, { ask: { section: 'Auction insights', ctx: { competitors: comps.slice(0, 20), own: ai } } });
 
     const opp = (data.keyword_opportunities || []).filter(inScopeA);
@@ -1804,6 +1804,25 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
     if (b.dataset.supadd) { editSupplier(null); return; }
     const s = supRows()[Number(b.dataset.supedit)]; if (s) editSupplier(s);
   });
+
+  // ---------- Auction insights upload (CSV downloaded from Google Ads) ----------
+  $('#aiUpBtn').onclick = () => { $('#aiFile').value = ''; $('#aiFile').click(); };
+  $('#aiFile').onchange = async e => {
+    const file = e.target.files && e.target.files[0]; if (!file) return;
+    if (file.size > 2e6) { toast('This file is too big. Download the Auction insights report for the last 30 days only.'); return; }
+    const buf = new Uint8Array(await file.arrayBuffer());
+    const enc = buf[0] === 0xFF && buf[1] === 0xFE ? 'utf-16le' : buf[0] === 0xFE && buf[1] === 0xFF ? 'utf-16be' : 'utf-8';
+    const text = new TextDecoder(enc).decode(buf).replace(/^\uFEFF/, '');
+    if (!/display url domain/i.test(text)) { toast('This is not an Auction insights file. Open the steps under "How to get the file".', 8000); return; }
+    const acc = scopeAcc();
+    toast('Uploading Auction insights…', 30000);
+    let res;
+    try { res = await act({ action: 'auction_upload', account_id: acc, params: JSON.stringify({ csv: text, file_name: file.name }) }); } catch (err) { res = { ok: false, error: err.message }; }
+    $$('.toast').forEach(t => t.remove());
+    if (!res.ok) { await modal('Not uploaded', '<p>' + esc(res.error || 'Unknown error') + '</p>', [{ key: 'ok', label: 'OK', cls: 'primary' }]); return; }
+    toast(res.message || 'Saved.', 8000);
+    await reload();
+  };
 
   // ---------- tabs ----------
   $('#tabs').onclick = e => {
