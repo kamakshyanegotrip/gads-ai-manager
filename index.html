@@ -151,6 +151,8 @@ table.kv { width: auto; margin-top: 6px; } table.kv td { padding: 3px 12px 3px 0
 .ai-answer { white-space: pre-wrap; background: var(--info-bg); border-radius: 8px; padding: 8px 10px; margin-top: 8px; }
 .ai-steps { margin-top: 8px; }
 .change { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin: 8px 0; font-size: 13px; }
+.lead-bar { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; } .lead-bar .seg { display: flex; gap: 6px; flex-wrap: wrap; }
+.ta { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; width: 100%; resize: vertical; } td.nowrap { white-space: nowrap; } .lead-form .grid.two { gap: 0 12px; } table.leads td { vertical-align: top; }
 .modal.wide { max-width: 640px; } .modal-body { max-height: 65vh; overflow-y: auto; }
 .modal .row { flex-wrap: wrap; }
 .callout { background: var(--info-bg); border-radius: 8px; padding: 10px 12px; margin: 8px 0; }
@@ -331,11 +333,13 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
     <!-- FUNNEL & CALLS -->
     <section id="tab-funnel" class="hidden">
       <div class="grid kpis" id="funKpis"></div>
+      <div class="panel" style="margin-top:14px"><h2>Leads: log calls &amp; update status</h2><div id="leadBox"></div>
+        <p class="small muted">Saved straight into your Leads Google Sheet, so you do not need to open it. Edits made in the sheet still work and show here within an hour.</p></div>
       <div class="panel" style="margin-top:14px"><div id="adv-funnel"></div></div>
       <div class="grid two" style="margin-top:14px">
         <div class="panel"><h2>Leads by channel (30 days)</h2><div id="funChannels"></div><div id="adv-channels"></div></div>
         <div class="panel"><h2>Calls</h2><div id="funCalls"></div>
-          <p class="small muted">Calls from ads: clicks on your call asset in Google Ads. Calls from the website: taps on your phone number, captured by the tracking snippet. Choose each call's result in the CRM sheet's "Call outcome" column (answered, missed, called back...); it syncs every hour.</p><div id="adv-calls"></div></div>
+          <p class="small muted">Calls from ads: clicks on your call asset in Google Ads. Calls from the website: taps on your phone number, captured by the tracking snippet. Log each call's result with <b>Update</b> in the Leads list above. If a customer phoned you directly, use <b>+ Add a lead</b>.</p><div id="adv-calls"></div></div>
       </div>
       <div class="panel" style="margin-top:14px"><h2>Campaign funnel (30 days)</h2><div class="table-wrap"><table id="funTable"></table></div>
         <p class="small muted">Leads, qualified, quoted and booked come from the Status column of your CRM sheet. ROAS = booking value / ad spend.</p><div id="adv-funtable"></div></div>
@@ -488,7 +492,7 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
 
   // ---------- render ----------
   function render() { REG.clear(); renderDash(); renderRecs(); renderLog(); renderSite(); renderIntel(); renderMarket(); renderFunnel(); renderWeb(); renderExp(); renderReports();
-    for (const f of [renderSiteAdvice, renderIntelAdvice, renderMarketAdvice, renderFunnelAdvice, renderWebAdvice]) { try { f(); } catch (e) { console.error(f.name, e); } } }
+    for (const f of [renderLeads, renderSiteAdvice, renderIntelAdvice, renderMarketAdvice, renderFunnelAdvice, renderWebAdvice]) { try { f(); } catch (e) { console.error(f.name, e); } } }
 
   function renderDash() {
     const camps = data.campaigns.filter(inScope);
@@ -511,7 +515,7 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
     const labels = Object.keys(byDate).sort();
     const css = getComputedStyle(document.documentElement);
     const accent = css.getPropertyValue('--accent').trim(), good = css.getPropertyValue('--good').trim(), muted = css.getPropertyValue('--muted').trim(), line = css.getPropertyValue('--line').trim();
-    if (!window.Chart) { $('#chart').parentElement.innerHTML = '<div class="empty">Chart library could not load. Check your connection and refresh.</div>'; }
+    if (!window.Chart) { const cv = $('#chart'); if (cv) cv.parentElement.innerHTML = '<div class="empty" id="chartMissing">Chart library could not load. Check your connection and refresh.</div>'; }
     else {
       if (chart) chart.destroy();
       chart = new Chart($('#chart'), {
@@ -837,9 +841,9 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
     $('#funKpis').innerHTML = kpiHtml([
       ['Ad spend (30 days)', inr(cost), num(S('ads_conversions_30d')) + ' Google Ads conversions'],
       ['Leads', num(leads), leads ? inr(cost / leads) + ' per lead' : (S('spam') ? num(S('spam')) + ' spam' : 'no leads recorded yet')],
-      ['Qualified', num(q), q ? inr(cost / q) + ' per qualified lead' : 'set Status in the CRM sheet'],
+      ['Qualified', num(q), q ? inr(cost / q) + ' per qualified lead' : 'set Status with Update in Leads below'],
       ['Booked', num(b), b ? inr(cost / b) + ' per booking' : '—'],
-      ['Booking value', inr(rev), cost && rev ? 'ROAS ' + (rev / cost).toFixed(2) + 'x' : 'enter Booking value in the CRM sheet']
+      ['Booking value', inr(rev), cost && rev ? 'ROAS ' + (rev / cost).toFixed(2) + 'x' : 'enter Booking value with Update in Leads below']
     ]);
     const ch = [['Website form', S('form_leads')], ['WhatsApp', S('whatsapp_leads')], ['Phone (website)', S('call_leads')], ['Email', S('email_leads')]];
     const mx = Math.max(1, ...ch.map(c => c[1]));
@@ -1441,18 +1445,18 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
     const k = [];
     if (leads && !q && !b) k.push({ sev: 'warning', title: 'No lead has a status yet, so the app cannot tell good leads from bad ones', why: 'Once statuses are filled, Google Ads receives "Qualified lead" and "Booking" conversions and learns to find buyers, not just enquirers.', steps: ['Open the Google Sheet "Negotrip Leads - AI Google Ads Manager".', 'Go to the Leads tab.', 'For each lead choose a Status in column K (contacted, qualified, quoted, booked, lost, spam).', 'For bookings enter the Booking value in column M.', 'It syncs every hour.'] });
     if (leads && cost && tgt && cost / leads > tgt * 1.5) k.push({ sev: 'warning', title: 'Cost per lead ' + rsx(cost / leads) + ' is well above your target ' + rsx(tgt), steps: ['Fix the Site & Tracking findings first (they affect every lead).', 'Stop hours and searches that do not convert (Alerts & Insights tab).', 'Test a new ad (Experiments tab).'] });
-    if (leads && S('spam') / (leads + S('spam')) > 0.3) k.push({ sev: 'warning', title: 'Many leads are spam', steps: ['Add a simple captcha (e.g. Cloudflare Turnstile) to the website form.', 'Keep marking spam in the CRM sheet so it is excluded.'] });
-    if (!leads) k.push({ sev: 'info', title: 'No leads recorded in the last 30 days', steps: ['Submit a test enquiry on the website.', 'Check it appears in the CRM sheet within a minute.', 'If not, open the Site & Tracking tab and run the audit.'] });
-    $('#adv-funnel').innerHTML = box('Recommendation & strategy: funnel', k, { ask: { section: 'Funnel', ctx }, empty: 'The funnel looks healthy. Keep updating lead statuses in the CRM sheet.' });
+    if (leads && S('spam') / (leads + S('spam')) > 0.3) k.push({ sev: 'warning', title: 'Many leads are spam', steps: ['Add a simple captcha (e.g. Cloudflare Turnstile) to the website form.', 'Keep marking spam leads (Leads list above > Update > Status: Spam) so they are excluded.'] });
+    if (!leads) k.push({ sev: 'info', title: 'No leads recorded in the last 30 days', steps: ['Submit a test enquiry on the website.', 'Check it appears in the Leads list above within a minute (after a refresh).', 'If not, open the Site & Tracking tab and run the audit.'] });
+    $('#adv-funnel').innerHTML = box('Recommendation & strategy: funnel', k, { ask: { section: 'Funnel', ctx }, empty: 'The funnel looks healthy. Keep updating each lead with the Update button in the Leads list.' });
     const ch = [];
-    if (S('whatsapp_leads') > S('form_leads') * 1.5) ch.push({ sev: 'tip', sevLabel: 'strategy', title: 'WhatsApp brings most of your leads', why: 'Make WhatsApp the main button on landing pages and answer within 5 minutes.', steps: ['Keep the floating WhatsApp button on every page.', 'Set a WhatsApp Business quick reply with your top packages and prices.', 'Log each WhatsApp enquiry\'s outcome in the CRM sheet.'] });
+    if (S('whatsapp_leads') > S('form_leads') * 1.5) ch.push({ sev: 'tip', sevLabel: 'strategy', title: 'WhatsApp brings most of your leads', why: 'Make WhatsApp the main button on landing pages and answer within 5 minutes.', steps: ['Keep the floating WhatsApp button on every page.', 'Set a WhatsApp Business quick reply with your top packages and prices.', 'Log each WhatsApp enquiry\'s status with Update in the Leads list (or + Add a lead if it is not there).'] });
     if (S('form_leads') > S('whatsapp_leads') * 1.5) ch.push({ sev: 'tip', sevLabel: 'strategy', title: 'The website form brings most of your leads', why: 'Call form leads back within 15 minutes; speed doubles the chance of a booking.' });
-    ch.push({ sev: 'tip', sevLabel: 'strategy', title: 'Reply fast to every channel', steps: ['Turn on email / WhatsApp notifications for new leads (the owner already gets an email for each).', 'Reply within 15 minutes during office hours.', 'Mark the result in the CRM sheet.'] });
+    ch.push({ sev: 'tip', sevLabel: 'strategy', title: 'Reply fast to every channel', steps: ['Turn on email / WhatsApp notifications for new leads (the owner already gets an email for each).', 'Reply within 15 minutes during office hours.', 'Mark the result with Update in the Leads list.'] });
     $('#adv-channels').innerHTML = box('Recommendation & strategy: channels', ch, { ask: { section: 'Leads by channel', ctx } });
     const tags = insOf(acc).tags || {}; const calls = tags.calls || {};
     const c = [];
-    if (S('calls_unlogged')) c.push({ sev: 'warning', title: S('calls_unlogged') + ' phone lead(s) have no call outcome', steps: ['Open the CRM sheet > Leads tab.', 'For each phone lead choose column P "Call outcome": answered, missed, called back, no answer, voicemail, busy or wrong number.', 'It syncs every hour and shows here.'] });
-    if (S('calls_missed')) c.push({ sev: 'warning', title: S('calls_missed') + ' call(s) were missed', steps: ['Call them back today.', 'Set a missed-call SMS / WhatsApp auto-reply on the business phone.', 'Change the outcome to "called back" in the CRM sheet.'] });
+    if (S('calls_unlogged')) c.push({ sev: 'warning', title: S('calls_unlogged') + ' phone lead(s) have no call outcome', steps: ['Go to the Leads list at the top of this tab.', 'Press Update on each phone lead marked "not logged".', 'Choose the Call result (answered, missed, called back...) and press Save.'] });
+    if (S('calls_missed')) c.push({ sev: 'warning', title: S('calls_missed') + ' call(s) were missed', steps: ['Call them back today.', 'Set a missed-call SMS / WhatsApp auto-reply on the business phone.', 'Then press Update on the lead and set Call result to "Called back".'] });
     if (Number(calls.phone_impressions || S('phone_impressions')) > 200 && Number(calls.call_clicks || S('ad_call_clicks')) < 5) c.push({ sev: 'info', title: 'Your number was shown ' + num(calls.phone_impressions || S('phone_impressions')) + ' times but got only ' + num(calls.call_clicks || S('ad_call_clicks')) + ' call clicks', why: 'Most people prefer WhatsApp or the form, or the call button is not attractive.', steps: ['Keep the call asset (it costs nothing unless clicked).', 'Add a headline like "Call a Local Expert Now".', 'Make sure the phone is answered 8am–10pm.'], fixes: newAdFixes(acc, 'Call-focused angle: invite people to call a local Odisha travel expert for a free itinerary; mention quick replies.', null, 'Write a call-focused ad with AI') });
     c.push({ sev: 'info', sevLabel: 'note', title: 'Why "Calls from ads" can look low in India', why: 'Google does not offer call-tracking numbers in India, so only taps on the call button are counted, not the call itself. The CRM "Call outcome" column fills the gap.' });
     $('#adv-calls').innerHTML = box('Recommendation & strategy: calls', c, { ask: { section: 'Calls', ctx: { ...ctx, call_assets: calls } } });
@@ -1618,6 +1622,129 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
   const fab = document.createElement('button'); fab.className = 'fab'; fab.textContent = 'Ask AI'; fab.title = 'Discuss this screen with AI';
   fab.onclick = () => { const t = (document.querySelector('#tabs button.active') || {}).dataset; const tab = (t && t.tab) || 'dash'; askAI(TAB_NAMES[tab] || 'App', tabContext(tab)); };
   document.body.appendChild(fab);
+
+
+  // =====================================================================
+  // Leads: update a lead (status, call result, values) or add a phone / WhatsApp / email lead.
+  // Saved to the business's Leads Google Sheet (the owner's record) and shown here at once.
+  // =====================================================================
+  const LEAD_ST = [['new', 'New'], ['contacted', 'Contacted'], ['qualified', 'Qualified'], ['quoted', 'Quoted'], ['booked', 'Booked'], ['lost', 'Lost'], ['spam', 'Spam']];
+  const LEAD_OC = [['', '— not a call / not set —'], ['answered', 'Answered'], ['missed', 'Missed'], ['no answer', 'No answer'], ['called back', 'Called back'], ['voicemail', 'Voicemail'], ['busy', 'Busy'], ['wrong number', 'Wrong number']];
+  const LEAD_SRC = { form: 'Website form', thankyou: 'Website form', whatsapp: 'WhatsApp', call: 'Phone call', email: 'Email' };
+  const OC_DB = { answered: 'answered', missed: 'missed', no_answer: 'no answer', called_back: 'called back', voicemail: 'voicemail', busy: 'busy', wrong_number: 'wrong number' };
+  const stPill = s => { s = s || 'new'; const c = { booked: 'good', qualified: 'info', quoted: 'info', contacted: '', lost: 'bad', spam: 'bad', new: 'warn' }[s]; return '<span class="pill ' + (c || '') + '">' + esc(cap(s)) + '</span>'; };
+  const leadAcc = l => { const a = data.accounts.find(x => x.business_id === l.business_id && x.can_execute) || data.accounts.find(x => x.business_id === l.business_id); return a ? a.account_id : scopeAcc(); };
+  const leadsInScope = () => { const biz = $('#bizSel').value; return (data.leads || []).filter(l => biz === 'ALL' || l.business_id === biz); };
+  let leadFilter = 'open';
+
+  function renderLeads() {
+    const box = $('#leadBox'); if (!box) return;
+    const all = leadsInScope();
+    const open = all.filter(l => !['booked', 'lost', 'spam'].includes(l.status || 'new'));
+    const noOc = all.filter(l => l.lead_source === 'call' && !l.call_outcome);
+    const list = leadFilter === 'open' ? open : all;
+    const d = s => { if (!s) return ''; const x = new Date(s); return x.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) + ' ' + x.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }); };
+    box.innerHTML =
+      '<div class="lead-bar"><div class="seg">' +
+        '<button class="btn sm' + (leadFilter === 'open' ? ' primary' : '') + '" data-leadf="open">Open (' + open.length + ')</button>' +
+        '<button class="btn sm' + (leadFilter === 'all' ? ' primary' : '') + '" data-leadf="all">All, last 120 days (' + all.length + ')</button></div>' +
+        '<button class="btn primary" data-leadadd="1">+ Add a lead</button></div>' +
+      (noOc.length ? '<p class="small"><span class="pill warn">' + noOc.length + '</span> phone lead(s) have no call result yet. Press <b>Update</b> to log it.</p>' : '') +
+      (list.length ? '<div class="table-wrap"><table class="leads"><thead><tr><th>When</th><th>Customer</th><th>Came from</th><th>Status</th><th>Call result</th><th class="num">Quoted</th><th class="num">Booked</th><th></th></tr></thead><tbody>' +
+        list.slice(0, 150).map(l => '<tr><td class="nowrap">' + esc(d(l.lead_at)) + '<div class="small muted">' + esc(l.lead_ref) + '</div></td>' +
+          '<td>' + esc(l.contact_name || '—') + '<div class="small muted">' + esc([l.contact_phone, l.contact_email].filter(Boolean).join(' · ')) + '</div>' + (l.message ? '<div class="small muted">' + esc(trunc(l.message, 80)) + '</div>' : '') + '</td>' +
+          '<td>' + esc(LEAD_SRC[l.lead_source] || l.lead_source || '—') + (l.from_google_ads ? ' <span class="pill info">Google Ads</span>' : '') + (l.campaign_name ? '<div class="small muted">' + esc(trunc(l.campaign_name, 30)) + '</div>' : '') + '</td>' +
+          '<td>' + stPill(l.status) + (l.lost_reason ? '<div class="small muted">' + esc(trunc(l.lost_reason, 40)) + '</div>' : '') + '</td>' +
+          '<td>' + (l.call_outcome ? esc(cap(OC_DB[l.call_outcome] || l.call_outcome)) : (l.lead_source === 'call' ? '<span class="pill warn">not logged</span>' : '<span class="muted">—</span>')) + '</td>' +
+          '<td class="num">' + (l.quoted_value ? inr(l.quoted_value) : '—') + '</td><td class="num">' + (l.booking_value ? inr(l.booking_value) : '—') + '</td>' +
+          '<td><button class="btn sm" data-leadupd="' + esc(l.lead_ref) + '">Update</button></td></tr>').join('') + '</tbody></table></div>'
+        : '<div class="empty">' + (all.length ? 'No open leads. Switch to "All" to see closed ones.' : 'No leads recorded in the last 120 days. When a customer phones, WhatsApps or emails you directly, press <b>+ Add a lead</b> so it is counted.') + '</div>');
+  }
+
+  // A form in a modal. Resolves with the field values (or null on cancel); values are read before the modal closes.
+  function formModal(title, html, okLabel) {
+    return new Promise(resolve => {
+      const root = $('#modalRoot');
+      root.innerHTML = '<div class="modal-bg"><form class="modal wide lead-form" role="dialog" aria-modal="true" novalidate><h3>' + esc(title) + '</h3><div class="modal-body">' + html +
+        '</div><div class="row"><button type="button" class="btn" data-m="no">Cancel</button><button type="submit" class="btn primary">' + esc(okLabel) + '</button></div></form></div>';
+      const f = root.querySelector('form');
+      const sync = () => {
+        const st = f.elements.status ? f.elements.status.value : '';
+        f.querySelectorAll('[data-show]').forEach(el => { el.style.display = el.dataset.show.split(',').includes(st) ? '' : 'none'; });
+        const g = f.elements.from_google_ads; const cw = f.querySelector('[data-camp]'); if (g && cw) cw.style.display = g.value === 'yes' ? '' : 'none';
+      };
+      f.addEventListener('change', sync); sync();
+      root.querySelector('[data-m="no"]').onclick = () => { root.innerHTML = ''; resolve(null); };
+      f.onsubmit = e => { e.preventDefault(); const v = {}; for (const el of f.elements) if (el.name) v[el.name] = el.value; root.innerHTML = ''; resolve(v); };
+      const first = f.querySelector('input,select,textarea'); if (first) first.focus();
+    });
+  }
+  const sel = (name, opts, cur) => '<select name="' + name + '">' + opts.map(o => '<option value="' + esc(o[0]) + '"' + (String(cur ?? '') === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>').join('') + '</select>';
+  const fld = (label, inner, hint, show) => '<div class="field"' + (show ? ' data-show="' + show + '"' : '') + '><label>' + label + '</label>' + inner + (hint ? '<div class="hint">' + hint + '</div>' : '') + '</div>';
+  const inp = (name, val, attrs) => '<input name="' + name + '" value="' + esc(val ?? '') + '" ' + (attrs || '') + '>';
+  const progressFields = v => '<div class="grid two">' +
+      fld('Status', sel('status', LEAD_ST, v.status || 'new'), 'Where this enquiry stands now.') +
+      fld('Call result', sel('call_outcome', LEAD_OC, v.call_outcome || ''), 'Only for phone calls.') + '</div>' +
+    '<div class="grid two">' +
+      fld('Quoted value (Rs)', inp('quoted_value', v.quoted_value, 'inputmode="numeric" placeholder="e.g. 45000"'), 'The price you offered.', 'quoted,booked,lost,qualified,contacted') +
+      fld('Booking value (Rs)', inp('booking_value', v.booking_value, 'inputmode="numeric" placeholder="e.g. 42000"'), 'What the customer paid or will pay.', 'booked') + '</div>' +
+    fld('Why was it lost?', inp('lost_reason', v.lost_reason, 'maxlength="300" placeholder="e.g. price, dates changed, booked elsewhere"'), '', 'lost') +
+    fld('Notes', '<textarea name="notes" rows="2" maxlength="1000" class="ta" placeholder="Anything useful for follow-up">' + esc(v.notes || '') + '</textarea>');
+
+  async function saveLead(action, acc, params, again) {
+    toast('Saving to your Leads sheet…', 30000);
+    let res;
+    try { res = await act({ action, account_id: acc, params: JSON.stringify(params) }); }
+    catch (e) { res = { ok: false, error: e.message }; }
+    $$('.toast').forEach(t => t.remove());
+    if (!res.ok) { await modal('Not saved', '<p>' + esc(res.error || 'Unknown error') + '</p>', [{ key: 'ok', label: 'Change and try again', cls: 'primary' }]); return again(params); }
+    toast(res.message || 'Saved.', 7000);
+    await reload();
+  }
+
+  async function updateLead(ref, prev) {
+    const l = (data.leads || []).find(x => x.lead_ref === ref); if (!l) { toast('Lead not found. Refresh and try again.'); return; }
+    const acc = leadAcc(l);
+    if (!canExec(acc)) { toast('You have read-only access, so leads cannot be changed.'); return; }
+    const cur = prev || { status: l.status || 'new', call_outcome: OC_DB[l.call_outcome] || l.call_outcome || '', quoted_value: l.quoted_value ? Math.round(l.quoted_value) : '', booking_value: l.booking_value ? Math.round(l.booking_value) : '', lost_reason: l.lost_reason || '', notes: l.notes || '' };
+    const head = '<p><b>' + esc(l.contact_name || 'Customer') + '</b> · ' + esc(l.lead_ref) + ' · ' + esc(LEAD_SRC[l.lead_source] || l.lead_source || '') + (l.from_google_ads ? ' (Google Ads)' : '') +
+      '<br><span class="small muted">' + esc([l.contact_phone, l.contact_email].filter(Boolean).join(' · ')) + '</span></p>';
+    const v = await formModal('Update lead', head + progressFields(cur), 'Save');
+    if (!v) return;
+    if (v.status !== 'booked') v.booking_value = '';
+    if (v.status !== 'lost') v.lost_reason = '';
+    await saveLead('lead_update', acc, { lead_ref: ref, ...v }, p => updateLead(ref, p));
+  }
+
+  async function addLead(prev) {
+    const acc = scopeAcc();
+    if (!canExec(acc)) { toast('You have read-only access, so leads cannot be added.'); return; }
+    const a = data.accounts.find(x => x.account_id === acc) || {};
+    const camps = data.campaigns.filter(c => c.account_id === acc && c.status === 'ENABLED');
+    const v0 = prev || { source: 'call', from_google_ads: 'unsure', status: 'contacted', call_outcome: 'answered' };
+    const html = '<p class="small muted">For enquiries that did not come through the website form, for example a customer who phoned the number on your ad. It is added to your Leads sheet with a new Lead ID' + (a.business_name ? ' for ' + esc(a.business_name) : '') + '.</p>' +
+      '<div class="grid two">' + fld('How did they contact you?', sel('source', [['call', 'Phone call'], ['whatsapp', 'WhatsApp'], ['email', 'Email']], v0.source)) +
+        fld('Did they find you through Google Ads?', sel('from_google_ads', [['unsure', 'Not sure'], ['yes', 'Yes'], ['no', 'No']], v0.from_google_ads), 'Ask "How did you find us?"') + '</div>' +
+      (camps.length ? '<div data-camp>' + fld('Which campaign? (if known)', sel('campaign_id', [['', 'Not known']].concat(camps.map(c => [String(c.campaign_id), c.campaign_name])), v0.campaign_id || '')) + '</div>' : '') +
+      '<div class="grid two">' + fld('Customer name', inp('name', v0.name, 'maxlength="120" autocomplete="off"')) +
+        fld('Phone', inp('phone', v0.phone, 'inputmode="tel" maxlength="16" placeholder="9876543210" autocomplete="off"'), 'Phone or email is needed.') + '</div>' +
+      fld('Email', inp('email', v0.email, 'type="email" maxlength="200" autocomplete="off"')) +
+      fld('What do they want?', '<textarea name="message" rows="2" maxlength="900" class="ta" placeholder="e.g. Puri-Konark 3 nights, 4 adults, December">' + esc(v0.message || '') + '</textarea>') +
+      progressFields(v0);
+    const v = await formModal('Add a lead', html, 'Add lead');
+    if (!v) return;
+    if (v.status !== 'booked') v.booking_value = '';
+    if (v.status !== 'lost') v.lost_reason = '';
+    const p = { ...v, from_google_ads: v.from_google_ads === 'yes' ? 'yes' : 'no', campaign_id: v.from_google_ads === 'yes' ? (v.campaign_id || '') : '' };
+    await saveLead('lead_add', acc, p, () => addLead(v));
+  }
+
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-leadupd],[data-leadadd],[data-leadf]'); if (!b) return;
+    if (b.dataset.leadf) { leadFilter = b.dataset.leadf; renderLeads(); return; }
+    if (b.dataset.leadadd) { addLead(); return; }
+    if (b.dataset.leadupd) updateLead(b.dataset.leadupd);
+  });
 
   // ---------- tabs ----------
   $('#tabs').onclick = e => {
