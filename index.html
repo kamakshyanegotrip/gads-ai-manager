@@ -327,7 +327,7 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
       <div class="panel" style="margin-top:14px"><h2>Keyword gaps &amp; demand</h2><div id="kgSummary"></div><div class="table-wrap"><table id="kgTable"></table></div>
         <p class="small muted">Weekly (Monday 06:10 IST): Google Keyword Planner ideas for India plus your own search terms, compared with your keywords. Brand, portal and temple-room searches are left out.</p><div id="adv-kg"></div></div>
       <div class="panel" style="margin-top:14px"><h2>Suppliers</h2><div id="supBox"></div>
-        <p class="small muted">From your "Suppliers" Google Sheet, synced daily at 08:10 IST. Rows you delete from the sheet become inactive here.</p><div id="adv-sup"></div></div>
+        <p class="small muted">Saved straight into your "Suppliers" Google Sheet. Edits made in the sheet still show here the next morning (08:10 IST sync). Set a supplier to inactive instead of deleting it.</p><div id="adv-sup"></div></div>
     </section>
 
     <!-- FUNNEL & CALLS -->
@@ -823,12 +823,7 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
         '<td class="num">' + (o.bid_high ? inr(o.bid_low) + '–' + inr(o.bid_high) : '—') + '</td><td class="num">' + num(o.our_clicks_30d) + '</td><td class="num">' + num(o.our_conversions_30d) + '</td><td class="small muted">' + esc(o.matched_keyword || 'not covered') + '</td><td>' + (canExec(o.account_id) ? '<button class="btn good sm" data-fix="' + reg({ label: 'Add', kind: 'add_keywords', account_id: o.account_id, params: { keywords: [{ text: o.keyword, match_type: 'PHRASE' }], reason: 'Keyword gap: ' + (o.avg_monthly_searches || '?') + ' searches a month.' } }) + '">Add as keyword</button>' : '') + '</td></tr>'; }).join('')
         : '<tr><td colspan="8" class="empty">No gaps found yet. The weekly check runs on Mondays.</td></tr>') + '</tbody>';
 
-    const sup = (data.suppliers || []).filter(s => $('#bizSel').value === 'ALL' || s.business_id === $('#bizSel').value);
-    const soon = d => d && (new Date(d) - Date.now()) < 30 * 864e5;
-    $('#supBox').innerHTML = sup.length ? '<div class="table-wrap"><table><thead><tr><th>Supplier</th><th>Type</th><th>Destination</th><th>Services</th><th class="num">Rate from</th><th>Season</th><th>Contract until</th><th class="num">Rating</th></tr></thead><tbody>' +
-      sup.map(s => '<tr><td><b>' + esc(s.supplier_name) + '</b></td><td>' + esc(s.supplier_type || '') + '</td><td>' + esc(s.destination || '') + '</td><td class="small">' + esc(s.services || '') + '</td><td class="num">' + (s.rate_from ? inr(s.rate_from) + (s.rate_unit ? ' <span class="small muted">/' + esc(s.rate_unit) + '</span>' : '') : '—') + '</td><td>' + esc(s.season || '') + '</td>' +
-        '<td>' + (s.contract_valid_to ? '<span class="pill ' + (soon(s.contract_valid_to) ? 'warn' : '') + '">' + esc(String(s.contract_valid_to).slice(0, 10)) + '</span>' : '—') + '</td><td class="num">' + (s.rating || '—') + '</td></tr>').join('') + '</tbody></table></div>'
-      : '<div class="empty">No suppliers yet. Add rows to your "Suppliers" Google Sheet; they appear here the next morning.</div>';
+    renderSuppliers();
   }
 
   // ---------- funnel & calls ----------
@@ -1744,6 +1739,70 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
     if (b.dataset.leadf) { leadFilter = b.dataset.leadf; renderLeads(); return; }
     if (b.dataset.leadadd) { addLead(); return; }
     if (b.dataset.leadupd) updateLead(b.dataset.leadupd);
+  });
+
+
+  // =====================================================================
+  // Suppliers: add or edit a supplier. Saved to the business's Suppliers Google Sheet and shown here at once.
+  // =====================================================================
+  const SUP_TYPES = [['hotel', 'Hotel'], ['homestay', 'Homestay'], ['cab', 'Cab / car'], ['transport', 'Bus / other transport'], ['guide', 'Guide'], ['restaurant', 'Restaurant'], ['activity', 'Activity'], ['other', 'Other']];
+  let supShowInactive = false;
+  const supRows = () => { const biz = $('#bizSel').value; const src = data.supplier_rows || (data.suppliers || []).map(s => ({ ...s, active: true })); return src.filter(s => biz === 'ALL' || s.business_id === biz); };
+  const supAcc = s => { const a = data.accounts.find(x => x.business_id === s.business_id && x.can_execute) || data.accounts.find(x => x.business_id === s.business_id); return a ? a.account_id : scopeAcc(); };
+
+  function renderSuppliers() {
+    const box = $('#supBox'); if (!box) return;
+    const all = supRows(); const inactive = all.filter(s => !s.active).length;
+    const list = supShowInactive ? all : all.filter(s => s.active);
+    const soon = d => d && (new Date(d) - Date.now()) < 30 * 864e5;
+    box.innerHTML = '<div class="lead-bar"><div class="seg">' +
+        (inactive ? '<button class="btn sm' + (supShowInactive ? ' primary' : '') + '" data-supinact="1">' + (supShowInactive ? 'Hide' : 'Show') + ' inactive (' + inactive + ')</button>' : '') + '</div>' +
+        '<button class="btn primary" data-supadd="1">+ Add supplier</button></div>' +
+      (list.length ? '<div class="table-wrap"><table class="leads"><thead><tr><th>Supplier</th><th>Type</th><th>Destination</th><th>Services</th><th>Contact</th><th class="num">Rate from</th><th>Season</th><th>Contract until</th><th class="num">Rating</th><th></th></tr></thead><tbody>' +
+        list.map((s, i) => '<tr' + (s.active ? '' : ' class="muted"') + '><td><b>' + esc(s.supplier_name) + '</b>' + (s.active ? '' : ' <span class="pill">inactive</span>') + '</td><td>' + esc(s.supplier_type || '') + '</td><td>' + esc(s.destination || '') + '</td>' +
+          '<td class="small">' + esc(trunc(s.services || '', 60)) + '</td><td class="small">' + esc([s.contact_name, s.phone].filter(Boolean).join(' · ')) + '</td>' +
+          '<td class="num">' + (s.rate_from ? inr(s.rate_from) + (s.rate_unit ? ' <span class="small muted">/' + esc(s.rate_unit) + '</span>' : '') : '—') + '</td><td>' + esc(s.season || '') + '</td>' +
+          '<td>' + (s.contract_valid_to ? '<span class="pill ' + (soon(s.contract_valid_to) ? 'warn' : '') + '">' + esc(String(s.contract_valid_to).slice(0, 10)) + '</span>' : '—') + '</td><td class="num">' + (s.rating || '—') + '</td>' +
+          '<td><button class="btn sm" data-supedit="' + all.indexOf(s) + '">Edit</button></td></tr>').join('') + '</tbody></table></div>'
+        : '<div class="empty">No suppliers yet. Press <b>+ Add supplier</b> to add your hotels, cabs and guides. They are saved in your Suppliers Google Sheet.</div>');
+  }
+
+  async function editSupplier(s, prev) {
+    const acc = s ? supAcc(s) : scopeAcc();
+    if (!canExec(acc)) { toast('You have read-only access, so suppliers cannot be changed.'); return; }
+    const v = prev || (s ? { ...s, rate_from: s.rate_from ? Math.round(s.rate_from) : '', contract_valid_to: s.contract_valid_to ? String(s.contract_valid_to).slice(0, 10) : '', active: s.active ? 'yes' : 'no' } : { supplier_type: 'hotel', active: 'yes' });
+    const html = '<div class="grid two">' + fld('Supplier name *', inp('supplier_name', v.supplier_name, 'maxlength="120" autocomplete="off"')) +
+        fld('Type', sel('supplier_type', SUP_TYPES, v.supplier_type || 'hotel')) + '</div>' +
+      '<div class="grid two">' + fld('Destination *', inp('destination', v.destination, 'maxlength="80" placeholder="e.g. Puri"')) +
+        fld('Services', inp('services', v.services, 'maxlength="300" placeholder="e.g. AC rooms, breakfast, sea view"')) + '</div>' +
+      '<div class="grid two">' + fld('Contact person', inp('contact_name', v.contact_name, 'maxlength="120" autocomplete="off"')) +
+        fld('Phone', inp('phone', String(v.phone || '').replace(/^'/, ''), 'inputmode="tel" maxlength="40" autocomplete="off"')) + '</div>' +
+      fld('Email', inp('email', v.email, 'type="email" maxlength="200" autocomplete="off"')) +
+      '<div class="grid two">' + fld('Rate from (Rs)', inp('rate_from', v.rate_from, 'inputmode="numeric" placeholder="e.g. 2500"')) +
+        fld('Rate is per', inp('rate_unit', v.rate_unit, 'maxlength="40" placeholder="e.g. night, day, trip"')) + '</div>' +
+      '<div class="grid two">' + fld('Season', inp('season', v.season, 'maxlength="80" placeholder="e.g. Oct–Mar"')) +
+        fld('Contract valid until', inp('contract_valid_to', v.contract_valid_to, 'type="date"')) + '</div>' +
+      '<div class="grid two">' + fld('Capacity', inp('capacity', v.capacity, 'maxlength="60" placeholder="e.g. 20 rooms, 4 cars"')) +
+        fld('Rating (1–5)', inp('rating', v.rating, 'inputmode="decimal" placeholder="e.g. 4"')) + '</div>' +
+      fld('Active?', sel('active', [['yes', 'Yes, we use them'], ['no', 'No (keep for records)']], v.active || 'yes'), 'Set to No instead of deleting; the sheet keeps the row.') +
+      fld('Notes', '<textarea name="notes" rows="2" maxlength="500" class="ta">' + esc(v.notes || '') + '</textarea>');
+    const f = await formModal(s ? 'Edit supplier' : 'Add supplier', html, s ? 'Save' : 'Add supplier');
+    if (!f) return;
+    const params = { ...f, original_name: s ? s.supplier_name : '', original_destination: s ? (s.destination || '') : '' };
+    toast('Saving to your Suppliers sheet…', 30000);
+    let res;
+    try { res = await act({ action: 'supplier_save', account_id: acc, params: JSON.stringify(params) }); } catch (e) { res = { ok: false, error: e.message }; }
+    $$('.toast').forEach(t => t.remove());
+    if (!res.ok) { await modal('Not saved', '<p>' + esc(res.error || 'Unknown error') + '</p>', [{ key: 'ok', label: 'Change and try again', cls: 'primary' }]); return editSupplier(s, f); }
+    toast(res.message || 'Saved.', 7000);
+    await reload();
+  }
+
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-supadd],[data-supedit],[data-supinact]'); if (!b) return;
+    if (b.dataset.supinact) { supShowInactive = !supShowInactive; renderSuppliers(); return; }
+    if (b.dataset.supadd) { editSupplier(null); return; }
+    const s = supRows()[Number(b.dataset.supedit)]; if (s) editSupplier(s);
   });
 
   // ---------- tabs ----------
