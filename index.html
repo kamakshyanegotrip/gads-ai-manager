@@ -158,6 +158,17 @@ table.kv { width: auto; margin-top: 6px; } table.kv td { padding: 3px 12px 3px 0
 .callout { background: var(--info-bg); border-radius: 8px; padding: 10px 12px; margin: 8px 0; }
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 10px; margin: 10px 0; }
 .card { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: var(--panel); }
+.cp-list { display: grid; gap: 10px; } .cp-card .rec-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; } .chip { background: var(--info-bg); color: var(--accent); border-radius: 999px; padding: 3px 4px 3px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; }
+.chip button { border: 0; background: transparent; color: inherit; cursor: pointer; font-size: 14px; line-height: 1; padding: 0 4px; }
+.cp-geo { position: relative; } .cp-geo input { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; width: 100%; }
+.cp-geo-res { display: grid; } .cp-geo-res button { text-align: left; background: var(--panel); border: 1px solid var(--line); border-top: 0; padding: 8px 10px; cursor: pointer; color: var(--text); } .cp-geo-res button:hover { background: var(--bg); }
+.cp-langs { display: flex; flex-wrap: wrap; gap: 4px 14px; } label.chk { font-weight: 400; font-size: 13px; display: inline-flex; gap: 6px; align-items: center; margin-right: 10px; }
+.cp-money { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin: 10px 0; } .cp-money > div { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; display: grid; gap: 2px; }
+.cp-warn { background: var(--warn-bg); color: var(--warn); border-radius: 8px; padding: 8px 10px; font-size: 13px; display: grid; gap: 4px; margin: 8px 0; }
+.cp-plan h4 { margin: 16px 0 6px; } .cp-ag { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin: 8px 0; } .cp-ag summary, .cp-plan details summary { cursor: pointer; }
+.ta.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; } .ta.over { border-color: var(--bad); }
+.cp-copy { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin: 8px 0; } .cp-copy ol { margin: 6px 0 0; padding-left: 20px; font-size: 13px; } .cp-steps li { margin: 4px 0; } .bad-t { color: var(--bad); }
 .card-h { display: flex; justify-content: space-between; gap: 6px; align-items: center; }
 .card p { margin: 6px 0 0; }
 .exp-list { display: grid; gap: 12px; }
@@ -218,6 +229,7 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
       <button data-tab="site">Site &amp; Tracking <span class="count hidden" id="siteCount"></span></button>
       <button data-tab="intel">Alerts &amp; Insights <span class="count hidden" id="alertCount"></span></button>
       <button data-tab="market">Market</button>
+      <button data-tab="camp">New campaign</button>
       <button data-tab="funnel">Funnel &amp; Calls</button>
       <button data-tab="web">Web &amp; Tags <span class="count hidden" id="webCount"></span></button>
       <button data-tab="exp">Experiments <span class="count hidden" id="expCount"></span></button>
@@ -331,6 +343,11 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
     </section>
 
     <!-- FUNNEL & CALLS -->
+    <section id="tab-camp" class="hidden">
+      <div class="panel"><h2>Create a new campaign</h2>
+        <p class="small muted">Answer a few questions; the AI suggests the best campaign type and writes everything: keywords, ads, audiences, budget and a plan to grow it. Every campaign starts small and grows by one approved step a week. Search campaigns are created for you (paused until you press Go live); Performance Max, Demand Gen, Video and Display come with ready-to-paste text and step-by-step setup, because Google does not let apps create them.</p>
+        <div id="campBox"></div></div>
+    </section>
     <section id="tab-funnel" class="hidden">
       <div class="grid kpis" id="funKpis"></div>
       <div class="panel" style="margin-top:14px"><h2>Leads: log calls &amp; update status</h2><div id="leadBox"></div>
@@ -962,6 +979,9 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
     else if (r.action_type === 'set_campaign_budget') h = '<b>New daily budget:</b> ' + rsx(Number(p.amount_micros || 0) / 1e6) + ' (now ' + rsx((r.pre_state || {}).daily_budget) + ')';
     else if (r.action_type === 'set_ad_schedule') { const days = {}; (p.schedule || []).forEach(w => (days[w.day_of_week] = days[w.day_of_week] || []).push(String(w.start_hour).padStart(2, '0') + ':' + String(w.start_minute || 0).padStart(2, '0') + '–' + String(w.end_hour).padStart(2, '0') + ':' + String(w.end_minute || 0).padStart(2, '0'))); h = '<b>New ad schedule (ads show only in these hours)</b>' + list(Object.keys(days).map(d => cap(d) + ': ' + days[d].join(', '))); }
     else if (r.action_type === 'pause_ad') h = '<b>Ad to pause:</b> ' + esc(p.ad_id);
+    else if (r.action_type === 'enable_campaign') h = '<b>Campaign to switch on:</b> ' + esc(p.campaign_id);
+    else if (r.action_type === 'set_target_cpa') h = '<b>New target cost per lead:</b> ' + rsx(Number(p.target_cpa_micros || 0) / 1e6) + ((r.pre_state || {}).target_cpa ? ' (now ' + rsx(r.pre_state.target_cpa) + ')' : ' (no target now)');
+    else if (r.action_type === 'set_campaign_bidding_strategy') h = '<b>New bidding:</b> ' + esc(String(p.strategy || '').replace(/_/g, ' ')) + (p.target_cpa_micros ? ', target ' + rsx(Number(p.target_cpa_micros) / 1e6) + ' per lead' : '') + (p.cpc_bid_ceiling_micros ? ', max ' + rsx(Number(p.cpc_bid_ceiling_micros) / 1e6) + ' per click' : '');
     return '<p>' + esc(r.title) + '</p>' + (r.rationale ? '<p class="small">' + esc(r.rationale) + '</p>' : '') + (h ? '<div class="change">' + h + '</div>' : '') +
       '<div class="pc"><div><b>Pros</b>' + esc(r.pros || '—') + '</div><div><b>Cons</b>' + esc(r.cons || '—') + '</div></div>';
   }
@@ -1824,12 +1844,266 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
     await reload();
   };
 
+
+  // =====================================================================
+  // New campaign wizard: AI plans every campaign type; Search is built by the app (paused), other types come with
+  // step-by-step setup. Every campaign starts small and grows by one approved step a week.
+  // =====================================================================
+  let camp = { loaded: false, acc: null, data: null };
+  const CP_ST = { draft: ['info', 'Plan ready'], guided: ['warn', 'Set up in Google Ads'], building: ['warn', 'Being built…'], partial: ['warn', 'Partly built'], built: ['good', 'Built, paused'], live: ['good', 'Live'] };
+  const CP_TYPES = [['auto', 'Let AI suggest (recommended)'], ['search', 'Search'], ['performance_max', 'Performance Max'], ['demand_gen', 'Demand Gen'], ['video', 'Video (YouTube)'], ['display', 'Display']];
+  const CP_LANGS = [['en', 'English'], ['hi', 'Hindi'], ['bn', 'Bengali'], ['te', 'Telugu'], ['ta', 'Tamil'], ['mr', 'Marathi'], ['gu', 'Gujarati'], ['kn', 'Kannada'], ['ml', 'Malayalam'], ['pa', 'Punjabi'], ['ur', 'Urdu']];
+  const rsx2 = v => 'Rs ' + Math.round(Number(v || 0)).toLocaleString('en-IN');
+
+  async function loadCamp(force) {
+    const acc = scopeAcc(); const box = $('#campBox'); if (!box) return;
+    if (camp.loaded && camp.acc === acc && !force) { renderCamp(); return; }
+    box.innerHTML = '<div class="empty">Loading…</div>';
+    let res; try { res = await act({ action: 'campaign_list', account_id: acc, params: '{}' }); } catch (e) { res = { ok: false, error: e.message }; }
+    if (!res.ok) { box.innerHTML = '<div class="empty">' + esc(res.error || 'Could not load campaign plans.') + '</div>'; return; }
+    camp = { loaded: true, acc, data: res }; renderCamp();
+  }
+
+  function renderCamp() {
+    const box = $('#campBox'); const d = camp.data || {}; const plans = d.plans || [];
+    const canX = d.can_execute;
+    const card = p => {
+      const pl = p.plan || {}, b = pl.budget || {}, st = CP_ST[p.status] || ['', p.status], l = p.last14 || {};
+      const pend = (p.recs || []).filter(r => r.status === 'proposed');
+      const btn = (k, label, cls) => '<button class="btn sm ' + (cls || '') + '" data-cp="' + k + '" data-id="' + esc(p.plan_id) + '">' + label + '</button>';
+      const acts = [btn('open', p.status === 'guided' ? 'Setup steps & ad text' : 'Open plan')];
+      if (canX) {
+        if (p.status === 'draft' && p.campaign_type === 'search') acts.push(btn('build', 'Create in Google Ads (paused)', 'primary'));
+        if (p.status === 'partial') acts.push(btn('build', 'Finish building', 'primary'));
+        if (p.status === 'built') acts.push(btn('live', 'Go live', 'good'));
+        if (p.status === 'guided') acts.push(btn('link', 'I have created it', 'primary'));
+        if (['draft', 'guided', 'partial', 'built', 'live'].includes(p.status)) acts.push(btn('remove', p.campaign_id ? 'Stop tracking' : 'Remove', 'bad'));
+      }
+      return '<div class="card cp-card"><div class="card-h"><b>' + esc(p.title || pl.campaign_name || p.plan_id) + '</b><span><span class="pill">' + esc(pl.type_label || p.campaign_type) + '</span> <span class="pill ' + st[0] + '">' + esc(st[1]) + '</span></span></div>' +
+        '<p class="small">Starts at <b>' + rsx2(b.start_daily) + '/day</b>, grows to ' + rsx2(b.full_daily) + '/day · ' + esc((b.bidding || {}).label || '') + (b.target_cpl ? ' · target ' + rsx2(b.target_cpl) + ' per lead' : '') + '</p>' +
+        (p.campaign_id ? '<p class="small muted">Google Ads campaign ' + esc(p.campaign_id) + (p.campaign_status ? ' · ' + esc(cap(p.campaign_status)) : '') + (p.campaign_budget ? ' · now ' + rsx2(p.campaign_budget) + '/day' : '') + '</p>' : '') +
+        (p.status === 'live' ? '<p class="small">Last 14 days: ' + rsx2(l.cost) + ' spent · ' + num(l.clicks) + ' clicks · ' + (l.conv || 0) + ' leads' + (l.conv ? ' (' + rsx2(l.cost / l.conv) + ' per lead)' : '') + '</p>' : '') +
+        ((p.ramp || {}).note ? '<p class="small muted">Weekly check: ' + esc(p.ramp.note) + '</p>' : '') +
+        (pend.length ? '<p class="small"><span class="pill warn">Next step waiting</span> ' + esc(pend[0].title) + ' <a href="#" data-goto="recs">Open Recommendations</a></p>' : '') +
+        ((p.build || {}).errors && Object.keys(p.build.errors).length && p.status === 'partial' ? '<p class="small bad-t">Last error: ' + esc(Object.values(p.build.errors)[0]) + '</p>' : '') +
+        '<div class="rec-actions">' + acts.join('') + '</div></div>';
+    };
+    box.innerHTML = '<div class="lead-bar"><span class="small muted">' + (plans.length ? plans.length + ' plan(s)' : 'No plans yet') + '</span>' +
+      (canX ? '<button class="btn primary" data-cp="new">+ Start a new campaign</button>' : '<span class="small muted">Read-only access</span>') + '</div>' +
+      (plans.length ? '<div class="cp-list">' + plans.map(card).join('') + '</div>' :
+        '<div class="empty">Press <b>+ Start a new campaign</b>. Answer a few questions and the AI writes the full campaign: type, keywords, ads, budget and a plan to grow it slowly.</div>');
+  }
+
+  // ---------- step 1: questions ----------
+  async function campWizard(prev) {
+    const d = camp.data || {}; const v = prev || {};
+    const pages = d.pages || [];
+    window.__cpLocs = Array.isArray(v.locations) ? v.locations.slice() : (d.current_locations || []).map(l => ({ id: l.id, name: l.name }));
+    const langs = v.languages || ['en', 'hi'];
+    const typeInfo = t => t === 'auto' ? 'The AI picks the best type for your goal, budget and what you have (photos, video).' : ((d.types || {})[t] || {}).what || '';
+    const html = fld('Campaign type', sel('type', CP_TYPES, v.type || 'auto') + '<div class="hint" id="cpTypeHint">' + esc(typeInfo(v.type || 'auto')) + '</div>') +
+      '<div class="grid two">' + fld('Goal', sel('goal', [['leads', 'Enquiries (form, WhatsApp, calls)'], ['calls', 'Phone calls'], ['awareness', 'Get known (awareness)'], ['remarketing', 'Bring back past visitors']], v.goal || 'leads')) +
+        fld('What to promote *', inp('promote', v.promote, 'maxlength="200" placeholder="e.g. Puri Konark 2N/3D package"')) + '</div>' +
+      fld('Why people should book with you', '<textarea name="selling_points" rows="2" maxlength="800" class="ta" placeholder="e.g. local Odisha team, hotel + cab + guide, pickup from Bhubaneswar">' + esc(v.selling_points || '') + '</textarea>') +
+      '<div class="grid two">' + fld('Price from (optional)', inp('price_from', v.price_from, 'maxlength="60" placeholder="e.g. Rs 8,999 per person"'), 'Only shown in ads if you enter it.') +
+        fld('Landing page *', sel('landing_url', [['', '— choose a page —']].concat(pages.map(p => [p.url, (p.title || p.url).replace(/ - Negotrip$/, '') + (p.conv ? ' (' + p.conv + ' leads)' : '')])), v.landing_url || '')) + '</div>' +
+      fld('Where should ads show?', '<div id="cpLocs" class="chips"></div><div class="cp-geo"><input id="cpGeoQ" placeholder="Type a city or state, e.g. Kolkata" autocomplete="off"><div id="cpGeoRes" class="cp-geo-res"></div></div>', 'Pre-filled with the places your current campaign targets. Remove all to target the whole of India.') +
+      fld('Languages', '<div class="cp-langs">' + CP_LANGS.map(l => '<label class="chk"><input type="checkbox" name="lang_' + l[0] + '"' + (langs.includes(l[0]) ? ' checked' : '') + '> ' + l[1] + '</label>').join('') + '</div>') +
+      '<div class="grid two">' + fld('Monthly budget (Rs) *', inp('monthly_budget', v.monthly_budget, 'inputmode="numeric" placeholder="e.g. 12000"'), 'The most you want to spend a month once it works.') +
+        fld('Target cost per lead (Rs)', inp('target_cpl', v.target_cpl || d.target_cpa || '', 'inputmode="numeric" placeholder="e.g. 400"'), 'What one enquiry is worth to you.') + '</div>' +
+      '<div class="grid two">' + fld('Start at', sel('start_pct', [['30', '30% of the budget (very careful)'], ['50', '50% of the budget (recommended)'], ['70', '70% of the budget'], ['100', 'Full budget from day one']], String(v.start_pct || 50)), '<span id="cpCalc"></span>') +
+        fld('Phone for call button (optional)', inp('phone', v.phone, 'inputmode="tel" maxlength="16" placeholder="e.g. 9876543210"')) + '</div>' +
+      fld('What do you have ready?', '<label class="chk"><input type="checkbox" name="has_images"' + (v.has_images ? ' checked' : '') + '> Good trip photos</label> <label class="chk"><input type="checkbox" name="has_logo"' + (v.has_logo ? ' checked' : '') + '> Logo</label> <label class="chk"><input type="checkbox" name="has_video"' + (v.has_video ? ' checked' : '') + '> A short video</label>', 'Needed for Performance Max, Demand Gen, Video and Display.') +
+      fld('Who are your customers? (optional)', inp('audience', v.audience, 'maxlength="500" placeholder="e.g. families and senior citizens from Kolkata, Hyderabad"')) +
+      '<label class="chk"><input type="checkbox" name="copy_negatives"' + (v.copy_negatives === false ? '' : ' checked') + '> Copy the blocked searches (negative keywords) from my current campaign</label>';
+    setTimeout(() => wireWizard(), 0);
+    const f = await formModal('New campaign: tell the AI about it', html, 'Write the plan');
+    if (!f) return;
+    const ans = { type: f.type, goal: f.goal, promote: f.promote, selling_points: f.selling_points, price_from: f.price_from, landing_url: f.landing_url, audience: f.audience,
+      monthly_budget: f.monthly_budget, target_cpl: f.target_cpl, start_pct: Number(f.start_pct), phone: f.phone, locations: window.__cpLocs || [] };
+    const ck = window.__cpChecks || {};
+    Object.assign(ans, { languages: CP_LANGS.map(l => l[0]).filter(k => ck['lang_' + k]), has_images: !!ck.has_images, has_logo: !!ck.has_logo, has_video: !!ck.has_video, copy_negatives: !!ck.copy_negatives });
+    if (!ans.languages.length) ans.languages = ['en'];
+    const miss = []; if (!ans.promote.trim()) miss.push('what to promote'); if (!ans.landing_url) miss.push('a landing page'); if (!(Number(String(ans.monthly_budget).replace(/[^0-9.]/g, '')) >= 1000)) miss.push('a monthly budget of at least Rs 1,000');
+    if (miss.length) { await modal('A few answers are missing', '<p>Please add ' + miss.join(', ') + '.</p>', [{ key: 'ok', label: 'OK', cls: 'primary' }]); return campWizard(ans); }
+    await writePlan(ans, v.plan_id);
+  }
+
+  function wireWizard() {
+    const root = $('#modalRoot'); const f = root.querySelector('form'); if (!f) return;
+    const d = camp.data || {};
+    let locs = window.__cpLocs || [];
+    const capture = () => { const c = {}; for (const el of f.elements) if (el.type === 'checkbox') c[el.name] = el.checked; window.__cpChecks = c; };
+    capture(); f.addEventListener('change', capture);
+    const draw = () => { $('#cpLocs').innerHTML = (locs.length ? locs.map((l, i) => '<span class="chip">' + esc(l.name.split(',').slice(0, 2).join(', ')) + ' <button type="button" data-rm="' + i + '" aria-label="Remove">×</button></span>').join('') : '<span class="small muted">Whole of India</span>'); window.__cpLocs = locs; };
+    draw();
+    $('#cpLocs').onclick = e => { const b = e.target.closest('[data-rm]'); if (!b) return; locs.splice(Number(b.dataset.rm), 1); draw(); };
+    let t = null; const q = $('#cpGeoQ'), res = $('#cpGeoRes');
+    q.oninput = () => { clearTimeout(t); const s = q.value.trim(); if (s.length < 3) { res.innerHTML = ''; return; } t = setTimeout(async () => {
+      let r; try { r = await act({ action: 'geo_search', account_id: camp.acc, params: JSON.stringify({ q: s }) }); } catch (e) { r = { ok: false }; }
+      res.innerHTML = r.ok && r.matches.length ? r.matches.map(m => '<button type="button" data-geo="' + esc(m.id) + '" data-name="' + esc(m.name) + '">' + esc(m.name) + ' <span class="muted small">' + esc(m.type) + '</span></button>').join('') : '<div class="small muted">No match</div>';
+    }, 350); };
+    q.onkeydown = e => { if (e.key === 'Enter') e.preventDefault(); };
+    res.onclick = e => { const b = e.target.closest('[data-geo]'); if (!b) return; if (!locs.some(l => l.id === b.dataset.geo)) locs.push({ id: b.dataset.geo, name: b.dataset.name }); draw(); q.value = ''; res.innerHTML = ''; };
+    const calc = () => { const m = Number(String(f.elements.monthly_budget.value).replace(/[^0-9.]/g, '')) || 0; const full = Math.round(m / 30.4); const st = Math.round(full * Number(f.elements.start_pct.value) / 100 / 10) * 10;
+      $('#cpCalc').textContent = m ? 'About ' + rsx2(full) + '/day at full budget; starts at about ' + rsx2(st) + '/day.' : ''; };
+    const hint = () => { const t2 = f.elements.type.value; $('#cpTypeHint').textContent = t2 === 'auto' ? 'The AI picks the best type for your goal, budget and what you have (photos, video).' : (((d.types || {})[t2] || {}).what || ''); };
+    f.addEventListener('input', calc); f.addEventListener('change', () => { calc(); hint(); }); calc();
+  }
+
+  async function writePlan(ans, planId) {
+    toast('Writing your campaign plan with AI… about 30 seconds', 90000);
+    let res; try { res = await act({ action: 'campaign_plan', account_id: camp.acc, params: JSON.stringify({ answers: ans, plan_id: planId || '' }) }); } catch (e) { res = { ok: false, error: e.message }; }
+    $$('.toast').forEach(t => t.remove());
+    if (!res.ok) { const k = await modal('The plan could not be written', '<p>' + esc(res.error || 'Unknown error') + '</p>', [{ key: 'no', label: 'Close' }, { key: 'again', label: 'Change answers', cls: 'primary' }]); if (k === 'again') return campWizard({ ...ans, plan_id: planId }); return; }
+    await loadCamp(true);
+    return showPlan(res.plan.plan_id, res.message);
+  }
+
+  // ---------- step 2: the plan ----------
+  const lines = a => (a || []).join('\n');
+  const kwLine = k => k.match_type === 'EXACT' ? '[' + k.text + ']' : '"' + k.text + '"';
+  const parseKw = s => String(s || '').split('\n').map(x => x.trim()).filter(Boolean).map(x => /^\[.*\]$/.test(x) ? { text: x.slice(1, -1), match_type: 'EXACT' } : { text: x.replace(/^"|"$/g, ''), match_type: 'PHRASE' });
+  const parseNeg = s => String(s || '').split('\n').map(x => x.trim()).filter(Boolean).map(x => /^\[.*\]$/.test(x) ? { text: x.slice(1, -1), match_type: 'EXACT' } : /^".*"$/.test(x) ? { text: x.slice(1, -1), match_type: 'PHRASE' } : { text: x, match_type: 'BROAD' });
+  const negLine = k => k.match_type === 'EXACT' ? '[' + k.text + ']' : k.match_type === 'PHRASE' ? '"' + k.text + '"' : k.text;
+  const ta = (name, val, rows, max, hint) => '<textarea name="' + name + '" rows="' + rows + '" class="ta mono" data-max="' + (max || '') + '">' + esc(val) + '</textarea>' + (hint ? '<div class="hint">' + hint + '</div>' : '');
+  const copyBlock = (title, arr, max) => arr && arr.length ? '<div class="cp-copy"><div class="card-h"><b>' + title + '</b><button type="button" class="btn sm" data-copy="' + esc(arr.join('\n')) + '">Copy all</button></div><ol>' + arr.map(x => '<li>' + esc(x) + (max ? ' <span class="muted small">(' + x.length + '/' + max + ')</span>' : '') + '</li>').join('') + '</ol></div>' : '';
+
+  async function showPlan(id, msg) {
+    const p = ((camp.data || {}).plans || []).find(x => x.plan_id === id); if (!p) { toast('Plan not found. Refresh the page.'); return; }
+    const pl = p.plan || {}, b = pl.budget || {}, editable = ['draft', 'guided'].includes(p.status) && camp.data.can_execute;
+    const isS = p.campaign_type === 'search';
+    let html = (msg ? '<p class="small"><span class="pill good">Ready</span> ' + esc(msg) + '</p>' : '') +
+      '<p>' + esc(pl.summary || '') + '</p>' +
+      (pl.type_reason ? '<p class="small"><b>Why ' + esc(pl.type_label) + ':</b> ' + esc(pl.type_reason) + '</p>' : '') +
+      ((pl.alternatives || []).length ? '<p class="small muted">Other options: ' + pl.alternatives.map(a => esc(((camp.data.types || {})[a.type] || {}).label || a.type) + ' – ' + esc(a.why)).join(' · ') + '</p>' : '') +
+      '<div class="cp-money"><div><span class="muted small">Start</span><b>' + rsx2(b.start_daily) + '/day</b></div><div><span class="muted small">Full budget</span><b>' + rsx2(b.full_daily) + '/day</b></div><div><span class="muted small">Target per lead</span><b>' + (b.target_cpl ? rsx2(b.target_cpl) : '—') + '</b></div><div><span class="muted small">Bidding at start</span><b>' + esc((b.bidding || {}).label || '') + '</b></div></div>' +
+      '<p class="small muted">' + esc((b.bidding || {}).why || '') + '</p>' +
+      ((pl.warnings || []).length ? '<div class="cp-warn">' + pl.warnings.map(w => '<div>⚠ ' + esc(w) + '</div>').join('') + '</div>' : '') +
+      '<details open><summary><b>How it grows (start low, then step up)</b></summary><ol class="small">' + (pl.ramp_steps || []).map(s => '<li>' + esc(s) + '</li>').join('') + '</ol></details>' +
+      '<p class="small">Locations: ' + esc((pl.locations || []).map(l => l.name.split(',')[0]).join(', ')) + ' · Languages: ' + esc((pl.languages || []).join(', ')) + ' · Landing page: <a href="' + esc(pl.final_url) + '" target="_blank" rel="noopener">' + esc(pl.final_url) + '</a></p>';
+    if (isS) {
+      html += '<h4>Ad groups</h4>' + (pl.ad_groups || []).map((g, i) => '<details' + (i === 0 ? ' open' : '') + ' class="cp-ag"><summary><b>' + esc(g.name) + '</b> <span class="muted small">' + g.keywords.length + ' keywords · ' + g.headlines.length + ' headlines</span></summary>' +
+        (editable ? fld('Keywords (one per line; "phrase" or [exact])', ta('kw_' + i, lines(g.keywords.map(kwLine)), 6)) +
+          '<div class="grid two">' + fld('Headlines (max 30 characters, 3-15)', ta('hl_' + i, lines(g.headlines), 8, 30)) + fld('Descriptions (max 90 characters, 2-4)', ta('ds_' + i, lines(g.descriptions), 5, 90)) + '</div>'
+          : '<p class="small">' + g.keywords.map(k => esc(kwLine(k))).join(', ') + '</p>' + copyBlock('Headlines', g.headlines, 30) + copyBlock('Descriptions', g.descriptions, 90)) + '</details>').join('') +
+        '<details class="cp-ag"><summary><b>Blocked searches</b> <span class="muted small">' + (pl.negatives || []).length + '</span></summary>' + (editable ? ta('negatives', lines((pl.negatives || []).map(negLine)), 8, 0, 'one per line; plain = broad, "phrase", [exact]') : '<p class="small">' + (pl.negatives || []).map(k => esc(negLine(k))).join(', ') + '</p>') + '</details>' +
+        '<details class="cp-ag"><summary><b>Sitelinks, callouts, snippet</b></summary>' + (pl.sitelinks || []).map(s => '<div class="small">🔗 <b>' + esc(s.link_text) + '</b> – ' + esc(s.final_url) + (s.description_1 ? ' · ' + esc(s.description_1) + ' / ' + esc(s.description_2) : '') + '</div>').join('') +
+        '<div class="small">Callouts: ' + (pl.callouts || []).map(esc).join(' · ') + '</div>' + (pl.structured_snippet ? '<div class="small">' + esc(pl.structured_snippet.header) + ': ' + pl.structured_snippet.values.map(esc).join(', ') + '</div>' : '') + (pl.phone ? '<div class="small">Call button: ' + esc(pl.phone) + '</div>' : '') + '</details>';
+    } else {
+      html += '<h4>What you need</h4><ul class="small">' + (pl.needs || []).map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' +
+        '<h4>Ad text (copy and paste into Google Ads)</h4>' + copyBlock('Headlines', pl.headlines) + copyBlock('Long headlines', pl.long_headlines) + copyBlock('Descriptions', pl.descriptions) +
+        '<p class="small">Business name: <b>' + esc(pl.business_name) + '</b> · Call to action: <b>' + esc(pl.cta) + '</b></p>' +
+        ((pl.image_ideas || []).length ? '<details><summary><b>Photo ideas</b></summary><ul class="small">' + pl.image_ideas.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul></details>' : '') +
+        ((pl.video_ideas || []).length ? '<details><summary><b>Video ideas</b></summary>' + pl.video_ideas.map(x => '<p class="small"><b>' + esc(x.length) + ':</b> ' + esc(x.hook) + '<br>' + esc(x.outline) + '</p>').join('') + '</details>' : '') +
+        '<details open><summary><b>Audience</b></summary>' + [['Search themes', (pl.audience || {}).search_themes], ['Interests', (pl.audience || {}).interests], ['Custom segments', (pl.audience || {}).custom_segments]].filter(a => (a[1] || []).length).map(a => copyBlock(a[0], a[1])).join('') +
+          ((pl.audience || {}).remarketing ? '<p class="small">Remarketing: ' + esc(pl.audience.remarketing) + '</p>' : '') + '</details>' +
+        '<h4>Setup steps in Google Ads</h4><ol class="cp-steps">' + (pl.setup_steps || []).map(s => '<li>' + esc(s) + '</li>').join('') + '</ol>';
+    }
+    const btns = [{ key: 'close', label: 'Close' }];
+    if (editable) { btns.push({ key: 'again', label: 'Write the plan again' }); if (isS) btns.push({ key: 'save', label: 'Save changes' }); }
+    if (camp.data.can_execute && isS && ['draft', 'partial'].includes(p.status)) btns.push({ key: 'build', label: p.status === 'partial' ? 'Finish building' : 'Create in Google Ads (paused)', cls: 'primary' });
+    if (camp.data.can_execute && p.status === 'guided') btns.push({ key: 'link', label: 'I have created it', cls: 'primary' });
+    if (camp.data.can_execute && p.status === 'built') btns.push({ key: 'live', label: 'Go live', cls: 'good' });
+    const k = await planModal(pl.campaign_name || 'Campaign plan', html, btns);
+    const vals = k.vals || {};
+    if (k.key === 'again') return campWizard({ ...(p.answers || {}), plan_id: p.plan_id });
+    if (k.key === 'save' || (k.key === 'build' && editable)) {
+      const edited = { ad_groups: (pl.ad_groups || []).map((g, i) => ({ ...g, keywords: parseKw(vals['kw_' + i]), headlines: String(vals['hl_' + i] || '').split('\n').map(x => x.trim()).filter(Boolean), descriptions: String(vals['ds_' + i] || '').split('\n').map(x => x.trim()).filter(Boolean) })), negatives: parseNeg(vals.negatives) };
+      const bad = []; edited.ad_groups.forEach((g, i) => { const long = g.headlines.filter(h => h.length > 30).concat(g.descriptions.filter(x => x.length > 90)); if (long.length) bad.push('Ad group ' + (i + 1) + ': too long – ' + long.map(x => '"' + x + '" (' + x.length + ')').join(', ')); });
+      if (bad.length) { await modal('Some lines are too long', '<p>' + bad.map(esc).join('<br>') + '</p><p class="small muted">Headlines max 30 characters, descriptions max 90. Nothing was saved.</p>', [{ key: 'ok', label: 'Fix them', cls: 'primary' }]); return showPlan(id); }
+      toast('Saving…', 20000); let r; try { r = await act({ action: 'campaign_save', account_id: camp.acc, params: JSON.stringify({ plan_id: p.plan_id, plan: edited }) }); } catch (e) { r = { ok: false, error: e.message }; }
+      $$('.toast').forEach(t => t.remove());
+      if (!r.ok) { await modal('Not saved', '<p>' + esc(r.error) + '</p>', [{ key: 'ok', label: 'OK', cls: 'primary' }]); return showPlan(id); }
+      await loadCamp(true);
+      if (k.key === 'save') { toast(r.message, 5000); return showPlan(id); }
+    }
+    if (k.key === 'build') return buildCamp(p.plan_id);
+    if (k.key === 'link') return linkCamp(p.plan_id);
+    if (k.key === 'live') return goLiveCamp(p.plan_id);
+  }
+
+  function planModal(title, html, buttons) {
+    return new Promise(resolve => {
+      const root = $('#modalRoot');
+      root.innerHTML = '<div class="modal-bg"><form class="modal wide lead-form cp-plan" role="dialog" aria-modal="true" novalidate><h3>' + esc(title) + '</h3><div class="modal-body">' + html + '</div><div class="row">' +
+        buttons.map(b => '<button type="button" class="btn ' + (b.cls || '') + '" data-m="' + esc(b.key) + '">' + esc(b.label) + '</button>').join('') + '</div></form></div>';
+      const f = root.querySelector('form');
+      const count = el => { const max = Number(el.dataset.max || 0); if (!max) return; const over = el.value.split('\n').filter(x => x.trim().length > max).length; el.classList.toggle('over', over > 0); el.title = over ? over + ' line(s) longer than ' + max + ' characters' : ''; };
+      f.querySelectorAll('textarea[data-max]').forEach(el => { count(el); el.addEventListener('input', () => count(el)); });
+      f.addEventListener('click', e => { const c = e.target.closest('[data-copy]'); if (!c) return; try { navigator.clipboard.writeText(c.dataset.copy); toast('Copied', 1500); } catch (err) { toast('Select the text and copy it'); } });
+      root.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { const v = {}; for (const el of f.elements) if (el.name) v[el.name] = el.value; root.innerHTML = ''; resolve({ key: b.dataset.m, vals: v }); });
+    });
+  }
+
+  // ---------- step 3: build / link / go live ----------
+  async function buildCamp(id) {
+    const p = ((camp.data || {}).plans || []).find(x => x.plan_id === id); if (!p) return;
+    const pl = p.plan || {};
+    const k = await modal('Create this campaign in Google Ads?', '<p>The app creates <b>' + esc(pl.campaign_name) + '</b> in account ' + esc(camp.acc) + ' with ' + (pl.ad_groups || []).length + ' ad groups, their keywords and ads, blocked searches, sitelinks and callouts.</p>' +
+      '<p>It is created <b>PAUSED</b>: nothing shows and nothing is spent until you press <b>Go live</b>. Daily budget is set to ' + rsx2((pl.budget || {}).start_daily) + '.</p><p class="small muted">Takes about a minute. Every step is written to the Change log.</p>',
+      [{ key: 'no', label: 'Cancel' }, { key: 'yes', label: 'Create (paused)', cls: 'primary' }]);
+    if (k !== 'yes') return;
+    toast('Creating the campaign in Google Ads (paused)… about a minute', 120000);
+    let r; try { r = await act({ action: 'campaign_build', account_id: camp.acc, params: JSON.stringify({ plan_id: id }) }); } catch (e) { r = { ok: false, error: e.message }; }
+    $$('.toast').forEach(t => t.remove());
+    await loadCamp(true);
+    await modal(r.status === 'built' ? 'Created (paused)' : r.ok ? 'Partly created' : 'Not created', '<p>' + esc(r.message || r.error || 'Unknown result') + '</p>', [{ key: 'ok', label: 'OK', cls: 'primary' }]);
+  }
+
+  async function linkCamp(id) {
+    const d = camp.data || {};
+    const free = (d.campaigns || []).filter(c => !c.linked);
+    if (!free.length) { await modal('Campaign not found yet', '<p>The new campaign appears here after the next data refresh (every few hours). Try again later.</p>', [{ key: 'ok', label: 'OK', cls: 'primary' }]); return; }
+    const f = await formModal('Which campaign did you create?', fld('Campaign', sel('campaign_id', free.map(c => [c.campaign_id, c.name + ' (' + cap(c.status) + (c.type ? ', ' + cap(c.type).replace(/_/g, ' ') : '') + ')']), free[0].campaign_id), 'Only campaigns not already linked are shown. If yours is missing, wait for the next data refresh.'), 'Link it');
+    if (!f) return;
+    let r; try { r = await act({ action: 'campaign_link', account_id: camp.acc, params: JSON.stringify({ plan_id: id, campaign_id: f.campaign_id }) }); } catch (e) { r = { ok: false, error: e.message }; }
+    toast(r.ok ? r.message : (r.error || 'Failed'), 7000); await loadCamp(true);
+  }
+
+  async function goLiveCamp(id) {
+    toast('Preparing…', 20000);
+    let res; try { res = await act({ action: 'campaign_golive', account_id: camp.acc, params: JSON.stringify({ plan_id: id }) }); } catch (e) { res = { ok: false, error: e.message }; }
+    $$('.toast').forEach(t => t.remove());
+    if (!res.ok) { await modal('Cannot switch it on yet', '<p>' + esc(res.error || 'Unknown error') + '</p>', [{ key: 'ok', label: 'OK', cls: 'primary' }]); return; }
+    const r = res.recommendation; window.__lastRec = r;
+    const k = await modal('Switch the campaign on?', changeHtml(r) + '<p class="small muted">After Google\'s ad review (usually within a day) ads start showing. Every Monday the app proposes one small next step; nothing changes without your OK.</p>',
+      [{ key: 'later', label: 'Later' }, { key: 'apply', label: 'Go live now', cls: 'good' }], true);
+    if (k === 'apply') {
+      toast('Switching on…', 60000);
+      try { const d2 = await post('gads-webapp-api', { action: 'decide', recommendation_id: r.recommendation_id, decision: 'approve', ...creds() }); $$('.toast').forEach(t => t.remove()); toast(d2.message || d2.error || 'Done', 9000); }
+      catch (e) { $$('.toast').forEach(t => t.remove()); toast('Failed: ' + e.message); }
+    } else toast('Saved in Recommendations → Needs approval.', 5000);
+    await reload(); await loadCamp(true);
+  }
+
+  async function removeCamp(id) {
+    const p = ((camp.data || {}).plans || []).find(x => x.plan_id === id); if (!p) return;
+    const k = await modal(p.campaign_id ? 'Stop tracking this campaign?' : 'Remove this plan?', '<p>' + esc(p.title) + '</p><p class="small muted">' + (p.campaign_id ? 'The campaign in Google Ads is not changed or removed; the app just stops proposing weekly steps for it.' : 'Nothing exists in Google Ads for this plan yet.') + '</p>',
+      [{ key: 'no', label: 'Cancel' }, { key: 'yes', label: p.campaign_id ? 'Stop tracking' : 'Remove', cls: 'bad' }]);
+    if (k !== 'yes') return;
+    let r; try { r = await act({ action: 'campaign_archive', account_id: camp.acc, params: JSON.stringify({ plan_id: id }) }); } catch (e) { r = { ok: false, error: e.message }; }
+    toast(r.ok ? r.message : (r.error || 'Failed'), 6000); await loadCamp(true);
+  }
+
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-cp]'); if (!b) return;
+    const k = b.dataset.cp, id = b.dataset.id;
+    if (k === 'new') campWizard();
+    else if (k === 'open') showPlan(id);
+    else if (k === 'build') buildCamp(id);
+    else if (k === 'link') linkCamp(id);
+    else if (k === 'live') goLiveCamp(id);
+    else if (k === 'remove') removeCamp(id);
+  });
+
   // ---------- tabs ----------
   $('#tabs').onclick = e => {
     const b = e.target.closest('button[data-tab]'); if (!b) return;
     $$('#tabs button').forEach(x => x.classList.toggle('active', x === b));
-    ['dash', 'recs', 'site', 'intel', 'market', 'funnel', 'web', 'exp', 'reports', 'chat', 'log'].forEach(t => $('#tab-' + t).classList.toggle('hidden', t !== b.dataset.tab));
+    ['dash', 'recs', 'site', 'intel', 'market', 'camp', 'funnel', 'web', 'exp', 'reports', 'chat', 'log'].forEach(t => $('#tab-' + t).classList.toggle('hidden', t !== b.dataset.tab));
     if (b.dataset.tab === 'chat') $('#chatInput').focus();
+    if (b.dataset.tab === 'camp') loadCamp();
   };
 
   // ---------- chat ----------
