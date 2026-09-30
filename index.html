@@ -169,6 +169,8 @@ table.kv { width: auto; margin-top: 6px; } table.kv td { padding: 3px 12px 3px 0
 .cp-plan h4 { margin: 16px 0 6px; } .cp-ag { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin: 8px 0; } .cp-ag summary, .cp-plan details summary { cursor: pointer; }
 .ta.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; } .ta.over { border-color: var(--bad); }
 .cp-copy { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin: 8px 0; } .cp-copy ol { margin: 6px 0 0; padding-left: 20px; font-size: 13px; } .cp-steps li { margin: 4px 0; } .bad-t { color: var(--bad); }
+.field:has(> .sug) { align-content: start; } .sug { font-size: 12px; line-height: 1.45; margin-top: 2px; } .sug-tip { color: var(--muted); } .sug-ai { margin-top: 4px; padding: 6px 8px; border-radius: 8px; background: rgba(66,133,244,.08); border: 1px solid rgba(66,133,244,.25); } .sug.used .sug-ai { background: rgba(52,168,83,.10); border-color: rgba(52,168,83,.35); } .sug .btn.sm { padding: 2px 8px; font-size: 12px; margin-left: 4px; }
+.cp-chat { border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin-bottom: 14px; } .cp-chat textarea { width: 100%; box-sizing: border-box; } #cpChatLog { max-height: 220px; overflow-y: auto; display: grid; gap: 6px; margin: 6px 0; } .cp-msg { padding: 6px 9px; border-radius: 8px; font-size: 13px; line-height: 1.45; white-space: pre-wrap; } .cp-msg.me { background: rgba(66,133,244,.12); justify-self: end; max-width: 90%; } .cp-msg.ai { border: 1px solid var(--line); } .cp-chat-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
 .card-h { display: flex; justify-content: space-between; gap: 6px; align-items: center; }
 .card p { margin: 6px 0 0; }
 .exp-list { display: grid; gap: 12px; }
@@ -1894,6 +1896,90 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
         '<div class="empty">Press <b>+ Start a new campaign</b>. Answer a few questions and the AI writes the full campaign: type, keywords, ads, budget and a plan to grow it slowly.</div>');
   }
 
+
+  // ---------- wizard helper: per-field tips (by ad type) + AI suggestions from the chat box ----------
+  const CP_TIPS = {
+    type: t => ({ auto: 'Not sure? Tell the AI above what you want (e.g. "more taxi bookings from Bhubaneswar airport") and it suggests the best type.',
+      search: 'Best when people already search for what you sell (tour package, taxi, hotel). You pay per click; the app builds it for you.',
+      performance_max: 'Shows everywhere on Google. Needs 5+ good photos, a logo and Rs 20,000+/month; best once Search already brings leads.',
+      demand_gen: 'Image/video ads on YouTube, Gmail and Discover. Good to create interest or remind past website visitors.',
+      video: 'YouTube video ads for awareness. You need a 15-30 second video; it rarely brings direct enquiries.',
+      display: 'Banner ads on websites. Cheap; use mainly to remind people who visited your website.' })[t],
+    goal: t => ({ search: 'Taxi / urgent bookings: choose Phone calls. Packages / hotels: choose Enquiries.', video: 'Video works for Get known (awareness).', display: 'Display works best for Bring back past visitors.', demand_gen: 'Demand Gen: Enquiries or Bring back past visitors.' })[t] || 'Pick what you want customers to do: enquire, call, know you, or come back.',
+    promote: t => t === 'search' || t === 'auto' ? 'One service per campaign, as customers say it: "Bhubaneswar airport taxi", "Puri Konark 2N/3D package".' : 'A service group is fine here: "Odisha tour packages", "Puri taxi service".',
+    selling_points: t => 'What makes people pick you: price, AC cars, 24x7, pickup points, local team, reviews. ' + (t === 'search' || t === 'auto' ? 'These become your ad headlines.' : 'Used in headlines and descriptions.'),
+    price_from: t => 'A clear starting price (e.g. "Rs 12/km" or "Rs 8,999 per person") gets fewer but better clicks. Leave empty if prices vary a lot.',
+    landing_url: t => 'The page must match the ad: same service, price, phone/WhatsApp button and a form. ' + (t === 'search' || t === 'auto' ? 'Search ads can only go to your own website.' : 'A general page is fine for image/video ads.'),
+    locations: t => 'Where the CUSTOMER is when searching. Taxi / local service: your city and airport area. Tour packages: the cities travellers come from.',
+    languages: t => 'English + Hindi covers most Google users in India. Odia cannot be selected in Google Ads.',
+    monthly_budget: t => 'The most you will spend per month once it works. Minimum sensible for this type: about Rs ' + Math.round(((({ search: 150, performance_max: 500, demand_gen: 400, video: 250, display: 150 })[t] || 150) * 30.4) / 100) * 100 + '/month.',
+    target_cpl: t => 'What one enquiry or call is worth to you. A taxi lead is usually cheaper than a tour-package lead.',
+    start_pct: t => 'Start at 50% (or 30% for a brand-new service). The app suggests +20% steps each Monday only when results are good.',
+    phone: t => t === 'search' || t === 'auto' ? 'Adds a Call button to the ad. Strongly recommended for taxi and urgent bookings.' : 'Only used for Search ads.',
+    assets: t => ({ search: 'Nothing needed: the app writes all text.', performance_max: 'Needs landscape + square photos (5+ each), a square logo, ideally a short video.', demand_gen: 'Needs landscape, square and portrait photos and a logo; a vertical video helps.', video: 'Needs a 15-30 second video on your YouTube channel.', display: 'Needs landscape + square photos and a logo.' })[t] || 'Tick what you already have; it decides which ad types are possible.',
+    audience: t => t === 'search' || t === 'auto' ? 'Optional for Search (keywords do the targeting). Helps the AI write the right words.' : 'Important here: who they are and what they like (e.g. families, pilgrims, senior citizens).',
+    copy_negatives: t => 'Keeps blocking the junk searches your current campaign already learned to avoid. Keep it ticked unless the new service is very different (e.g. taxi vs tours).'
+  };
+  const sugBox = k => '<div class="sug" data-sug="' + k + '"></div>';
+  const CP_FIELD_LABEL = { type: 'Campaign type', goal: 'Goal', promote: 'What to promote', selling_points: 'Why book with you', price_from: 'Price from', landing_url: 'Landing page', locations: 'Locations', languages: 'Languages', monthly_budget: 'Monthly budget', target_cpl: 'Target cost per lead', start_pct: 'Start at', phone: 'Phone', assets: 'What you have ready', audience: 'Customers', copy_negatives: 'Copy blocked searches' };
+
+  function sugValueText(k, v) {
+    if (k === 'type') return (CP_TYPES.find(x => x[0] === v) || [v, v])[1];
+    if (k === 'locations') return (v || []).length ? v.map(l => l.name.split(',').slice(0, 2).join(', ')).join('; ') : 'Whole of India';
+    if (k === 'languages') return v.map(c => (CP_LANGS.find(x => x[0] === c) || [c, c])[1]).join(', ');
+    if (k === 'monthly_budget' || k === 'target_cpl') return rsx2(v);
+    if (k === 'start_pct') return v + '% of the budget';
+    if (k === 'copy_negatives') return v ? 'Yes, copy them' : 'No, start fresh';
+    if (k === 'goal') return ({ leads: 'Enquiries', calls: 'Phone calls', awareness: 'Get known', remarketing: 'Bring back past visitors' })[v] || v;
+    return String(v || '');
+  }
+
+  function renderSug(f) {
+    const t = f.elements.type ? f.elements.type.value : 'auto';
+    const s = window.__cpSug || {};
+    f.querySelectorAll('[data-sug]').forEach(box => {
+      const k = box.dataset.sug; const tip = (CP_TIPS[k] || (() => ''))(t) || ''; const a = s[k];
+      const hasVal = a && a.value !== undefined && a.value !== '' && !(Array.isArray(a.value) && !a.value.length && k !== 'locations');
+      box.innerHTML = '<div class="sug-tip">💡 ' + esc(tip) + '</div>' + (a ? '<div class="sug-ai"><b>AI suggests:</b> ' + (hasVal ? esc(sugValueText(k, a.value)) + ' ' : '') +
+        (a.why ? '<span class="muted">— ' + esc(a.why) + '</span>' : '') + (hasVal && k !== 'phone' && k !== 'assets' ? ' <button type="button" class="btn sm" data-use="' + k + '">Use this</button>' : '') + '</div>' : '');
+    });
+    const all = $('#cpUseAll'); if (all) all.style.display = Object.keys(s).some(k => s[k] && s[k].value !== '' && k !== 'phone' && k !== 'assets') ? '' : 'none';
+  }
+
+  function useSug(f, k) {
+    const a = (window.__cpSug || {})[k]; if (!a) return;
+    const v = a.value; const el = f.elements[k];
+    if (k === 'locations') { const cur = window.__cpLocs || []; cur.splice(0, cur.length, ...v.map(l => ({ id: l.id, name: l.name }))); if (window.__cpDraw) window.__cpDraw(); }
+    else if (k === 'languages') CP_LANGS.forEach(l => { const c = f.elements['lang_' + l[0]]; if (c) c.checked = v.includes(l[0]); });
+    else if (k === 'copy_negatives') { if (el) el.checked = !!v; }
+    else if (k === 'landing_url') { if (el && [...el.options].some(o => o.value === v)) el.value = v; }
+    else if (el) el.value = String(v);
+    f.dispatchEvent(new Event('change', { bubbles: true })); f.dispatchEvent(new Event('input', { bubbles: true }));
+    const box = f.querySelector('[data-sug="' + k + '"]'); if (box) box.classList.add('used');
+  }
+
+  function currentAnswers(f) {
+    const g = n => f.elements[n] ? f.elements[n].value : '';
+    return { type: g('type'), goal: g('goal'), promote: g('promote'), selling_points: g('selling_points'), price_from: g('price_from'), landing_url: g('landing_url'), monthly_budget: g('monthly_budget'),
+      target_cpl: g('target_cpl'), start_pct: g('start_pct'), audience: g('audience'), locations: (window.__cpLocs || []).map(l => l.name), languages: CP_LANGS.map(l => l[0]).filter(c => f.elements['lang_' + c] && f.elements['lang_' + c].checked) };
+  }
+
+  async function askWizardAI(f) {
+    const box = $('#cpChatQ'); const q = box.value.trim(); if (!q) { box.focus(); return; }
+    const log = $('#cpChatLog'); const hist = window.__cpChat || (window.__cpChat = []);
+    log.insertAdjacentHTML('beforeend', '<div class="cp-msg me">' + esc(q) + '</div><div class="cp-msg ai muted" id="cpThinking">Thinking… (about 15 seconds)</div>'); log.scrollTop = log.scrollHeight; box.value = '';
+    const btn = $('#cpChatSend'); btn.disabled = true;
+    let r; try { r = await act({ action: 'campaign_suggest', account_id: camp.acc, params: JSON.stringify({ message: q, answers: currentAnswers(f), history: hist.slice(-6) }) }); } catch (e) { r = { ok: false, error: e.message }; }
+    btn.disabled = false; const th = $('#cpThinking'); if (th) th.remove();
+    if (!document.body.contains(f)) return;
+    if (!r.ok) { log.insertAdjacentHTML('beforeend', '<div class="cp-msg ai bad-t">' + esc(r.error || 'No answer. Try again.') + '</div>'); return; }
+    hist.push({ role: 'user', content: q }, { role: 'assistant', content: r.reply });
+    window.__cpSug = { ...(window.__cpSug || {}), ...(r.fields || {}) };
+    const n = Object.keys(r.fields || {}).length;
+    log.insertAdjacentHTML('beforeend', '<div class="cp-msg ai">' + esc(r.reply) + (n ? '<div class="small muted">Suggestions added under ' + n + ' field(s) below' + '.</div>' : '') + '</div>'); log.scrollTop = log.scrollHeight;
+    renderSug(f);
+  }
+
   // ---------- step 1: questions ----------
   async function campWizard(prev) {
     const d = camp.data || {}; const v = prev || {};
@@ -1901,21 +1987,26 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
     window.__cpLocs = Array.isArray(v.locations) ? v.locations.slice() : (d.current_locations || []).map(l => ({ id: l.id, name: l.name }));
     const langs = v.languages || ['en', 'hi'];
     const typeInfo = t => t === 'auto' ? 'The AI picks the best type for your goal, budget and what you have (photos, video).' : ((d.types || {})[t] || {}).what || '';
-    const html = fld('Campaign type', sel('type', CP_TYPES, v.type || 'auto') + '<div class="hint" id="cpTypeHint">' + esc(typeInfo(v.type || 'auto')) + '</div>') +
-      '<div class="grid two">' + fld('Goal', sel('goal', [['leads', 'Enquiries (form, WhatsApp, calls)'], ['calls', 'Phone calls'], ['awareness', 'Get known (awareness)'], ['remarketing', 'Bring back past visitors']], v.goal || 'leads')) +
-        fld('What to promote *', inp('promote', v.promote, 'maxlength="200" placeholder="e.g. Puri Konark 2N/3D package"')) + '</div>' +
-      fld('Why people should book with you', '<textarea name="selling_points" rows="2" maxlength="800" class="ta" placeholder="e.g. local Odisha team, hotel + cab + guide, pickup from Bhubaneswar">' + esc(v.selling_points || '') + '</textarea>') +
-      '<div class="grid two">' + fld('Price from (optional)', inp('price_from', v.price_from, 'maxlength="60" placeholder="e.g. Rs 8,999 per person"'), 'Only shown in ads if you enter it.') +
-        fld('Landing page *', sel('landing_url', [['', '— choose a page —']].concat(pages.map(p => [p.url, (p.title || p.url).replace(/ - Negotrip$/, '') + (p.conv ? ' (' + p.conv + ' leads)' : '')])), v.landing_url || '')) + '</div>' +
-      fld('Where should ads show?', '<div id="cpLocs" class="chips"></div><div class="cp-geo"><input id="cpGeoQ" placeholder="Type a city or state, e.g. Kolkata" autocomplete="off"><div id="cpGeoRes" class="cp-geo-res"></div></div>', 'Pre-filled with the places your current campaign targets. Remove all to target the whole of India.') +
-      fld('Languages', '<div class="cp-langs">' + CP_LANGS.map(l => '<label class="chk"><input type="checkbox" name="lang_' + l[0] + '"' + (langs.includes(l[0]) ? ' checked' : '') + '> ' + l[1] + '</label>').join('') + '</div>') +
-      '<div class="grid two">' + fld('Monthly budget (Rs) *', inp('monthly_budget', v.monthly_budget, 'inputmode="numeric" placeholder="e.g. 12000"'), 'The most you want to spend a month once it works.') +
-        fld('Target cost per lead (Rs)', inp('target_cpl', v.target_cpl || d.target_cpa || '', 'inputmode="numeric" placeholder="e.g. 400"'), 'What one enquiry is worth to you.') + '</div>' +
-      '<div class="grid two">' + fld('Start at', sel('start_pct', [['30', '30% of the budget (very careful)'], ['50', '50% of the budget (recommended)'], ['70', '70% of the budget'], ['100', 'Full budget from day one']], String(v.start_pct || 50)), '<span id="cpCalc"></span>') +
-        fld('Phone for call button (optional)', inp('phone', v.phone, 'inputmode="tel" maxlength="16" placeholder="e.g. 9876543210"')) + '</div>' +
-      fld('What do you have ready?', '<label class="chk"><input type="checkbox" name="has_images"' + (v.has_images ? ' checked' : '') + '> Good trip photos</label> <label class="chk"><input type="checkbox" name="has_logo"' + (v.has_logo ? ' checked' : '') + '> Logo</label> <label class="chk"><input type="checkbox" name="has_video"' + (v.has_video ? ' checked' : '') + '> A short video</label>', 'Needed for Performance Max, Demand Gen, Video and Display.') +
-      fld('Who are your customers? (optional)', inp('audience', v.audience, 'maxlength="500" placeholder="e.g. families and senior citizens from Kolkata, Hyderabad"')) +
-      '<label class="chk"><input type="checkbox" name="copy_negatives"' + (v.copy_negatives === false ? '' : ' checked') + '> Copy the blocked searches (negative keywords) from my current campaign</label>';
+    if (!prev) { window.__cpSug = {}; window.__cpChat = []; }
+    const chatHist = (window.__cpChat || []).map(m => '<div class="cp-msg ' + (m.role === 'user' ? 'me' : 'ai') + '">' + esc(m.content) + '</div>').join('');
+    const chat = '<div class="cp-chat"><b>Ask the AI</b> <span class="small muted">Say what you want in your own words, e.g. "I want more taxi bookings from Bhubaneswar airport. Which ad is best?" It fills a suggestion under every field; press <b>Use this</b> or <b>Use all suggestions</b>.</span>' +
+      '<div id="cpChatLog">' + chatHist + '</div><textarea id="cpChatQ" rows="2" class="ta" maxlength="1000" placeholder="Type your goal or question…"></textarea>' +
+      '<div class="cp-chat-row"><button type="button" class="btn primary" id="cpChatSend">Ask AI</button><button type="button" class="btn" id="cpUseAll" style="display:none">Use all suggestions</button></div></div>';
+    const html = chat + fld('Campaign type', sel('type', CP_TYPES, v.type || 'auto') + '<div class="hint" id="cpTypeHint">' + esc(typeInfo(v.type || 'auto')) + '</div>' + sugBox('type')) +
+      '<div class="grid two">' + fld('Goal', sel('goal', [['leads', 'Enquiries (form, WhatsApp, calls)'], ['calls', 'Phone calls'], ['awareness', 'Get known (awareness)'], ['remarketing', 'Bring back past visitors']], v.goal || 'leads') + sugBox('goal')) +
+        fld('What to promote *', inp('promote', v.promote, 'maxlength="200" placeholder="e.g. Puri Konark 2N/3D package"') + sugBox('promote')) + '</div>' +
+      fld('Why people should book with you', '<textarea name="selling_points" rows="2" maxlength="800" class="ta" placeholder="e.g. local Odisha team, hotel + cab + guide, pickup from Bhubaneswar">' + esc(v.selling_points || '') + '</textarea>' + sugBox('selling_points')) +
+      '<div class="grid two">' + fld('Price from (optional)', inp('price_from', v.price_from, 'maxlength="60" placeholder="e.g. Rs 8,999 per person"') + sugBox('price_from'), 'Only shown in ads if you enter it.') +
+        fld('Landing page *', sel('landing_url', [['', '— choose a page —']].concat(pages.map(p => [p.url, (p.title || p.url).replace(/ - Negotrip$/, '') + (p.conv ? ' (' + p.conv + ' leads)' : '')])), v.landing_url || '') + sugBox('landing_url')) + '</div>' +
+      fld('Where should ads show?', '<div id="cpLocs" class="chips"></div><div class="cp-geo"><input id="cpGeoQ" placeholder="Type a city or state, e.g. Kolkata" autocomplete="off"><div id="cpGeoRes" class="cp-geo-res"></div></div>' + sugBox('locations'), 'Pre-filled with the places your current campaign targets. Remove all to target the whole of India.') +
+      fld('Languages', '<div class="cp-langs">' + CP_LANGS.map(l => '<label class="chk"><input type="checkbox" name="lang_' + l[0] + '"' + (langs.includes(l[0]) ? ' checked' : '') + '> ' + l[1] + '</label>').join('') + '</div>' + sugBox('languages')) +
+      '<div class="grid two">' + fld('Monthly budget (Rs) *', inp('monthly_budget', v.monthly_budget, 'inputmode="numeric" placeholder="e.g. 12000"') + sugBox('monthly_budget'), 'The most you want to spend a month once it works.') +
+        fld('Target cost per lead (Rs)', inp('target_cpl', v.target_cpl || d.target_cpa || '', 'inputmode="numeric" placeholder="e.g. 400"') + sugBox('target_cpl'), 'What one enquiry is worth to you.') + '</div>' +
+      '<div class="grid two">' + fld('Start at', sel('start_pct', [['30', '30% of the budget (very careful)'], ['50', '50% of the budget (recommended)'], ['70', '70% of the budget'], ['100', 'Full budget from day one']], String(v.start_pct || 50)) + sugBox('start_pct'), '<span id="cpCalc"></span>') +
+        fld('Phone for call button (optional)', inp('phone', v.phone, 'inputmode="tel" maxlength="16" placeholder="e.g. 9876543210"') + sugBox('phone')) + '</div>' +
+      fld('What do you have ready?', '<label class="chk"><input type="checkbox" name="has_images"' + (v.has_images ? ' checked' : '') + '> Good trip photos</label> <label class="chk"><input type="checkbox" name="has_logo"' + (v.has_logo ? ' checked' : '') + '> Logo</label> <label class="chk"><input type="checkbox" name="has_video"' + (v.has_video ? ' checked' : '') + '> A short video</label>' + sugBox('assets'), 'Needed for Performance Max, Demand Gen, Video and Display.') +
+      fld('Who are your customers? (optional)', inp('audience', v.audience, 'maxlength="500" placeholder="e.g. families and senior citizens from Kolkata, Hyderabad"') + sugBox('audience')) +
+      '<label class="chk"><input type="checkbox" name="copy_negatives"' + (v.copy_negatives === false ? '' : ' checked') + '> Copy the blocked searches (negative keywords) from my current campaign</label>' + sugBox('copy_negatives');
     setTimeout(() => wireWizard(), 0);
     const f = await formModal('New campaign: tell the AI about it', html, 'Write the plan');
     if (!f) return;
@@ -1949,6 +2040,14 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
       $('#cpCalc').textContent = m ? 'About ' + rsx2(full) + '/day at full budget; starts at about ' + rsx2(st) + '/day.' : ''; };
     const hint = () => { const t2 = f.elements.type.value; $('#cpTypeHint').textContent = t2 === 'auto' ? 'The AI picks the best type for your goal, budget and what you have (photos, video).' : (((d.types || {})[t2] || {}).what || ''); };
     f.addEventListener('input', calc); f.addEventListener('change', () => { calc(); hint(); }); calc();
+    window.__cpDraw = draw;
+    $('#cpChatSend').onclick = () => askWizardAI(f);
+    $('#cpChatQ').onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); askWizardAI(f); } };
+    f.addEventListener('click', e => { const b = e.target.closest('[data-use]'); if (!b) return; e.preventDefault(); useSug(f, b.dataset.use); renderSug(f); f.querySelector('[data-sug="' + b.dataset.use + '"]').classList.add('used'); capture(); calc(); hint(); });
+    $('#cpUseAll').onclick = () => { const s = window.__cpSug || {}; ['type', 'goal', 'promote', 'selling_points', 'price_from', 'landing_url', 'locations', 'languages', 'monthly_budget', 'target_cpl', 'start_pct', 'audience', 'copy_negatives'].forEach(k => { if (s[k] && s[k].value !== undefined && s[k].value !== '') useSug(f, k); }); renderSug(f); Object.keys(s).forEach(k => { const x = f.querySelector('[data-sug="' + k + '"]'); if (x) x.classList.add('used'); }); capture(); calc(); hint(); toast('Suggestions filled in. Check them, then press Write the plan.'); };
+    f.elements.type.addEventListener('change', () => renderSug(f));
+    renderSug(f);
+    const lg = $('#cpChatLog'); lg.scrollTop = lg.scrollHeight;
   }
 
   async function writePlan(ans, planId) {
