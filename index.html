@@ -1425,10 +1425,17 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
     let host = ''; try { host = new URL(url).hostname.replace(/^www\./, ''); } catch (e) { return null; }
     const kw = (data.keywords || []).filter(k => String(k.campaign_id) === cid && String(k.status || 'ENABLED').toUpperCase() !== 'PAUSED').sort((a, b) => Number(b.clicks_30d || 0) - Number(a.clicks_30d || 0))[0];
     const keyword = kw ? kw.keyword_text : (url.split('/').filter(Boolean).pop() || '').replace(/[-_]+/g, ' ');
-    const seen = new Set(), competitors = [];
-    (data.competitors || []).filter(c => c.account_id === acc).forEach(c => { const d = String(c.domain || '').replace(/^www\./, ''); if (d && !seen.has(d) && d !== host) { seen.add(d); competitors.push({ domain: d, note: 'above you in ' + Math.round(Number(c.position_above_rate || 0) * 100) + '% of auctions' }); } });
-    (data.competitor_ads || []).filter(c => c.account_id === acc).forEach(c => { const d = String(c.domain || '').replace(/^www\./, ''); if (d && !seen.has(d) && d !== host) { seen.add(d); competitors.push({ domain: d, note: c.offer_summary || '' }); } });
-    return { url, host, keyword, competitors: competitors.slice(0, 12) };
+    // only the advertisers that compete in YOUR auctions (Auction insights + their ads in the Transparency Center); OTAs and marketplaces go last
+    const OTA = /(^|\.)(google|booking|agoda|airbnb|makemytrip|goibibo|yatra|cleartrip|expedia|tripadvisor|skyscanner|traveltriangle|thrillophilia|holidify|oyorooms|oyo|trivago|ixigo|easemytrip|justdial|indiamart|sotc|thomascook|veena|kesari|tourmyindia|wikipedia|youtube|facebook|instagram)\.[a-z.]+$/;
+    const aggr = new Set(); (data.insights || []).forEach(x => (((x.insights || {}).competitors) || []).forEach(c => { if (c.aggregator) aggr.add(String(c.domain).replace(/^www\./, '')); }));
+    const map = {}; const get = d => map[d] || (map[d] = { domain: d, notes: [], score: 0, ads: 0 });
+    (data.competitors || []).filter(c => c.account_id === acc).forEach(c => { const d = String(c.domain || '').replace(/^www\./, ''); if (!d || d === host) return; const x = get(d); x.auction = true;
+      if (c.position_above_rate != null && c.metrics_updated_at) { x.score += Number(c.position_above_rate) * 100; x.notes.push('above you in ' + Math.round(Number(c.position_above_rate) * 100) + '% of auctions'); }
+      else if (c.overlap_rate != null && c.metrics_updated_at) { x.score += Number(c.overlap_rate) * 50; x.notes.push('in ' + Math.round(Number(c.overlap_rate) * 100) + '% of your auctions'); } });
+    (data.competitor_ads || []).filter(c => c.account_id === acc).forEach(c => { const d = String(c.domain || '').replace(/^www\./, ''); if (!d || d === host) return; const x = get(d); x.ads++; if (c.live) x.live = true; if (c.offer_summary && x.notes.length < 2) x.notes.push('ad: ' + c.offer_summary); });
+    const competitors = Object.values(map).map(x => ({ domain: x.domain, aggregator: aggr.has(x.domain) || OTA.test(x.domain), auction: !!x.auction, live: !!x.live, note: x.notes.join(' · ') || (x.auction ? 'in your Auction insights' : ''), score: x.score + (x.live ? 30 : 0) + (x.auction ? 10 : 0) }))
+      .sort((a, b) => (a.aggregator - b.aggregator) || (b.score - a.score));
+    return { url, host, keyword, competitors: competitors.filter(c => !c.aggregator).slice(0, 15).concat(competitors.filter(c => c.aggregator).slice(0, 8)) };
   }
   // the AI compares the competitor page with yours (asked from the Google Ads guide extension)
   window.addEventListener('message', async e => {
