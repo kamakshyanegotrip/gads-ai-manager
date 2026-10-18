@@ -1398,8 +1398,44 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
       const ads2 = ext.find(x => /^https:\/\/ads\.google\.com/.test(x.href));
       return { appDoes, targets, text: s, path, adsUrl: ads2 ? ads2.href : '', extUrl: other ? other.href : '', extLabel: other ? other.label : '', appTab: app ? app.tab : '', appLabel: app ? app.label + ' (in the app)' : '', changes, copy: m ? m[1].trim() : '', check };
     });
-    return { key: g.key, title: g.title, why: g.why || '', recId: g.recId || '', i: g.i, st: g.st, steps, home: 'https://ads.google.com/aw/campaigns' + (g.c.campaign_id ? '?campaignId=' + encodeURIComponent(g.c.campaign_id) : '') };
+    // landing-page phase: competitor page for the same search, then the changes on your own page
+    const lp = /cpa|ad rank|quality|landing|conversion|relevance|cost per lead|leads?\b|page/i.test(g.title + ' ' + g.steps.join(' ')) ? lpInfo(g) : null;
+    if (lp) steps.push(
+      { text: 'Find the competitor page that competes with yours for "' + lp.keyword + '"', site: 'google', kind: 'pick', url: 'https://www.google.com/search?q=' + encodeURIComponent(lp.keyword) + '&hl=en&gl=in', targets: [],
+        why: 'People searching "' + lp.keyword + '" see these ads next to yours. The page behind the ad is what your page competes with.' },
+      { text: 'Compare the competitor page with your page', site: 'competitor', kind: 'analyze', url: '', targets: [], why: 'The AI reads both pages and lists what the competitor does better and exactly what to change on yours.' },
+      { text: 'Improve your landing page ' + lp.url.replace(/^https?:\/\/(www\.)?/, ''), site: 'ours', kind: 'ours_pending', url: lp.url, targets: [], why: 'Your landing page decides whether a paid click becomes an enquiry; a better page also lowers your cost per click.' });
+    return { key: g.key, title: g.title, why: g.why || '', recId: g.recId || '', i: g.i, st: g.st, steps, oursUrl: lp ? lp.url : '', oursHost: lp ? lp.host : '', lpKeyword: lp ? lp.keyword : '', competitors: lp ? lp.competitors : [], home: 'https://ads.google.com/aw/campaigns' + (g.c.campaign_id ? '?campaignId=' + encodeURIComponent(g.c.campaign_id) : '') };
   }
+  // the campaign's main landing page, its top search and known competitors (Auction insights + competitor ads)
+  function lpInfo(g) {
+    const acc = g.c.account_id || scopeAcc(); const cid = String(g.c.campaign_id || (mainCamp(acc) || {}).campaign_id || ''); if (!cid) return null;
+    const byUrl = {}; (data.ads || []).filter(a => String(a.campaign_id) === cid).forEach(a => (a.final_urls || []).forEach(u => byUrl[u] = (byUrl[u] || 0) + Number(a.clicks_30d || 0) + 0.01));
+    let url = Object.keys(byUrl).sort((a, b) => byUrl[b] - byUrl[a])[0];
+    if (!url) { const p = (data.landing_pages || []).filter(x => x.account_id === acc).sort((a, b) => Number(b.cost_30d || 0) - Number(a.cost_30d || 0))[0]; url = p && p.url; }
+    if (!url) return null;
+    let host = ''; try { host = new URL(url).hostname.replace(/^www\./, ''); } catch (e) { return null; }
+    const kw = (data.keywords || []).filter(k => String(k.campaign_id) === cid && String(k.status || 'ENABLED').toUpperCase() !== 'PAUSED').sort((a, b) => Number(b.clicks_30d || 0) - Number(a.clicks_30d || 0))[0];
+    const keyword = kw ? kw.keyword_text : (url.split('/').filter(Boolean).pop() || '').replace(/[-_]+/g, ' ');
+    const seen = new Set(), competitors = [];
+    (data.competitors || []).filter(c => c.account_id === acc).forEach(c => { const d = String(c.domain || '').replace(/^www\./, ''); if (d && !seen.has(d) && d !== host) { seen.add(d); competitors.push({ domain: d, note: 'above you in ' + Math.round(Number(c.position_above_rate || 0) * 100) + '% of auctions' }); } });
+    (data.competitor_ads || []).filter(c => c.account_id === acc).forEach(c => { const d = String(c.domain || '').replace(/^www\./, ''); if (d && !seen.has(d) && d !== host) { seen.add(d); competitors.push({ domain: d, note: c.offer_summary || '' }); } });
+    return { url, host, keyword, competitors: competitors.slice(0, 12) };
+  }
+  // the AI compares the competitor page with yours (asked from the Google Ads guide extension)
+  window.addEventListener('message', async e => {
+    if (e.source !== window || !e.data || e.data.source !== 'negotrip-ext' || e.data.type !== 'lp:analyze') return;
+    const d = e.data; let res;
+    try {
+      const q = 'Compare OUR landing page with the COMPETITOR page (both in the data). Both get visitors from the Google search "' + String(d.keyword || '').slice(0, 80) + '". Return ONLY JSON: {"summary":"one sentence","competitor":[{"anchor":"short exact text copied from the COMPETITOR page","note":"what they do better, max 20 words","why":"why it wins customers, max 20 words"}],"ours":[{"anchor":"short exact text copied from OUR page (3-8 words of a heading, button or sentence) where the change goes","instruction":"what to change, max 20 words","reason":"why, saying what the competitor shows, max 30 words","new_text":"suggested new text, or empty"}]}. Max 3 competitor items and 3 to 6 ours items, most important first. Anchors must be copied exactly from the page text. Look at: headline match to the search, price shown early, trust (reviews, years, licences), call and WhatsApp buttons, enquiry form, clear itinerary and inclusions, offers. Plain words for a travel business owner. No markdown.';
+      const ctx = { recommendation: d.title, competitor: { url: d.comp.url, title: d.comp.title, headings: d.comp.headings, text: String(d.comp.text || '').slice(0, 5500) }, ours: { url: d.ours.url, title: d.ours.title, headings: d.ours.headings, text: String(d.ours.text || '').slice(0, 5500) } };
+      const r = await act({ action: 'ask', account_id: scopeAcc(), section: 'Landing page vs competitor', question: q, context: JSON.stringify(ctx).slice(0, 15800) });
+      if (!r.ok) throw new Error(r.error || 'No answer');
+      const t = String(r.answer || ''); const j = JSON.parse(t.slice(t.indexOf('{'), t.lastIndexOf('}') + 1));
+      res = { ok: true, result: j };
+    } catch (x) { res = { ok: false, error: 'The comparison did not work (' + x.message + '). Press Compare again.' }; }
+    window.postMessage({ source: 'negotrip-app', type: 'lp:answer', id: d.id, res }, location.origin);
+  });
   function gCompleted(g) {
     const ok = g.steps.filter((x, k) => gDone(g.st[k])).length, n = g.steps.length;
     toast('✓ Recommended steps completed: ' + ok + ' of ' + n + ' done. Press Mark done on the recommendation.', 9000);
@@ -1408,7 +1444,7 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
   function gBadgeHtml(o) { return '<span class="g-badge" data-gbadge="' + esc(gKeyOf(o)) + '" data-gn="' + (o.steps || []).filter(Boolean).length + '"></span>'; }
   function gBadges() {
     const all = gLoad();
-    $$('[data-gbadge]').forEach(el => { const p = all[el.dataset.gbadge]; const n = Number(el.dataset.gn); if (!p || !p.st) { el.textContent = ''; el.className = 'g-badge'; return; }
+    $$('[data-gbadge]').forEach(el => { const p = all[el.dataset.gbadge]; const n = Number((p && p.n) || el.dataset.gn); if (!p || !p.st) { el.textContent = ''; el.className = 'g-badge'; return; }
       const ok = Object.values(p.st).filter(gDone).length, sk = Object.values(p.st).filter(x => x === 'skip').length;
       el.className = 'g-badge' + (ok + sk >= n ? ' full' : ''); el.textContent = ok + sk >= n ? '✓ Steps completed (' + ok + ' of ' + n + ' done)' : ok + ' of ' + n + ' steps done'; });
   }
@@ -1418,7 +1454,7 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
     if (e.data.type === 'goto') { const b = document.querySelector('button[data-tab="' + e.data.tab + '"]'); if (b) b.click(); return; }
     const x = e.data.guide; if (e.data.type !== 'guide:state' || !x || !x.key) return;
     const all = gLoad(); const prev = all[x.key] || {}; const wasDone = prev.st && x.steps.every((s, k) => prev.st[k]);
-    all[x.key] = { i: x.i, st: x.st || {}, at: Date.now() }; gSave(all); gBadges();
+    all[x.key] = { i: x.i, st: x.st || {}, n: x.steps.length, at: Date.now() }; gSave(all); gBadges();
     if (!wasDone && x.steps.every((s, k) => (x.st || {})[k])) gCompleted({ title: x.title, steps: x.steps, st: x.st });
   });
   setTimeout(() => { if (hasExt()) window.postMessage({ source: 'negotrip-app', type: 'guide:hello' }, location.origin); }, 1500);
