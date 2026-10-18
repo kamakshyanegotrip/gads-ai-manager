@@ -610,7 +610,7 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
         (r.result_note && !canAct ? '<p class="small muted">' + esc(r.result_note) + '</p>' : '') +
         (() => { const x = recHow(r); if (x.auto) return '<details class="kw"><summary>How it is implemented</summary><p class="small">' + esc(x.text) + '</p>' + (r.action_params && r.status === 'proposed' && !kwEditable(r) ? '<div class="change small">' + changeHtml(r) + '</div>' : '') + '</details>';
           const pb = x.pb || {}; return '<details class="kw"' + (r.status === 'advisory' ? ' open' : '') + '><summary>How to do it, step by step</summary>' + ((pb.steps || []).length ? stepsOl(pb.steps, { account_id: r.account_id, campaign_id: r.campaign_id, section: 'Recommendation ' + r.recommendation_id + ': ' + trunc(r.title, 60) }) : '<div class="ai-steps"><button class="btn sm" data-aistepsbtn="' + reg({ section: 'Recommendation ' + r.recommendation_id, ctx: { recommendation: r } }) + '">Get step-by-step instructions from AI</button></div>') +
-            ((pb.steps || []).length ? '<div class="rec-actions"><button class="btn primary sm" data-guide="' + reg({ title: r.title, steps: pb.steps, c: { account_id: r.account_id, campaign_id: r.campaign_id, section: 'Recommendation ' + r.recommendation_id }, recId: r.recommendation_id }) + '">▶ Guide me through it</button>' + gBadgeHtml({ title: r.title, steps: pb.steps, recId: r.recommendation_id }) + '</div>' : '') +
+            ((pb.steps || []).length ? '<div class="rec-actions"><button class="btn primary sm" data-guide="' + reg({ title: r.title, steps: pb.steps, why: [r.rationale, pb.why].filter(Boolean).join(' '), c: { account_id: r.account_id, campaign_id: r.campaign_id, section: 'Recommendation ' + r.recommendation_id }, recId: r.recommendation_id }) + '">▶ Guide me through it</button>' + gBadgeHtml({ title: r.title, steps: pb.steps, recId: r.recommendation_id }) + '</div>' : '') +
             ((pb.fixes || []).length ? '<div class="rec-actions">' + pb.fixes.map(f => '<button class="btn good sm" data-fix="' + reg(f) + '">' + esc(f.label) + '</button>').join('') + '</div>' : '') + '</details>'; })() +
         (canAct && canExec ? '<div class="rec-actions">' + (r.status === 'proposed'
             ? '<button class="btn good" data-act="approve" data-id="' + esc(r.recommendation_id) + '">' + (kwEditable(r) ? 'Apply selected' : 'Approve &amp; apply') + '</button><button class="btn bad" data-act="decline" data-id="' + esc(r.recommendation_id) + '">Decline</button>'
@@ -1271,11 +1271,11 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
     const steps = (o.steps || []).filter(Boolean); if (!steps.length) return;
     const key = o.recId || gHash(o.title + '|' + steps.join('|'));
     const saved = gLoad()[key] || {};
-    guide = { key, title: o.title, steps, c: o.c || {}, recId: o.recId, i: 0, st: saved.st || {} };
+    guide = { key, title: o.title, steps, c: o.c || {}, recId: o.recId, why: o.why || ((data.recommendations || []).find(r => r.recommendation_id === o.recId) || {}).rationale || '', i: 0, st: saved.st || {} };
     { const n = steps.length, si = Number(saved.i || 0); guide.i = si < n ? si : (steps.findIndex((x, k) => !gDone(guide.st[k])) + 1 || n + 1) - 1; if (guide.i < 0) guide.i = n; }
     if (hasExt() && !o.here) {
       window.postMessage({ source: 'negotrip-app', type: 'guide:start', guide: extGuide(guide) }, location.origin);
-      gPersist(); gBadges();
+      gPersist(); gBadges(); gReasons(guide);
       toast('Opening the steps on the Google Ads page…', 5000);
       return;
     }
@@ -1366,9 +1366,21 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
         if (a.kind === 'pause_ad') changes.push({ what: 'Ad ' + a.params.ad_id, from: 'Enabled', to: 'Paused' });
       }
       const m = s.match(/(?:paste|enter|type)\s*:\s*(.+)$/i);
-      return { text: s, path: stepPath(s), adsUrl: ads ? ads.href : '', extUrl: other ? other.href : '', extLabel: other ? other.label : '', appTab: app ? app.tab : '', appLabel: app ? app.label + ' (in the app)' : '', changes, copy: m ? m[1].trim() : '', check };
+      const path = stepPath(s), camp = (data.campaigns || []).find(x => String(x.campaign_id) === String(g.c.campaign_id || t.cid));
+      const targets = [];
+      (path || []).slice(1).forEach(seg => {
+        if (/^campaign$/i.test(seg) && camp) targets.push({ label: camp.campaign_name, say: 'Click your campaign "' + camp.campaign_name + '"' });
+        else if (/^campaigns$/i.test(seg)) targets.push({ label: 'Campaigns', say: 'Click "Campaigns"' });
+        else targets.push({ label: seg, say: 'Click "' + seg + '"' });
+      });
+      for (const q of (s.match(/"([^"]{2,30})"/g) || []).map(x => x.slice(1, -1))) if (!/^(mark done|run audit now)$/i.test(q) && !targets.some(x => x.label === q)) targets.push({ label: q, say: 'Click "' + q + '"' });
+      for (const a of t.acts) {
+        if (a.kind === 'target_cpa') targets.push({ label: 'Target CPA', say: 'Change Target CPA to ' + rsx(a.params.amount) + ', then click Save' });
+        if (a.kind === 'budget') targets.push({ label: 'Budget', say: 'Change the daily budget as shown in the guide, then click Save' });
+      }
+      return { targets, text: s, path, adsUrl: ads ? ads.href : '', extUrl: other ? other.href : '', extLabel: other ? other.label : '', appTab: app ? app.tab : '', appLabel: app ? app.label + ' (in the app)' : '', changes, copy: m ? m[1].trim() : '', check };
     });
-    return { key: g.key, title: g.title, recId: g.recId || '', i: g.i, st: g.st, steps, home: 'https://ads.google.com/aw/campaigns' + (g.c.campaign_id ? '?campaignId=' + encodeURIComponent(g.c.campaign_id) : '') };
+    return { key: g.key, title: g.title, why: g.why || '', recId: g.recId || '', i: g.i, st: g.st, steps, home: 'https://ads.google.com/aw/campaigns' + (g.c.campaign_id ? '?campaignId=' + encodeURIComponent(g.c.campaign_id) : '') };
   }
   function gCompleted(g) {
     const ok = g.steps.filter((x, k) => gDone(g.st[k])).length, n = g.steps.length;
@@ -1392,6 +1404,29 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
     if (!wasDone && x.steps.every((s, k) => (x.st || {})[k])) gCompleted({ title: x.title, steps: x.steps, st: x.st });
   });
   setTimeout(() => { if (hasExt()) window.postMessage({ source: 'negotrip-app', type: 'guide:hello' }, location.origin); }, 1500);
+  // one short reason per step, shown next to the arrow on the Google Ads page
+  async function gReasons(g) {
+    const rec = (data.recommendations || []).find(r => r.recommendation_id === g.recId) || null;
+    try {
+      const r = await act({ action: 'ask', account_id: g.c.account_id || scopeAcc(), section: 'Guide reasons: ' + trunc(g.title, 60),
+        question: 'For each numbered step below, write ONE short sentence (max 25 words, plain words, use the numbers from the data where useful) saying why this step matters for this account. Reply only with lines in the form "1. reason".\n' + g.steps.map((s, k) => (k + 1) + '. ' + s).join('\n'),
+        context: JSON.stringify({ ...(typeof ctxBase === 'function' ? ctxBase() : {}), recommendation: rec, why: g.why }).slice(0, 12000) });
+      if (!r.ok) return;
+      const reasons = []; String(r.answer || '').split('\n').forEach(l => { const m = l.match(/^\s*(\d+)[.)]\s+(.+)$/); if (m) reasons[Number(m[1]) - 1] = m[2].replace(/\*\*/g, '').trim(); });
+      window.postMessage({ source: 'negotrip-app', type: 'guide:reasons', key: g.key, reasons }, location.origin);
+    } catch (e) {}
+  }
+  // AI chat asked on the Google Ads page; answered here because the app holds the sign-in
+  window.addEventListener('message', async e => {
+    if (e.source !== window || !e.data || e.data.source !== 'negotrip-ext' || e.data.type !== 'chat:ask') return;
+    const d = e.data; let res;
+    try {
+      const r = await act({ action: 'ask', account_id: scopeAcc(), section: 'Google Ads page guide: ' + trunc((d.ctx || {}).recommendation || '', 50), question: String(d.q || '').slice(0, 1500),
+        context: JSON.stringify({ ...(typeof ctxBase === 'function' ? ctxBase() : {}), guide: d.ctx }).slice(0, 15000), history: JSON.stringify((d.history || []).slice(-6)) });
+      res = r.ok ? { ok: true, answer: r.answer } : { ok: false, error: r.error || 'No answer' };
+    } catch (x) { res = { ok: false, error: x.message }; }
+    window.postMessage({ source: 'negotrip-app', type: 'chat:answer', id: d.id, res }, location.origin);
+  });
 
   // ---------- one advice / finding item ----------
   // it = { sev, title, sub, why, steps[], fixes[{label,kind,params,account_id,cls}], recs[rec objects], ask:{section,ctx}, open, evidence(html) }
@@ -1408,7 +1443,7 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
     }
     const steps = (it.steps || []).filter(Boolean);
     const where = it.where || { account_id: (recs[0] || fixes[0] || {}).account_id, campaign_id: (recs[0] || {}).campaign_id || ((fixes[0] || {}).params || {}).campaign_id, url: it.url || ((((it.ask || {}).ctx) || {}).page || {}).url, section: it.ask ? it.ask.section : it.title };
-    if (steps.length) btns.unshift('<button class="btn primary sm" data-guide="' + reg({ title: it.title, steps, c: where, recId: (recs.find(r => ['proposed', 'advisory'].includes(r.status)) || {}).recommendation_id }) + '">▶ Guide me through it</button>' + gBadgeHtml({ title: it.title, steps, recId: (recs.find(r => ['proposed', 'advisory'].includes(r.status)) || {}).recommendation_id }));
+    if (steps.length) btns.unshift('<button class="btn primary sm" data-guide="' + reg({ title: it.title, steps, why: it.why || '', c: where, recId: (recs.find(r => ['proposed', 'advisory'].includes(r.status)) || {}).recommendation_id }) + '">▶ Guide me through it</button>' + gBadgeHtml({ title: it.title, steps, recId: (recs.find(r => ['proposed', 'advisory'].includes(r.status)) || {}).recommendation_id }));
     if (askId) btns.push('<button class="btn sm" data-ask="' + askId + '">Discuss with AI</button>');
     return '<details class="fx"' + (it.open ? ' open' : '') + '><summary><span class="pill ' + (SEV[it.sev] || '') + '">' + esc(it.sevLabel || it.sev || 'tip') + '</span> <span class="fx-t">' + esc(it.title) + '</span>' +
       (fixes.length || recs.some(r => r.status === 'proposed' && r.action_type) ? ' <span class="pill good">fixable</span>' : '') + '</summary><div class="fx-b">' +
