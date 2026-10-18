@@ -1374,11 +1374,29 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
         else targets.push({ label: seg, say: 'Click "' + seg + '"' });
       });
       for (const q of (s.match(/"([^"]{2,30})"/g) || []).map(x => x.slice(1, -1))) if (!/^(mark done|run audit now)$/i.test(q) && !targets.some(x => x.label === q)) targets.push({ label: q, say: 'Click "' + q + '"' });
+      // no menu path written in the step: work out the Google Ads place from what the step is about
+      let appDoes = '';
+      if (!targets.length) {
+        const T = (label, say) => targets.push({ label, say: say || 'Click "' + label + '"' });
+        if (/search terms?/i.test(s)) { T('Insights and reports'); T('Search terms'); }
+        else if (/negative/i.test(s)) { T('Audiences, keywords, and content'); T('Search keywords'); T('Negative search keywords'); }
+        else if (/headline|description|ad text|ad strength|ad writer|\bads?\b|\bRSA\b/i.test(s)) { T('Ads', 'Click "Ads" in the left menu to see your ads and their headlines'); }
+        else if (/\bkeywords?\b|match type/i.test(s)) { T('Audiences, keywords, and content'); T('Search keywords'); }
+        else if (/target cpa|bidding|bid strategy/i.test(s)) { T('Settings'); T('Bidding'); T('Target CPA', 'Change Target CPA here, then click Save'); }
+        else if (/ad schedule|hours/i.test(s)) { T('Settings'); T('Ad schedule'); }
+        else if (/location/i.test(s)) { T('Settings'); T('Locations'); }
+        else if (/search partners|network/i.test(s)) { T('Settings'); T('Networks'); }
+        else if (/conversion/i.test(s)) { T('Goals'); T('Conversions'); T('Summary'); }
+        else if (/budget/i.test(s)) { T('Budget', 'Click the pencil next to the budget to change it'); }
+      }
+      if (/(the )?(ai ad writer|app) (does|can do) this|fix button|apply button/i.test(s)) appDoes = /ad writer|headline/i.test(s) ? 'The app\'s AI ad writer can write this ad for you. Open the recommendation in the app and press Fix / Apply.' : 'The app can do this for you. Open the recommendation in the app and press Fix / Apply.';
       for (const a of t.acts) {
         if (a.kind === 'target_cpa') targets.push({ label: 'Target CPA', say: 'Change Target CPA to ' + rsx(a.params.amount) + ', then click Save' });
         if (a.kind === 'budget') targets.push({ label: 'Budget', say: 'Change the daily budget as shown in the guide, then click Save' });
       }
-      return { targets, text: s, path, adsUrl: ads ? ads.href : '', extUrl: other ? other.href : '', extLabel: other ? other.label : '', appTab: app ? app.tab : '', appLabel: app ? app.label + ' (in the app)' : '', changes, copy: m ? m[1].trim() : '', check };
+      if (!ads && targets.length) { const k = targets.map(x => x.label).join(' ').toLowerCase(); const pth = /search terms/.test(k) ? '/aw/searchterms' : /keywords/.test(k) ? '/aw/keywords' : /^ads/.test(k) ? '/aw/ads' : /conversions/.test(k) ? '/aw/conversions' : '/aw/campaigns'; ext.unshift({ kind: 'ext', href: 'https://ads.google.com' + pth + (t.cid && pth !== '/aw/conversions' ? '?campaignId=' + encodeURIComponent(t.cid) : ''), label: 'Open in Google Ads' }); }
+      const ads2 = ext.find(x => /^https:\/\/ads\.google\.com/.test(x.href));
+      return { appDoes, targets, text: s, path, adsUrl: ads2 ? ads2.href : '', extUrl: other ? other.href : '', extLabel: other ? other.label : '', appTab: app ? app.tab : '', appLabel: app ? app.label + ' (in the app)' : '', changes, copy: m ? m[1].trim() : '', check };
     });
     return { key: g.key, title: g.title, why: g.why || '', recId: g.recId || '', i: g.i, st: g.st, steps, home: 'https://ads.google.com/aw/campaigns' + (g.c.campaign_id ? '?campaignId=' + encodeURIComponent(g.c.campaign_id) : '') };
   }
