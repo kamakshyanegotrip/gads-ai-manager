@@ -154,6 +154,7 @@ ol.steps.rich li { margin-bottom: 8px; } .st-a { display: flex; flex-wrap: wrap;
 .st-link { font-size: 12px; font-weight: 500; text-decoration: none; border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px; color: var(--accent); background: var(--panel); } .st-link:hover { border-color: var(--accent); }
 .drawer.guide { grid-template-rows: auto auto 1fr auto; z-index: 30; } #askDrawer { z-index: 35; } .guide .g-prog { padding: 8px 12px; border-bottom: 1px solid var(--line); display: flex; gap: 4px; flex-wrap: wrap; } .g-dot { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); font-size: 12px; cursor: pointer; color: var(--ink); } .g-dot.cur { border-color: var(--accent); color: var(--accent); font-weight: 600; } .g-dot.ok { background: var(--good-bg); border-color: var(--good); color: var(--good); } .g-dot.skip { opacity: .5; }
 .guide .g-body { padding: 14px 12px; overflow-y: auto; } .g-n { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; } .g-step { font-size: 16px; font-weight: 600; margin: 4px 0 12px; line-height: 1.4; } .g-box { border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin: 10px 0; } .g-box h4 { margin: 0 0 6px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; } .g-path { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 13px; } .g-path span { background: var(--info-bg); border-radius: 6px; padding: 2px 7px; } .g-change { font-size: 15px; } .g-change b { color: var(--accent); } .g-copy { display: flex; gap: 6px; align-items: flex-start; } .g-copy code { flex: 1; font-size: 12px; background: var(--bg); border-radius: 6px; padding: 6px; word-break: break-all; } .guide .g-foot { display: flex; gap: 8px; justify-content: space-between; padding: 12px; border-top: 1px solid var(--line); flex-wrap: wrap; } .g-tip { font-size: 12px; color: var(--muted); margin-top: 8px; }
+.kwe { border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin: 10px 0; } .kwe-h { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; } .kwe-tools { margin-left: auto; display: flex; gap: 6px; } .kwe-row { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; padding: 3px 0; } .kwe-row.off .kwe-t { text-decoration: line-through; opacity: .55; } .kwe-row input[type=checkbox] { width: 18px; height: 18px; } .kwe-t, .kwe-add input { font: inherit; font-size: 13px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); min-width: 0; } .kwe-row select, .kwe-add select { font: inherit; font-size: 12px; padding: 4px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); } .kwe-add { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; margin-top: 8px; }
 .st-help { font: inherit; font-size: 12px; border: 0; background: none; color: var(--muted); cursor: pointer; padding: 2px 4px; text-decoration: underline dotted; } .st-help:hover { color: var(--accent); }
 .ai-steps { margin-top: 8px; }
 .change { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin: 8px 0; font-size: 13px; }
@@ -603,14 +604,15 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
         (r.expected_impact ? '<div class="pill good">' + esc(r.expected_impact) + '</div>' : '') + '</div>' +
         (r.rationale ? '<p>' + esc(r.rationale) + '</p>' : '') +
         '<div class="pc"><div><b>Pros</b>' + esc(r.pros || '—') + '</div><div><b>Cons</b>' + esc(r.cons || '—') + '</div></div>' +
-        (kws ? '<details class="kw"><summary>Show the ' + kws.length + ' negative keywords (' + esc(kws[0].match_type || 'EXACT').toLowerCase() + ' match)</summary><div class="kwlist">' + kws.map(k => '<span>' + esc(k.text) + '</span>').join('') + '</div></details>' : '') +
+        (kws && kwEditable(r) ? kwEditor(r) : '') +
+        (kws && !kwEditable(r) ? '<details class="kw"><summary>Show the ' + kws.length + ' negative keywords (' + esc(kws[0].match_type || 'EXACT').toLowerCase() + ' match)</summary><div class="kwlist">' + kws.map(k => '<span>' + esc(k.text) + '</span>').join('') + '</div></details>' : '') +
         (r.result_note && !canAct ? '<p class="small muted">' + esc(r.result_note) + '</p>' : '') +
-        (() => { const x = recHow(r); if (x.auto) return '<details class="kw"><summary>How it is implemented</summary><p class="small">' + esc(x.text) + '</p>' + (r.action_params && r.status === 'proposed' ? '<div class="change small">' + changeHtml(r) + '</div>' : '') + '</details>';
+        (() => { const x = recHow(r); if (x.auto) return '<details class="kw"><summary>How it is implemented</summary><p class="small">' + esc(x.text) + '</p>' + (r.action_params && r.status === 'proposed' && !kwEditable(r) ? '<div class="change small">' + changeHtml(r) + '</div>' : '') + '</details>';
           const pb = x.pb || {}; return '<details class="kw"' + (r.status === 'advisory' ? ' open' : '') + '><summary>How to do it, step by step</summary>' + ((pb.steps || []).length ? stepsOl(pb.steps, { account_id: r.account_id, campaign_id: r.campaign_id, section: 'Recommendation ' + r.recommendation_id + ': ' + trunc(r.title, 60) }) : '<div class="ai-steps"><button class="btn sm" data-aistepsbtn="' + reg({ section: 'Recommendation ' + r.recommendation_id, ctx: { recommendation: r } }) + '">Get step-by-step instructions from AI</button></div>') +
             ((pb.steps || []).length ? '<div class="rec-actions"><button class="btn primary sm" data-guide="' + reg({ title: r.title, steps: pb.steps, c: { account_id: r.account_id, campaign_id: r.campaign_id, section: 'Recommendation ' + r.recommendation_id }, recId: r.recommendation_id }) + '">▶ Guide me through it</button></div>' : '') +
             ((pb.fixes || []).length ? '<div class="rec-actions">' + pb.fixes.map(f => '<button class="btn good sm" data-fix="' + reg(f) + '">' + esc(f.label) + '</button>').join('') + '</div>' : '') + '</details>'; })() +
         (canAct && canExec ? '<div class="rec-actions">' + (r.status === 'proposed'
-            ? '<button class="btn good" data-act="approve" data-id="' + esc(r.recommendation_id) + '">Approve &amp; apply</button><button class="btn bad" data-act="decline" data-id="' + esc(r.recommendation_id) + '">Decline</button>'
+            ? '<button class="btn good" data-act="approve" data-id="' + esc(r.recommendation_id) + '">' + (kwEditable(r) ? 'Apply selected' : 'Approve &amp; apply') + '</button><button class="btn bad" data-act="decline" data-id="' + esc(r.recommendation_id) + '">Decline</button>'
             : '<button class="btn" data-act="approve" data-id="' + esc(r.recommendation_id) + '">Mark done</button><button class="btn" data-act="decline" data-id="' + esc(r.recommendation_id) + '">Dismiss</button>') +
           '<button class="btn sm" data-ask="' + reg({ section: 'Recommendation ' + r.recommendation_id, ctx: { recommendation: r } }) + '">Discuss with AI</button>' +
           '<span class="small muted">Expires ' + new Date(r.expires_at).toLocaleDateString() + '</span></div>' : '') +
@@ -626,6 +628,7 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
     const b = e.target.closest('button[data-act]'); if (!b) return;
     const r = data.recommendations.find(x => x.recommendation_id === b.dataset.id); if (!r) return;
     const approve = b.dataset.act === 'approve';
+    if (approve && kwEditable(r)) { const box = b.closest('article') && b.closest('article').querySelector('[data-kwed]'); const st = box && REG.get(box.dataset.kwed); if (st) { await applyKwEdit(st); return; } }
     const live = approve && r.status === 'proposed';
     const ok = await confirmBox(live ? 'Apply this change to Google Ads?' : (approve ? 'Mark as done?' : 'Decline this recommendation?'),
       '<p>' + esc(r.title) + '</p>' + (live ? '<p class="small muted">It will be re-validated (ownership, permission, current state) and then applied to account ' + esc(r.account_id) + ' only.</p>' : ''),
@@ -995,10 +998,80 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
       '<div class="pc"><div><b>Pros</b>' + esc(r.pros || '—') + '</div><div><b>Cons</b>' + esc(r.cons || '—') + '</div></div>';
   }
 
+  // ---------- editable keyword lists: owner picks, edits or adds searches before applying ----------
+  const KW_EDIT = ['push_negative_keywords', 'push_keywords'];
+  const kwEditable = r => r && r.status === 'proposed' && KW_EDIT.includes(r.action_type) && Array.isArray((r.action_params || {}).keywords) && canExec(r.account_id || r.google_ads_account_id);
+  function kwEditor(r) {
+    const neg = r.action_type === 'push_negative_keywords';
+    const st = { r, items: (r.action_params.keywords || []).map(k => ({ text: String(k.text || ''), match: String(k.match_type || (neg ? 'EXACT' : 'PHRASE')).toUpperCase(), on: true, orig: true })) };
+    const id = reg(st);
+    return '<div class="kwe" data-kwed="' + id + '"><div class="kwe-h"><b>' + (neg ? 'Searches to block' : 'Keywords to add') + '</b> <span class="small muted" data-kwcount>' + st.items.length + ' of ' + st.items.length + ' selected</span>' +
+      '<span class="kwe-tools"><button type="button" class="btn sm" data-kwall="1">Select all</button><button type="button" class="btn sm" data-kwall="0">Select none</button></span></div>' +
+      '<p class="small muted" style="margin:4px 0 6px">' + (neg ? 'Untick any search you still want your ads to show for. You can also correct a word, change the match type, or add your own.' : 'Untick keywords you do not want. You can edit them or add your own.') + '</p>' +
+      '<div data-kwrows>' + kwRows(st) + '</div>' +
+      '<div class="kwe-add"><input data-kwnew placeholder="' + (neg ? 'Add another search to block' : 'Add another keyword') + '" maxlength="80"><select data-kwnewm>' + kwOpts(neg ? 'EXACT' : 'PHRASE') + '</select><button type="button" class="btn sm" data-kwadd>Add</button></div>' +
+      '<div class="small muted" style="margin-top:6px">Exact = only that search. Phrase = any search containing these words in this order. Broad = related searches too (risky for blocking).</div></div>';
+  }
+  const kwOpts = m => ['EXACT', 'PHRASE', 'BROAD'].map(x => '<option value="' + x + '"' + (x === m ? ' selected' : '') + '>' + x.toLowerCase() + '</option>').join('');
+  const kwRows = st => st.items.map((k, i) => '<div class="kwe-row' + (k.on ? '' : ' off') + '"><input type="checkbox" data-kwon="' + i + '"' + (k.on ? ' checked' : '') + ' aria-label="Use this"><input class="kwe-t" data-kwtext="' + i + '" value="' + esc(k.text) + '" maxlength="80"><select data-kwm="' + i + '">' + kwOpts(k.match) + '</select></div>').join('');
+  function kwRefresh(box, st) { const n = st.items.filter(k => k.on && k.text.trim()).length; const c = box.querySelector('[data-kwcount]'); if (c) c.textContent = n + ' of ' + st.items.length + ' selected'; }
+  document.addEventListener('input', e => { const box = e.target.closest('[data-kwed]'); if (!box) return; const st = REG.get(box.dataset.kwed); if (!st) return;
+    const t = e.target; if (t.dataset.kwtext !== undefined) st.items[+t.dataset.kwtext].text = t.value; kwRefresh(box, st); });
+  document.addEventListener('change', e => { const box = e.target.closest('[data-kwed]'); if (!box) return; const st = REG.get(box.dataset.kwed); if (!st) return; const t = e.target;
+    if (t.dataset.kwon !== undefined) { st.items[+t.dataset.kwon].on = t.checked; t.closest('.kwe-row').classList.toggle('off', !t.checked); }
+    if (t.dataset.kwm !== undefined) st.items[+t.dataset.kwm].match = t.value;
+    kwRefresh(box, st); });
+  function kwAddNew(box, st) { const inp = box.querySelector('[data-kwnew]'); const v = inp.value.trim().toLowerCase(); if (!v) return;
+    if (!st.items.some(k => k.text.trim().toLowerCase() === v)) st.items.push({ text: v, match: box.querySelector('[data-kwnewm]').value, on: true });
+    inp.value = ''; box.querySelector('[data-kwrows]').innerHTML = kwRows(st); kwRefresh(box, st); inp.focus(); }
+  document.addEventListener('click', e => { const box = e.target.closest('[data-kwed]'); if (!box) return; const st = REG.get(box.dataset.kwed); if (!st) return; const t = e.target.closest('button'); if (!t) return;
+    if (t.dataset.kwall !== undefined) { e.preventDefault(); st.items.forEach(k => k.on = t.dataset.kwall === '1'); box.querySelector('[data-kwrows]').innerHTML = kwRows(st); kwRefresh(box, st); }
+    if (t.dataset.kwadd !== undefined) { e.preventDefault(); kwAddNew(box, st); } }, true);
+  document.addEventListener('keydown', e => { if (e.key !== 'Enter' || e.target.dataset.kwnew === undefined) return; e.preventDefault(); const box = e.target.closest('[data-kwed]'); const st = box && REG.get(box.dataset.kwed); if (st) kwAddNew(box, st); });
+  // apply the owner's selection: unchanged list -> approve as is; edited list -> new proposal with exactly those, original declined
+  async function applyKwEdit(st) {
+    const r = st.r, neg = r.action_type === 'push_negative_keywords', p = r.action_params || {};
+    const clean = t => t.trim().toLowerCase().replace(/\s+/g, ' ');
+    const sel = []; for (const k of st.items) { const t = clean(k.text); if (k.on && t && !sel.some(x => x.text === t)) sel.push({ text: t, match_type: k.match }); }
+    if (!sel.length) { await modal('Nothing selected', '<p>No ' + (neg ? 'searches' : 'keywords') + ' are ticked. If you want none of them, press <b>Decline</b> instead.</p>', [{ key: 'ok', label: 'OK', cls: 'primary' }]); return false; }
+    const orig = (p.keywords || []).map(k => clean(String(k.text)) + '|' + String(k.match_type || '').toUpperCase());
+    const same = sel.length === orig.length && sel.every(k => orig.includes(k.text + '|' + k.match_type));
+    const dropped = (p.keywords || []).filter(k => !sel.some(s => s.text === clean(String(k.text))));
+    const added = sel.filter(s => !(p.keywords || []).some(k => clean(String(k.text)) === s.text));
+    const li = a => '<ul class="plain">' + a.map(k => '<li>' + esc(k.text) + ' <span class="muted small">(' + esc(String(k.match_type || '').toLowerCase()) + ')</span></li>').join('') + '</ul>';
+    const k = await modal((neg ? 'Block ' : 'Add ') + sel.length + ' ' + (neg ? 'search(es)' : 'keyword(s)') + ' in Google Ads?',
+      '<b>' + (neg ? 'Will be blocked' : 'Will be added') + '</b>' + li(sel) + (dropped.length ? '<b>Left out (ads keep showing for these)</b>' + li(dropped) : '') + (added.length ? '<div class="small muted">' + added.length + ' added by you.</div>' : '') +
+      '<p class="small muted">Checked again (ownership, permission) and applied to account ' + esc(r.account_id || r.google_ads_account_id) + ' only. Logged in the Change log.</p>',
+      [{ key: 'no', label: 'Cancel' }, { key: 'yes', label: 'Apply now', cls: 'good' }], true);
+    if (k !== 'yes') return false;
+    toast('Applying… this can take up to a minute.', 60000);
+    try {
+      let id = r.recommendation_id;
+      if (!same) {
+        const kind = neg ? 'negatives' : 'add_keywords';
+        const params = neg ? { campaign_id: r.campaign_id || p.campaign_id, keywords: sel, reason: 'Owner-edited list from ' + r.recommendation_id + '. ' + (r.rationale || '').slice(0, 300), source: 'edited:' + r.recommendation_id }
+          : { ad_group_id: p.ad_group_id, campaign_id: r.campaign_id, keywords: sel, reason: 'Owner-edited list from ' + r.recommendation_id, source: 'edited:' + r.recommendation_id };
+        const q = await act({ action: 'quick_fix', account_id: r.account_id || r.google_ads_account_id, kind, params: JSON.stringify(params) });
+        if (!q.ok) throw new Error(q.error || 'Could not prepare the edited list');
+        id = q.recommendation.recommendation_id;
+      }
+      const res = await post('gads-webapp-api', { action: 'decide', recommendation_id: id, decision: 'approve', ...creds() });
+      if (!same) { try { await post('gads-webapp-api', { action: 'decide', recommendation_id: r.recommendation_id, decision: 'decline', ...creds() }); } catch (x) {} }
+      $$('.toast').forEach(t => t.remove()); toast((res.message || res.error || 'Done') + (same ? '' : ' (your edited list)'), 9000);
+    } catch (e) { $$('.toast').forEach(t => t.remove()); toast('Failed: ' + e.message, 9000); }
+    await reload(); return true;
+  }
+
   // ---------- apply an existing recommendation (approve -> execution engine) ----------
   async function applyRec(id) {
     const r = (data.recommendations || []).find(x => x.recommendation_id === id) || (window.__lastRec && window.__lastRec.recommendation_id === id ? window.__lastRec : null);
     if (!r) { toast('Recommendation not found. Refresh and try again.'); return; }
+    if (kwEditable(r)) {
+      const html = kwEditor(r); const sid = html.match(/data-kwed="([^"]+)"/)[1];
+      const k = await modal('Choose what to apply', '<p>' + esc(r.title) + '</p>' + html, [{ key: 'no', label: 'Cancel' }, { key: 'yes', label: 'Review & apply', cls: 'good' }], true);
+      if (k === 'yes') await applyKwEdit(REG.get(sid));
+      return;
+    }
     if (!r.action_type) {
       const k = await modal('Mark this as done?', '<p>' + esc(r.title) + '</p><p class="small muted">This is a manual task (the app cannot change this setting through Google Ads\' API). Mark it done after you have followed the steps.</p>', [{ key: 'no', label: 'Cancel' }, { key: 'yes', label: 'Mark done', cls: 'primary' }]);
       if (k !== 'yes') return;
