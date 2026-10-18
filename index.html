@@ -1355,6 +1355,8 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
   const gKeyOf = o => o.recId || gHash(o.title + '|' + (o.steps || []).filter(Boolean).join('|'));
   // the guide as plain data for the Google Ads page (extension)
   function extGuide(g) {
+    const lp = /cpa|ad rank|quality|landing|conversion|relevance|cost per lead|leads?\b|page/i.test(g.title + ' ' + g.steps.join(' ')) ? lpInfo(g) : null;
+    const lpPage = lp ? (data.landing_pages || []).find(x => String(x.url).replace(/\/$/, '') === lp.url.replace(/\/$/, '')) : null;
     const steps = g.steps.map(s => {
       const t = stepTools(s, g.c), ext = t.dests.filter(x => x.kind === 'ext'), app = t.dests.find(x => x.kind === 'app');
       const ads = ext.find(x => /^https:\/\/ads\.google\.com/.test(x.href)), other = ext.find(x => !/^https:\/\/ads\.google\.com/.test(x.href));
@@ -1396,10 +1398,16 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
       }
       if (!ads && targets.length) { const k = targets.map(x => x.label).join(' ').toLowerCase(); const pth = /search terms/.test(k) ? '/aw/searchterms' : /keywords/.test(k) ? '/aw/keywords' : /^ads/.test(k) ? '/aw/ads' : /conversions/.test(k) ? '/aw/conversions' : '/aw/campaigns'; ext.unshift({ kind: 'ext', href: 'https://ads.google.com' + pth + (t.cid && pth !== '/aw/conversions' ? '?campaignId=' + encodeURIComponent(t.cid) : ''), label: 'Open in Google Ads' }); }
       const ads2 = ext.find(x => /^https:\/\/ads\.google\.com/.test(x.href));
+      if (lp && !/google ads|ads\.google/i.test(s) && /landing page|page speed|load(s|ing)? (fast|slow|in)|heading|enquiry form|whatsapp button|the page\b/i.test(s)) {
+        const T = [];
+        if (/heading|headline|match/i.test(s)) T.push({ sel: 'h1', say: 'Your main heading: make it match the search "' + lp.keyword + '" and show the price.' });
+        if (/speed|fast|slow|load/i.test(s)) T.push({ sel: 'img', say: 'Big photos slow the page' + (lpPage && lpPage.pagespeed_mobile ? ' (mobile speed score ' + lpPage.pagespeed_mobile + ' of 100)' : '') + '. Compress them or use smaller ones.' });
+        if (/form|enquir|whatsapp|call/i.test(s)) T.push({ sel: 'form', say: 'Your enquiry form: keep it near the top so visitors see it without scrolling.' });
+        return { text: s, site: 'ours', kind: 'lp_general', url: lp.url, targets: T, changes: [], check: null, path: null, why: '' };
+      }
       return { appDoes, targets, text: s, path, adsUrl: ads2 ? ads2.href : '', extUrl: other ? other.href : '', extLabel: other ? other.label : '', appTab: app ? app.tab : '', appLabel: app ? app.label + ' (in the app)' : '', changes, copy: m ? m[1].trim() : '', check };
     });
     // landing-page phase: competitor page for the same search, then the changes on your own page
-    const lp = /cpa|ad rank|quality|landing|conversion|relevance|cost per lead|leads?\b|page/i.test(g.title + ' ' + g.steps.join(' ')) ? lpInfo(g) : null;
     if (lp) steps.push(
       { text: 'Find the competitor page that competes with yours for "' + lp.keyword + '"', site: 'google', kind: 'pick', url: 'https://www.google.com/search?q=' + encodeURIComponent(lp.keyword) + '&hl=en&gl=in', targets: [],
         why: 'People searching "' + lp.keyword + '" see these ads next to yours. The page behind the ad is what your page competes with.' },
