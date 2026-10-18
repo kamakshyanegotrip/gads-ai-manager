@@ -152,6 +152,8 @@ table.kv { width: auto; margin-top: 6px; } table.kv td { padding: 3px 12px 3px 0
 .ai-answer.rich, .msg .ai-answer.rich { white-space: normal; } .ai-answer.rich p { margin: 4px 0; } .msg.ai .ai-answer.rich { background: none; padding: 0; margin: 0; }
 ol.steps.rich li { margin-bottom: 8px; } .st-a { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 4px; } .st-a .btn.sm { padding: 3px 9px; font-size: 12px; }
 .st-link { font-size: 12px; font-weight: 500; text-decoration: none; border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px; color: var(--accent); background: var(--panel); } .st-link:hover { border-color: var(--accent); }
+.drawer.guide { grid-template-rows: auto auto 1fr auto; z-index: 30; } #askDrawer { z-index: 35; } .guide .g-prog { padding: 8px 12px; border-bottom: 1px solid var(--line); display: flex; gap: 4px; flex-wrap: wrap; } .g-dot { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); font-size: 12px; cursor: pointer; color: var(--ink); } .g-dot.cur { border-color: var(--accent); color: var(--accent); font-weight: 600; } .g-dot.ok { background: var(--good-bg); border-color: var(--good); color: var(--good); } .g-dot.skip { opacity: .5; }
+.guide .g-body { padding: 14px 12px; overflow-y: auto; } .g-n { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; } .g-step { font-size: 16px; font-weight: 600; margin: 4px 0 12px; line-height: 1.4; } .g-box { border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin: 10px 0; } .g-box h4 { margin: 0 0 6px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; } .g-path { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 13px; } .g-path span { background: var(--info-bg); border-radius: 6px; padding: 2px 7px; } .g-change { font-size: 15px; } .g-change b { color: var(--accent); } .g-copy { display: flex; gap: 6px; align-items: flex-start; } .g-copy code { flex: 1; font-size: 12px; background: var(--bg); border-radius: 6px; padding: 6px; word-break: break-all; } .guide .g-foot { display: flex; gap: 8px; justify-content: space-between; padding: 12px; border-top: 1px solid var(--line); flex-wrap: wrap; } .g-tip { font-size: 12px; color: var(--muted); margin-top: 8px; }
 .st-help { font: inherit; font-size: 12px; border: 0; background: none; color: var(--muted); cursor: pointer; padding: 2px 4px; text-decoration: underline dotted; } .st-help:hover { color: var(--accent); }
 .ai-steps { margin-top: 8px; }
 .change { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin: 8px 0; font-size: 13px; }
@@ -605,6 +607,7 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
         (r.result_note && !canAct ? '<p class="small muted">' + esc(r.result_note) + '</p>' : '') +
         (() => { const x = recHow(r); if (x.auto) return '<details class="kw"><summary>How it is implemented</summary><p class="small">' + esc(x.text) + '</p>' + (r.action_params && r.status === 'proposed' ? '<div class="change small">' + changeHtml(r) + '</div>' : '') + '</details>';
           const pb = x.pb || {}; return '<details class="kw"' + (r.status === 'advisory' ? ' open' : '') + '><summary>How to do it, step by step</summary>' + ((pb.steps || []).length ? stepsOl(pb.steps, { account_id: r.account_id, campaign_id: r.campaign_id, section: 'Recommendation ' + r.recommendation_id + ': ' + trunc(r.title, 60) }) : '<div class="ai-steps"><button class="btn sm" data-aistepsbtn="' + reg({ section: 'Recommendation ' + r.recommendation_id, ctx: { recommendation: r } }) + '">Get step-by-step instructions from AI</button></div>') +
+            ((pb.steps || []).length ? '<div class="rec-actions"><button class="btn primary sm" data-guide="' + reg({ title: r.title, steps: pb.steps, c: { account_id: r.account_id, campaign_id: r.campaign_id, section: 'Recommendation ' + r.recommendation_id }, recId: r.recommendation_id }) + '">▶ Guide me through it</button></div>' : '') +
             ((pb.fixes || []).length ? '<div class="rec-actions">' + pb.fixes.map(f => '<button class="btn good sm" data-fix="' + reg(f) + '">' + esc(f.label) + '</button>').join('') + '</div>' : '') + '</details>'; })() +
         (canAct && canExec ? '<div class="rec-actions">' + (r.status === 'proposed'
             ? '<button class="btn good" data-act="approve" data-id="' + esc(r.recommendation_id) + '">Approve &amp; apply</button><button class="btn bad" data-act="decline" data-id="' + esc(r.recommendation_id) + '">Decline</button>'
@@ -1114,7 +1117,7 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
   const rsNum = x => Number(String(x).replace(/[^0-9]/g, ''));
   function stepTools(s, c) {
     c = c || {}; const acc = c.account_id || scopeAcc(); const cid = c.campaign_id ? String(c.campaign_id) : String((mainCamp(acc) || {}).campaign_id || '');
-    const exec = canExec(acc); const acts = [], links = []; let m;
+    const exec = canExec(acc); const acts = []; let m;
     // one-click changes (each still opens a review screen before anything changes)
     if (exec && cid && /target (cpa|cost per (lead|action|conversion))/i.test(s) && /raise|increase|lower|reduce|set|change|step|move/i.test(s) && (m = s.match(/Rs\.?\s*([\d,]{2,7})/i)))
       acts.push({ label: 'Set target to Rs ' + rsNum(m[1]).toLocaleString('en-IN'), kind: 'target_cpa', account_id: acc, params: { campaign_id: cid, amount: rsNum(m[1]), reason: s, source: 'step' } });
@@ -1124,19 +1127,23 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
     }
     if (exec && (m = s.match(/pause (?:the )?ad (\d{6,})/i))) acts.push({ label: 'Pause ad ' + m[1], kind: 'pause_ad', account_id: acc, params: { ad_id: m[1], reason: s, source: 'step' } });
     if (/run audit now/i.test(s)) acts.push({ label: 'Run audit now', audit: true, cls: 'primary' });
-    // links inside the app
-    for (const [re, tab, label, scroll] of STEP_TABS) if (re.test(s)) { links.push('<a href="#" class="st-link" data-goto="' + tab + '"' + (scroll ? ' data-scroll="' + scroll + '"' : '') + '>' + esc(label) + ' →</a>'); break; }
-    // links to Google Ads and other sites
+    // where the step happens: inside the app, in Google Ads, or on another site
+    const dests = [];
+    for (const [re, tab, label, scroll] of STEP_TABS) if (re.test(s)) { dests.push({ kind: 'app', tab, scroll, label }); break; }
     if (/google ads|ads\.google/i.test(s)) {
-      const g = GA_PAGES.find(x => x[0].test(s.replace(/google ads/ig, ''))) || [null, '/aw/overview', 'Open Google Ads', false];
-      links.push('<a class="st-link" target="_blank" rel="noopener" href="https://ads.google.com' + g[1] + (g[3] && cid ? '?campaignId=' + encodeURIComponent(cid) : '') + '">' + esc(g[2]) + ' in Google Ads ↗</a>');
+      const g = GA_PAGES.find(x => x[0].test(s.replace(/google ads|ads\.google\.com/ig, ''))) || [null, '/aw/overview', 'Open Google Ads', false];
+      dests.push({ kind: 'ext', href: 'https://ads.google.com' + g[1] + (g[3] && cid ? '?campaignId=' + encodeURIComponent(cid) : ''), label: g[2] + ' in Google Ads' });
     }
-    if (/pagespeed/i.test(s)) links.push('<a class="st-link" target="_blank" rel="noopener" href="https://pagespeed.web.dev/' + (c.url ? 'analysis?form_factor=mobile&url=' + encodeURIComponent(c.url) : '') + '">Open PageSpeed ↗</a>');
-    if (/wordpress|elementor|plugins?\b|wp-admin/i.test(s) && siteOrigin(c)) links.push('<a class="st-link" target="_blank" rel="noopener" href="' + esc(siteOrigin(c)) + '/wp-admin/">Open WordPress admin ↗</a>');
-    if (/search console/i.test(s)) links.push('<a class="st-link" target="_blank" rel="noopener" href="https://search.google.com/search-console">Open Search Console ↗</a>');
-    if (/\bGA4\b|google analytics/i.test(s)) links.push('<a class="st-link" target="_blank" rel="noopener" href="https://analytics.google.com/">Open GA4 ↗</a>');
-    if (/tag manager|\bGTM\b/i.test(s)) links.push('<a class="st-link" target="_blank" rel="noopener" href="https://tagmanager.google.com/">Open Tag Manager ↗</a>');
-    return { acts, links };
+    if (/pagespeed/i.test(s)) dests.push({ kind: 'ext', href: 'https://pagespeed.web.dev/' + (c.url ? 'analysis?form_factor=mobile&url=' + encodeURIComponent(c.url) : ''), label: 'Open PageSpeed' });
+    if (/wordpress|elementor|plugins?\b|wp-admin/i.test(s) && siteOrigin(c)) dests.push({ kind: 'ext', href: siteOrigin(c) + '/wp-admin/', label: 'Open WordPress admin' });
+    if (/search console/i.test(s)) dests.push({ kind: 'ext', href: 'https://search.google.com/search-console', label: 'Open Search Console' });
+    if (/\bGA4\b|google analytics/i.test(s)) dests.push({ kind: 'ext', href: 'https://analytics.google.com/', label: 'Open GA4' });
+    if (/tag manager|\bGTM\b/i.test(s)) dests.push({ kind: 'ext', href: 'https://tagmanager.google.com/', label: 'Open Tag Manager' });
+    if (!dests.some(d => d.kind === 'ext') && c.url && /landing page|the page|website|open (it|the page)/i.test(s)) dests.push({ kind: 'ext', href: c.url, label: 'Open the page' });
+    const links = dests.map(d => d.kind === 'app'
+      ? '<a href="#" class="st-link" data-goto="' + d.tab + '"' + (d.scroll ? ' data-scroll="' + d.scroll + '"' : '') + '>' + esc(d.label) + ' →</a>'
+      : '<a class="st-link" target="_blank" rel="noopener" href="' + esc(d.href) + '">' + esc(d.label) + ' ↗</a>');
+    return { acts, links, dests, cid, acc };
   }
   const linkify = s => esc(s).replace(/(https?:\/\/[^\s<>"')]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
   function stepLi(s, c) {
@@ -1152,7 +1159,112 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
     const lines = String(txt || '').split(/\n/); let h = '', ol = [];
     const flush = () => { if (ol.length) { h += stepsOl(ol, c); ol = []; } };
     for (const l of lines) { const m = l.match(/^\s*(?:\d+[.)]|[-*•])\s+(.*)$/); if (m && /\d/.test(l.trim()[0])) ol.push(m[1].replace(/\*\*/g, '')); else { flush(); if (l.trim()) h += '<p>' + linkify(l.replace(/\*\*/g, '')) + '</p>'; } }
-    flush(); return '<div class="ai-answer rich">' + h + '</div>';
+    flush(); const all = lines.map(l => l.match(/^\s*\d+[.)]\s+(.*)$/)).filter(Boolean).map(m => m[1].replace(/\*\*/g, ''));
+    if (all.length >= 2) h += '<div class="rec-actions"><button class="btn primary sm" data-guide="' + reg({ title: (c && c.section) || 'AI steps', steps: all, c: c || {} }) + '">▶ Guide me through these steps</button></div>';
+    return '<div class="ai-answer rich">' + h + '</div>';
+  }
+
+  // ---------- guided walkthrough: one step at a time, takes you to the exact place ----------
+  const GKEY = 'gads_guide_progress';
+  const gLoad = () => { try { return JSON.parse(localStorage.getItem(GKEY) || '{}'); } catch (e) { return {}; } };
+  const gSave = o => { try { localStorage.setItem(GKEY, JSON.stringify(o)); } catch (e) {} };
+  let guide = null, gWin = null;
+  const gHash = s => { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0; return h.toString(36); };
+  // the last target CPA the app applied for this campaign (Google's current value is not in the data feed)
+  function lastTarget(cid) {
+    const l = (data.recommendations || []).filter(r => r.action_type === 'set_target_cpa' && String(r.campaign_id) === String(cid) && ['applied', 'verified'].includes(r.status) && (r.action_params || {}).target_cpa_micros)
+      .sort((a, b) => String(b.decided_at || b.created_at).localeCompare(String(a.decided_at || a.created_at)));
+    return l.length ? { amount: Number(l[0].action_params.target_cpa_micros) / 1e6, when: l[0].decided_at || l[0].created_at } : null;
+  }
+  // menu path written in the step, e.g. "Google Ads > Campaign > Settings > Bidding"
+  function stepPath(s) {
+    const m = s.match(/((?:Google Ads|GA4|Search Console|WordPress|Admin|Tools)\s*>\s*[^.;(]+?)(?=\s+(?:to|and|then|for|choose|click|set|change)\b|[.;(,]|$)/i);
+    return m ? m[1].split('>').map(x => x.trim()).filter(Boolean) : null;
+  }
+  // what to change, with the values filled in
+  function stepChange(s, t) {
+    const out = [];
+    for (const f of t.acts) {
+      if (f.kind === 'target_cpa') { const cur = lastTarget(f.params.campaign_id); out.push('<div class="g-change">Target CPA: ' + (cur ? rsx(cur.amount) : 'current value') + ' → <b>' + rsx(f.params.amount) + '</b></div>' + (cur ? '<div class="g-tip">Current value is the last one the app set (' + esc(new Date(cur.when).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })) + '). Check it matches Google Ads.</div>' : '')); }
+      if (f.kind === 'budget') { const c = (data.campaigns || []).find(x => String(x.campaign_id) === String(f.params.campaign_id)); const old = Number((c || {}).daily_budget || 0); out.push('<div class="g-change">Daily budget: ' + (old ? rsx(old) : 'current') + ' → <b>' + (old ? rsx(Math.round(old * (1 + f.params.pct / 100))) : (f.params.pct > 0 ? '+' : '') + f.params.pct + '%') + '</b></div>'); }
+      if (f.kind === 'pause_ad') out.push('<div class="g-change">Ad <b>' + esc(f.params.ad_id) + '</b>: Enabled → <b>Paused</b></div>');
+    }
+    const m = s.match(/(?:paste|enter|type|add)\s*:?\s*["“]?([^"”]{6,})["”]?\s*$/i) || s.match(/(?:paste|enter|type)\s*:\s*(.+)$/i);
+    if (m) out.push('<div class="g-copy"><code>' + esc(m[1].trim()) + '</code><button type="button" class="btn sm" data-gcopy="' + esc(m[1].trim()) + '">Copy</button></div>');
+    return out.join('');
+  }
+  function openGuide(o) {
+    const steps = (o.steps || []).filter(Boolean); if (!steps.length) return;
+    const key = o.recId || gHash(o.title + '|' + steps.join('|'));
+    const saved = gLoad()[key] || {};
+    guide = { key, title: o.title, steps, c: o.c || {}, recId: o.recId, i: 0, st: saved.st || {} };
+    { const n = steps.length, si = Number(saved.i || 0); guide.i = si < n ? si : (steps.findIndex((x, k) => guide.st[k] !== 'ok') + 1 || n + 1) - 1; if (guide.i < 0) guide.i = n; }
+    let d = $('#guidePanel');
+    if (!d) {
+      d = document.createElement('aside'); d.id = 'guidePanel'; d.className = 'drawer guide';
+      d.innerHTML = '<div class="drawer-head"><div><div class="small muted">Step-by-step guide</div><b id="gTitle"></b></div><button class="btn" id="gClose">Close</button></div><div class="g-prog" id="gProg"></div><div class="g-body" id="gBody"></div><div class="g-foot" id="gFoot"></div>';
+      document.body.appendChild(d);
+      $('#gClose').onclick = () => d.classList.remove('open');
+      d.addEventListener('click', gClick);
+    }
+    $('#gTitle').textContent = trunc(o.title, 80);
+    d.classList.add('open'); gRender();
+  }
+  function gPersist() { const all = gLoad(); all[guide.key] = { i: guide.i, st: guide.st, at: Date.now() }; const ks = Object.keys(all).sort((a, b) => all[b].at - all[a].at); ks.slice(30).forEach(k => delete all[k]); gSave(all); }
+  // open (or reuse) a Google Ads window next to the app, so "Next" moves it to the next place
+  function gGo(href) {
+    const wide = window.innerWidth >= 900;
+    if (gWin && !gWin.closed) { try { gWin.location.href = href; gWin.focus(); return; } catch (e) {} }
+    gWin = wide ? window.open(href, 'gadsGuideWin', 'width=' + Math.round(screen.availWidth * 0.62) + ',height=' + screen.availHeight + ',left=0,top=0') : window.open(href, '_blank');
+    if (!gWin) toast('Your browser blocked the window. Allow pop-ups for this site, or use the link.');
+  }
+  function gRender() {
+    const g = guide, n = g.steps.length;
+    $('#gProg').innerHTML = g.steps.map((s, k) => '<button type="button" class="g-dot' + (k === g.i ? ' cur' : '') + (g.st[k] === 'ok' ? ' ok' : g.st[k] === 'skip' ? ' skip' : '') + '" data-gjump="' + k + '" title="' + esc(trunc(s, 80)) + '">' + (g.st[k] === 'ok' ? '✓' : k + 1) + '</button>').join('') +
+      '<button type="button" class="g-dot' + (g.i === n ? ' cur' : '') + '" data-gjump="' + n + '" title="Finish">⚑</button>';
+    if (g.i >= n) {
+      const ok = Object.values(g.st).filter(x => x === 'ok').length, sk = g.steps.length - ok;
+      const rec = g.recId ? (data.recommendations || []).find(r => r.recommendation_id === g.recId) : null;
+      const canMark = rec && ['proposed', 'advisory'].includes(rec.status) && canExec(rec.account_id);
+      $('#gBody').innerHTML = '<div class="g-n">Finished</div><div class="g-step">' + ok + ' of ' + n + ' step(s) done' + (sk ? ', ' + sk + ' skipped' : '') + '.</div>' +
+        (sk ? '<p class="small">Skipped steps are marked grey above; click one to go back to it.</p>' : '') +
+        (canMark ? '<div class="g-box"><h4>Close the recommendation</h4><p class="small">' + (rec.action_type ? 'This one is a change the app applies for you.' : 'When everything is done, mark it done so it leaves your list.') + '</p><button class="btn good" data-apply="' + esc(rec.recommendation_id) + '">' + (rec.action_type ? 'Apply now' : 'Mark done') + '</button></div>' : '') +
+        '<div class="g-box"><h4>Check the effect</h4><p class="small">Changes made in Google Ads show in this app after the next data refresh (every morning). Changes the app applied are in the Change log and are measured for 14 days in Experiments.</p><a href="#" class="st-link" data-goto="log">Open Change log →</a></div>' +
+        '<button type="button" class="st-help" data-ask="' + reg({ section: 'Guide: ' + g.title, ctx: { steps: g.steps, status: g.st, where: g.c }, question: 'I finished these steps. What should I watch next, and when should I check the result?' }) + '">Ask AI what to watch next</button>';
+      $('#gFoot').innerHTML = '<button class="btn" data-gnav="back">◀ Back</button><button class="btn primary" data-gnav="close">Close guide</button>';
+      gPersist(); return;
+    }
+    const s = g.steps[g.i], t = stepTools(s, g.c), path = stepPath(s), ch = stepChange(s, t);
+    const ext = t.dests.find(x => x.kind === 'ext'), app = t.dests.find(x => x.kind === 'app');
+    $('#gBody').innerHTML = '<div class="g-n">Step ' + (g.i + 1) + ' of ' + n + '</div><div class="g-step">' + linkify(s) + '</div>' +
+      (ext || app ? '<div class="g-box"><h4>Go to</h4>' + (path ? '<div class="g-path">' + path.map(x => '<span>' + esc(x) + '</span>').join(' › ') + '</div>' : '') +
+        '<div class="rec-actions" style="margin-top:8px">' + (ext ? '<button class="btn primary" data-gopen="' + esc(ext.href) + '">Take me there ↗</button>' : '') +
+        (app ? '<button class="btn' + (ext ? '' : ' primary') + '" data-goto="' + app.tab + '"' + (app.scroll ? ' data-scroll="' + app.scroll + '"' : '') + '>' + esc(app.label) + ' →</button>' : '') + '</div>' +
+        (ext ? '<div class="g-tip">Opens in a window beside this app' + (/ads\.google/.test(ext.href) ? '. If Google asks, choose account ' + esc(t.acc) : '') + '. Keep this guide open.</div>' : '') + '</div>'
+        : '<div class="g-box"><h4>What to do</h4><p class="small">Nothing to open for this step. Read it, do it, then press "I did it".</p></div>') +
+      (ch ? '<div class="g-box"><h4>What to change</h4>' + ch + '</div>' : '') +
+      (t.acts.length ? '<div class="g-box"><h4>Or let the app do it</h4><div class="rec-actions">' + t.acts.map(f => '<button class="btn good sm" data-fix="' + reg(f) + '">' + esc(f.label) + '</button>').join('') + '</div><div class="g-tip">You see the change first and confirm it. Nothing changes until you press Apply now.</div></div>' : '') +
+      '<button type="button" class="st-help" data-ask="' + reg({ section: 'Guide step: ' + trunc(s, 60), ctx: { step: s, all_steps: g.steps, where: g.c }, question: 'I am on this step: "' + s + '". I am stuck. Tell me exactly where to click next, one click at a time.' }) + '">I\'m stuck, help me with this step</button>';
+    $('#gFoot').innerHTML = '<button class="btn" data-gnav="back"' + (g.i ? '' : ' disabled') + '>◀ Back</button><span style="display:flex;gap:8px"><button class="btn" data-gnav="skip">Skip</button><button class="btn primary" data-gnav="next">I did it, next ▶</button></span>';
+    gPersist();
+  }
+  function gMove(to) {
+    const g = guide; g.i = Math.max(0, Math.min(g.steps.length, to)); gRender();
+    // the bot part: if the Google Ads window is already open, move it to the next place
+    const s = g.steps[g.i]; if (!s || !gWin || gWin.closed) return;
+    const ext = stepTools(s, g.c).dests.find(x => x.kind === 'ext'); if (ext) gGo(ext.href);
+  }
+  function gClick(e) {
+    const b = e.target.closest('[data-gnav],[data-gjump],[data-gopen],[data-gcopy]'); if (!b) return;
+    e.preventDefault(); const g = guide;
+    if (b.dataset.gopen) { gGo(b.dataset.gopen); return; }
+    if (b.dataset.gcopy) { try { navigator.clipboard.writeText(b.dataset.gcopy); toast('Copied. Paste it in the field.'); } catch (x) { toast('Select the text and copy it.'); } return; }
+    if (b.dataset.gjump !== undefined) { gMove(Number(b.dataset.gjump)); return; }
+    const a = b.dataset.gnav;
+    if (a === 'next') { g.st[g.i] = 'ok'; gMove(g.i + 1); }
+    else if (a === 'skip') { g.st[g.i] = 'skip'; gMove(g.i + 1); }
+    else if (a === 'back') gMove(g.i - 1);
+    else if (a === 'close') $('#guidePanel').classList.remove('open');
   }
 
   // ---------- one advice / finding item ----------
@@ -1168,13 +1280,15 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
       if (r.status === 'proposed') btns.push('<button class="btn good sm" data-apply="' + esc(r.recommendation_id) + '">' + (r.action_type ? 'Apply' : 'Mark done') + ': ' + esc(trunc(r.title, 60)) + '</button>');
       else if (r.status === 'advisory') btns.push('<button class="btn sm" data-apply="' + esc(r.recommendation_id) + '">Mark done</button>');
     }
-    if (askId) btns.push('<button class="btn sm" data-ask="' + askId + '">Discuss with AI</button>');
     const steps = (it.steps || []).filter(Boolean);
+    const where = it.where || { account_id: (recs[0] || fixes[0] || {}).account_id, campaign_id: (recs[0] || {}).campaign_id || ((fixes[0] || {}).params || {}).campaign_id, url: it.url || ((((it.ask || {}).ctx) || {}).page || {}).url, section: it.ask ? it.ask.section : it.title };
+    if (steps.length) btns.unshift('<button class="btn primary sm" data-guide="' + reg({ title: it.title, steps, c: where, recId: (recs.find(r => ['proposed', 'advisory'].includes(r.status)) || {}).recommendation_id }) + '">▶ Guide me through it</button>');
+    if (askId) btns.push('<button class="btn sm" data-ask="' + askId + '">Discuss with AI</button>');
     return '<details class="fx"' + (it.open ? ' open' : '') + '><summary><span class="pill ' + (SEV[it.sev] || '') + '">' + esc(it.sevLabel || it.sev || 'tip') + '</span> <span class="fx-t">' + esc(it.title) + '</span>' +
       (fixes.length || recs.some(r => r.status === 'proposed' && r.action_type) ? ' <span class="pill good">fixable</span>' : '') + '</summary><div class="fx-b">' +
       (it.sub ? '<div class="small muted">' + esc(it.sub) + '</div>' : '') + (it.evidence || '') +
       (it.why ? '<p><b>Why it matters:</b> ' + esc(it.why) + '</p>' : '') +
-      (steps.length ? '<div class="steps-h">' + (fixes.length || recs.some(r => r.action_type) ? 'If you prefer to do it by hand' : 'Step by step') + '</div>' + stepsOl(steps, it.where || { account_id: (recs[0] || fixes[0] || {}).account_id, campaign_id: (recs[0] || {}).campaign_id || ((fixes[0] || {}).params || {}).campaign_id, url: it.url || ((((it.ask || {}).ctx) || {}).page || {}).url, section: it.ask ? it.ask.section : it.title }) : '') +
+      (steps.length ? '<div class="steps-h">' + (fixes.length || recs.some(r => r.action_type) ? 'If you prefer to do it by hand' : 'Step by step') + '</div>' + stepsOl(steps, where) : '') +
       (!steps.length && askId ? '<div class="ai-steps" data-aisteps="' + askId + '"><button class="btn sm" data-aistepsbtn="' + askId + '">Get step-by-step instructions from AI</button></div>' : '') +
       (btns.length ? '<div class="rec-actions">' + btns.join('') + '</div>' : '') + '</div></details>';
   }
@@ -1691,6 +1805,7 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
     const d = e.target.closest('[data-decline]'); if (d) { e.preventDefault(); declineRec(d.dataset.decline); return; }
     const k = e.target.closest('[data-ask]'); if (k) { e.preventDefault(); const o = REG.get(k.dataset.ask); if (o) askAI(o.section, o.ctx, o.question); return; }
     const s = e.target.closest('[data-aistepsbtn]'); if (s) { e.preventDefault(); const o = REG.get(s.dataset.aistepsbtn); if (o) aiSteps(s.parentElement, o.section, o.ctx); return; }
+    const gd = e.target.closest('[data-guide]'); if (gd) { e.preventDefault(); const o = REG.get(gd.dataset.guide); if (o) openGuide(o); return; }
     const g = e.target.closest('[data-goto]'); if (g) { e.preventDefault(); const b = document.querySelector('button[data-tab="' + g.dataset.goto + '"]'); if (b) b.click(); const sc = g.dataset.scroll; setTimeout(() => { const el = sc && document.getElementById(sc); (el || document.body).scrollIntoView({ behavior: 'smooth', block: 'start' }); if (!el) window.scrollTo({ top: 0, behavior: 'smooth' }); }, 150); }
   });
   const TAB_NAMES = { dash: 'Dashboard', recs: 'Recommendations', site: 'Site & Tracking', intel: 'Alerts & Insights', market: 'Market', funnel: 'Funnel & Calls', web: 'Web & Tags', exp: 'Experiments', reports: 'Reports', log: 'Change log' };
