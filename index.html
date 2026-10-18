@@ -152,7 +152,7 @@ table.kv { width: auto; margin-top: 6px; } table.kv td { padding: 3px 12px 3px 0
 .ai-answer.rich, .msg .ai-answer.rich { white-space: normal; } .ai-answer.rich p { margin: 4px 0; } .msg.ai .ai-answer.rich { background: none; padding: 0; margin: 0; }
 ol.steps.rich li { margin-bottom: 8px; } .st-a { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 4px; } .st-a .btn.sm { padding: 3px 9px; font-size: 12px; }
 .st-link { font-size: 12px; font-weight: 500; text-decoration: none; border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px; color: var(--accent); background: var(--panel); } .st-link:hover { border-color: var(--accent); }
-.drawer.guide { grid-template-rows: auto auto 1fr auto; z-index: 30; } #askDrawer { z-index: 35; } .guide .g-prog { padding: 8px 12px; border-bottom: 1px solid var(--line); display: flex; gap: 4px; flex-wrap: wrap; } .g-dot { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); font-size: 12px; cursor: pointer; color: var(--ink); } .g-dot.cur { border-color: var(--accent); color: var(--accent); font-weight: 600; } .g-dot.ok { background: var(--good-bg); border-color: var(--good); color: var(--good); } .g-dot.skip { opacity: .5; }
+.drawer.guide { grid-template-rows: auto auto 1fr auto; z-index: 30; } #askDrawer { z-index: 35; } .guide .g-prog { padding: 8px 10px; border-bottom: 1px solid var(--line); max-height: 40vh; overflow-y: auto; } .g-sum { font-size: 13px; padding: 2px 4px 8px; } .g-bar { height: 6px; background: var(--line); border-radius: 3px; margin-top: 6px; overflow: hidden; } .g-bar i { display: block; height: 100%; background: var(--good); } .g-row { display: flex; gap: 8px; align-items: center; width: 100%; text-align: left; font: inherit; font-size: 13px; color: var(--ink); background: none; border: 0; border-radius: 8px; padding: 6px; cursor: pointer; } .g-row:hover { background: var(--bg); } .g-row.now { background: var(--info-bg); } .g-ic { width: 22px; height: 22px; flex: none; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 700; border: 1.5px solid var(--line); color: var(--muted); } .g-row.ok .g-ic { background: var(--good); border-color: var(--good); color: #fff; } .g-row.cur .g-ic { border-color: var(--accent); color: var(--accent); } .g-row.skip .g-ic { border-style: dashed; } .g-rt { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .g-lb { flex: none; font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--bg); color: var(--muted); } .g-row.ok .g-lb { background: var(--good-bg); color: var(--good); } .g-row.now .g-lb { background: var(--panel); color: var(--accent); } .g-row.skip .g-lb { background: var(--warn-bg); color: var(--warn); } .g-donebox { text-align: center; padding: 8px 0 4px; } .g-big { font-size: 40px; color: var(--good); line-height: 1; } .g-badge { font-size: 12px; color: var(--muted); align-self: center; } .g-badge.full { color: var(--good); font-weight: 600; } .g-dot { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); font-size: 12px; cursor: pointer; color: var(--ink); } .g-dot.cur { border-color: var(--accent); color: var(--accent); font-weight: 600; } .g-dot.ok { background: var(--good-bg); border-color: var(--good); color: var(--good); } .g-dot.skip { opacity: .5; }
 .guide .g-body { padding: 14px 12px; overflow-y: auto; } .g-n { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; } .g-step { font-size: 16px; font-weight: 600; margin: 4px 0 12px; line-height: 1.4; } .g-box { border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin: 10px 0; } .g-box h4 { margin: 0 0 6px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; } .g-path { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 13px; } .g-path span { background: var(--info-bg); border-radius: 6px; padding: 2px 7px; } .g-change { font-size: 15px; } .g-change b { color: var(--accent); } .g-copy { display: flex; gap: 6px; align-items: flex-start; } .g-copy code { flex: 1; font-size: 12px; background: var(--bg); border-radius: 6px; padding: 6px; word-break: break-all; } .guide .g-foot { display: flex; gap: 8px; justify-content: space-between; padding: 12px; border-top: 1px solid var(--line); flex-wrap: wrap; } .g-tip { font-size: 12px; color: var(--muted); margin-top: 8px; }
 .kwe { border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin: 10px 0; } .kwe-h { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; } .kwe-tools { margin-left: auto; display: flex; gap: 6px; } .kwe-row { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; padding: 3px 0; } .kwe-row.off .kwe-t { text-decoration: line-through; opacity: .55; } .kwe-row input[type=checkbox] { width: 18px; height: 18px; } .kwe-t, .kwe-add input { font: inherit; font-size: 13px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); min-width: 0; } .kwe-row select, .kwe-add select { font: inherit; font-size: 12px; padding: 4px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); } .kwe-add { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; margin-top: 8px; }
 .st-help { font: inherit; font-size: 12px; border: 0; background: none; color: var(--muted); cursor: pointer; padding: 2px 4px; text-decoration: underline dotted; } .st-help:hover { color: var(--accent); }
@@ -517,7 +517,7 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
   }
 
   // ---------- render ----------
-  function render() { REG.clear(); renderDash(); renderRecs(); renderLog(); renderSite(); renderIntel(); renderMarket(); renderFunnel(); renderWeb(); renderExp(); renderReports();
+  function render() { REG.clear(); setTimeout(() => gBadges(), 0); renderDash(); renderRecs(); renderLog(); renderSite(); renderIntel(); renderMarket(); renderFunnel(); renderWeb(); renderExp(); renderReports();
     for (const f of [renderLeads, renderSiteAdvice, renderIntelAdvice, renderMarketAdvice, renderFunnelAdvice, renderWebAdvice]) { try { f(); } catch (e) { console.error(f.name, e); } } }
 
   function renderDash() {
@@ -585,6 +585,7 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
     return '<span class="pill ' + (m[s] ?? '') + '">' + esc(s) + '</span>';
   }
   function renderRecs() {
+    setTimeout(() => gBadges(), 0);
     const all = data.recommendations.filter(inScope);
     const pending = all.filter(r => r.status === 'proposed').length;
     $('#recCount').textContent = pending; $('#recCount').classList.toggle('hidden', !pending);
@@ -609,7 +610,7 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
         (r.result_note && !canAct ? '<p class="small muted">' + esc(r.result_note) + '</p>' : '') +
         (() => { const x = recHow(r); if (x.auto) return '<details class="kw"><summary>How it is implemented</summary><p class="small">' + esc(x.text) + '</p>' + (r.action_params && r.status === 'proposed' && !kwEditable(r) ? '<div class="change small">' + changeHtml(r) + '</div>' : '') + '</details>';
           const pb = x.pb || {}; return '<details class="kw"' + (r.status === 'advisory' ? ' open' : '') + '><summary>How to do it, step by step</summary>' + ((pb.steps || []).length ? stepsOl(pb.steps, { account_id: r.account_id, campaign_id: r.campaign_id, section: 'Recommendation ' + r.recommendation_id + ': ' + trunc(r.title, 60) }) : '<div class="ai-steps"><button class="btn sm" data-aistepsbtn="' + reg({ section: 'Recommendation ' + r.recommendation_id, ctx: { recommendation: r } }) + '">Get step-by-step instructions from AI</button></div>') +
-            ((pb.steps || []).length ? '<div class="rec-actions"><button class="btn primary sm" data-guide="' + reg({ title: r.title, steps: pb.steps, c: { account_id: r.account_id, campaign_id: r.campaign_id, section: 'Recommendation ' + r.recommendation_id }, recId: r.recommendation_id }) + '">▶ Guide me through it</button></div>' : '') +
+            ((pb.steps || []).length ? '<div class="rec-actions"><button class="btn primary sm" data-guide="' + reg({ title: r.title, steps: pb.steps, c: { account_id: r.account_id, campaign_id: r.campaign_id, section: 'Recommendation ' + r.recommendation_id }, recId: r.recommendation_id }) + '">▶ Guide me through it</button>' + gBadgeHtml({ title: r.title, steps: pb.steps, recId: r.recommendation_id }) + '</div>' : '') +
             ((pb.fixes || []).length ? '<div class="rec-actions">' + pb.fixes.map(f => '<button class="btn good sm" data-fix="' + reg(f) + '">' + esc(f.label) + '</button>').join('') + '</div>' : '') + '</details>'; })() +
         (canAct && canExec ? '<div class="rec-actions">' + (r.status === 'proposed'
             ? '<button class="btn good" data-act="approve" data-id="' + esc(r.recommendation_id) + '">' + (kwEditable(r) ? 'Apply selected' : 'Approve &amp; apply') + '</button><button class="btn bad" data-act="decline" data-id="' + esc(r.recommendation_id) + '">Decline</button>'
@@ -1271,7 +1272,13 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
     const key = o.recId || gHash(o.title + '|' + steps.join('|'));
     const saved = gLoad()[key] || {};
     guide = { key, title: o.title, steps, c: o.c || {}, recId: o.recId, i: 0, st: saved.st || {} };
-    { const n = steps.length, si = Number(saved.i || 0); guide.i = si < n ? si : (steps.findIndex((x, k) => guide.st[k] !== 'ok') + 1 || n + 1) - 1; if (guide.i < 0) guide.i = n; }
+    { const n = steps.length, si = Number(saved.i || 0); guide.i = si < n ? si : (steps.findIndex((x, k) => !gDone(guide.st[k])) + 1 || n + 1) - 1; if (guide.i < 0) guide.i = n; }
+    if (hasExt() && !o.here) {
+      window.postMessage({ source: 'negotrip-app', type: 'guide:start', guide: extGuide(guide) }, location.origin);
+      gPersist(); gBadges();
+      toast('Opening the steps on the Google Ads page…', 5000);
+      return;
+    }
     let d = $('#guidePanel');
     if (!d) {
       d = document.createElement('aside'); d.id = 'guidePanel'; d.className = 'drawer guide';
@@ -1293,13 +1300,16 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
   }
   function gRender() {
     const g = guide, n = g.steps.length;
-    $('#gProg').innerHTML = g.steps.map((s, k) => '<button type="button" class="g-dot' + (k === g.i ? ' cur' : '') + (g.st[k] === 'ok' ? ' ok' : g.st[k] === 'skip' ? ' skip' : '') + '" data-gjump="' + k + '" title="' + esc(trunc(s, 80)) + '">' + (g.st[k] === 'ok' ? '✓' : k + 1) + '</button>').join('') +
-      '<button type="button" class="g-dot' + (g.i === n ? ' cur' : '') + '" data-gjump="' + n + '" title="Finish">⚑</button>';
+    const okN = g.steps.filter((x, k) => gDone(g.st[k])).length, skN = g.steps.filter((x, k) => g.st[k] === 'skip').length;
+    $('#gProg').innerHTML = '<div class="g-sum"><b>' + okN + ' of ' + n + ' done</b>' + (skN ? ' · ' + skN + ' skipped' : '') + '<div class="g-bar"><i style="width:' + Math.round((okN + skN) / n * 100) + '%"></i></div></div>' +
+      g.steps.map((s, k) => { const st = g.st[k]; const cls = gDone(st) ? 'ok' : st === 'skip' ? 'skip' : k === g.i ? 'cur' : '';
+        return '<button type="button" class="g-row ' + cls + (k === g.i ? ' now' : '') + '" data-gjump="' + k + '"><span class="g-ic">' + (gDone(st) ? '✓' : st === 'skip' ? '–' : k + 1) + '</span><span class="g-rt">' + esc(trunc(s, 70)) + '</span><span class="g-lb">' + (st === 'seen' ? 'Done · seen on page' : gDone(st) ? 'Done' : st === 'skip' ? 'Skipped' : k === g.i ? 'Now' : 'To do') + '</span></button>'; }).join('') +
+      (hasExt() ? '' : '<div class="g-tip" style="margin:6px 2px 0">Want these steps on the Google Ads page itself? Install the NegoTrip Ads Guide extension.</div>');
     if (g.i >= n) {
-      const ok = Object.values(g.st).filter(x => x === 'ok').length, sk = g.steps.length - ok;
+      const ok = g.steps.filter((x, k) => gDone(g.st[k])).length, sk = g.steps.length - ok;
       const rec = g.recId ? (data.recommendations || []).find(r => r.recommendation_id === g.recId) : null;
       const canMark = rec && ['proposed', 'advisory'].includes(rec.status) && canExec(rec.account_id);
-      $('#gBody').innerHTML = '<div class="g-n">Finished</div><div class="g-step">' + ok + ' of ' + n + ' step(s) done' + (sk ? ', ' + sk + ' skipped' : '') + '.</div>' +
+      $('#gBody').innerHTML = '<div class="g-donebox"><div class="g-big">✓</div><div class="g-step">' + (sk ? ok + ' of ' + n + ' steps done, ' + sk + ' skipped' : 'All ' + n + ' recommended steps completed') + '</div></div>' +
         (sk ? '<p class="small">Skipped steps are marked grey above; click one to go back to it.</p>' : '') +
         (canMark ? '<div class="g-box"><h4>Close the recommendation</h4><p class="small">' + (rec.action_type ? 'This one is a change the app applies for you.' : 'When everything is done, mark it done so it leaves your list.') + '</p><button class="btn good" data-apply="' + esc(rec.recommendation_id) + '">' + (rec.action_type ? 'Apply now' : 'Mark done') + '</button></div>' : '') +
         '<div class="g-box"><h4>Check the effect</h4><p class="small">Changes made in Google Ads show in this app after the next data refresh (every morning). Changes the app applied are in the Change log and are measured for 14 days in Experiments.</p><a href="#" class="st-link" data-goto="log">Open Change log →</a></div>' +
@@ -1334,11 +1344,54 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
     if (b.dataset.gcopy) { try { navigator.clipboard.writeText(b.dataset.gcopy); toast('Copied. Paste it in the field.'); } catch (x) { toast('Select the text and copy it.'); } return; }
     if (b.dataset.gjump !== undefined) { gMove(Number(b.dataset.gjump)); return; }
     const a = b.dataset.gnav;
-    if (a === 'next') { g.st[g.i] = 'ok'; gMove(g.i + 1); }
-    else if (a === 'skip') { g.st[g.i] = 'skip'; gMove(g.i + 1); }
+    if (a === 'next' || a === 'skip') { g.st[g.i] = a === 'next' ? 'ok' : 'skip'; const n = g.steps.length;
+      let k = g.i + 1; while (k < n && g.st[k]) k++; if (k >= n) { k = g.steps.findIndex((x, j) => !g.st[j]); if (k < 0) k = n; }
+      gMove(k); gBadges(); if (k >= n) gCompleted(g); }
     else if (a === 'back') gMove(g.i - 1);
     else if (a === 'close') $('#guidePanel').classList.remove('open');
   }
+  const gDone = st => st === 'ok' || st === 'seen';
+  const hasExt = () => !!document.documentElement.dataset.ngGuideExt;
+  const gKeyOf = o => o.recId || gHash(o.title + '|' + (o.steps || []).filter(Boolean).join('|'));
+  // the guide as plain data for the Google Ads page (extension)
+  function extGuide(g) {
+    const steps = g.steps.map(s => {
+      const t = stepTools(s, g.c), ext = t.dests.filter(x => x.kind === 'ext'), app = t.dests.find(x => x.kind === 'app');
+      const ads = ext.find(x => /^https:\/\/ads\.google\.com/.test(x.href)), other = ext.find(x => !/^https:\/\/ads\.google\.com/.test(x.href));
+      const changes = [];
+      let check = null;
+      for (const a of t.acts) {
+        if (a.kind === 'target_cpa') { const cur = lastTarget(a.params.campaign_id); changes.push({ what: 'Target CPA', from: cur ? rsx(cur.amount) : '', to: rsx(a.params.amount) }); check = { kind: 'target_cpa', amount: a.params.amount }; }
+        if (a.kind === 'budget') { const c = (data.campaigns || []).find(x => String(x.campaign_id) === String(a.params.campaign_id)); const old = Number((c || {}).daily_budget || 0); if (old) { const nb = Math.round(old * (1 + a.params.pct / 100)); changes.push({ what: 'Daily budget', from: rsx(old), to: rsx(nb) }); check = { kind: 'budget', amount: nb }; } }
+        if (a.kind === 'pause_ad') changes.push({ what: 'Ad ' + a.params.ad_id, from: 'Enabled', to: 'Paused' });
+      }
+      const m = s.match(/(?:paste|enter|type)\s*:\s*(.+)$/i);
+      return { text: s, path: stepPath(s), adsUrl: ads ? ads.href : '', extUrl: other ? other.href : '', extLabel: other ? other.label : '', appTab: app ? app.tab : '', appLabel: app ? app.label + ' (in the app)' : '', changes, copy: m ? m[1].trim() : '', check };
+    });
+    return { key: g.key, title: g.title, recId: g.recId || '', i: g.i, st: g.st, steps, home: 'https://ads.google.com/aw/campaigns' + (g.c.campaign_id ? '?campaignId=' + encodeURIComponent(g.c.campaign_id) : '') };
+  }
+  function gCompleted(g) {
+    const ok = g.steps.filter((x, k) => gDone(g.st[k])).length, n = g.steps.length;
+    toast('✓ Recommended steps completed: ' + ok + ' of ' + n + ' done. Press Mark done on the recommendation.', 9000);
+    try { if (window.Notification && Notification.permission === 'granted') new Notification('Recommended steps completed', { body: g.title + ': ' + ok + ' of ' + n + ' done.' }); } catch (e) {}
+  }
+  function gBadgeHtml(o) { return '<span class="g-badge" data-gbadge="' + esc(gKeyOf(o)) + '" data-gn="' + (o.steps || []).filter(Boolean).length + '"></span>'; }
+  function gBadges() {
+    const all = gLoad();
+    $$('[data-gbadge]').forEach(el => { const p = all[el.dataset.gbadge]; const n = Number(el.dataset.gn); if (!p || !p.st) { el.textContent = ''; el.className = 'g-badge'; return; }
+      const ok = Object.values(p.st).filter(gDone).length, sk = Object.values(p.st).filter(x => x === 'skip').length;
+      el.className = 'g-badge' + (ok + sk >= n ? ' full' : ''); el.textContent = ok + sk >= n ? '✓ Steps completed (' + ok + ' of ' + n + ' done)' : ok + ' of ' + n + ' steps done'; });
+  }
+  // status coming back from the Google Ads page
+  window.addEventListener('message', e => {
+    if (e.source !== window || !e.data || e.data.source !== 'negotrip-ext') return;
+    if (e.data.type === 'goto') { const b = document.querySelector('button[data-tab="' + e.data.tab + '"]'); if (b) b.click(); return; }
+    const x = e.data.guide; if (e.data.type !== 'guide:state' || !x || !x.key) return;
+    const all = gLoad(); const prev = all[x.key] || {}; const wasDone = prev.st && x.steps.every((s, k) => prev.st[k]);
+    all[x.key] = { i: x.i, st: x.st || {}, at: Date.now() }; gSave(all); gBadges();
+    if (!wasDone && x.steps.every((s, k) => (x.st || {})[k])) gCompleted({ title: x.title, steps: x.steps, st: x.st });
+  });
+  setTimeout(() => { if (hasExt()) window.postMessage({ source: 'negotrip-app', type: 'guide:hello' }, location.origin); }, 1500);
 
   // ---------- one advice / finding item ----------
   // it = { sev, title, sub, why, steps[], fixes[{label,kind,params,account_id,cls}], recs[rec objects], ask:{section,ctx}, open, evidence(html) }
@@ -1355,7 +1408,7 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
     }
     const steps = (it.steps || []).filter(Boolean);
     const where = it.where || { account_id: (recs[0] || fixes[0] || {}).account_id, campaign_id: (recs[0] || {}).campaign_id || ((fixes[0] || {}).params || {}).campaign_id, url: it.url || ((((it.ask || {}).ctx) || {}).page || {}).url, section: it.ask ? it.ask.section : it.title };
-    if (steps.length) btns.unshift('<button class="btn primary sm" data-guide="' + reg({ title: it.title, steps, c: where, recId: (recs.find(r => ['proposed', 'advisory'].includes(r.status)) || {}).recommendation_id }) + '">▶ Guide me through it</button>');
+    if (steps.length) btns.unshift('<button class="btn primary sm" data-guide="' + reg({ title: it.title, steps, c: where, recId: (recs.find(r => ['proposed', 'advisory'].includes(r.status)) || {}).recommendation_id }) + '">▶ Guide me through it</button>' + gBadgeHtml({ title: it.title, steps, recId: (recs.find(r => ['proposed', 'advisory'].includes(r.status)) || {}).recommendation_id }));
     if (askId) btns.push('<button class="btn sm" data-ask="' + askId + '">Discuss with AI</button>');
     return '<details class="fx"' + (it.open ? ' open' : '') + '><summary><span class="pill ' + (SEV[it.sev] || '') + '">' + esc(it.sevLabel || it.sev || 'tip') + '</span> <span class="fx-t">' + esc(it.title) + '</span>' +
       (fixes.length || recs.some(r => r.status === 'proposed' && r.action_type) ? ' <span class="pill good">fixable</span>' : '') + '</summary><div class="fx-b">' +
