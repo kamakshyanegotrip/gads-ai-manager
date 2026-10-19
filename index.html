@@ -1453,8 +1453,11 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
         // after the changes: what is still weaker than the competitor?
         q = 'OUR landing page was changed (see "changes_made"). Compare OUR page NOW with the COMPETITOR page again; both get visitors from the Google search "' + String(d.keyword || '').slice(0, 80) + '". Return ONLY JSON: {"summary":"one sentence on where we stand now","score_ours":0-10,"score_comp":0-10,"ours":[{"anchor":"short exact text copied from OUR page where the change goes","instruction":"what to change, max 20 words","reason":"why, saying what the competitor shows, max 30 words","new_text":"suggested new text, or empty"}]}. List only what is STILL missing or weaker (max 5, most important first); do not repeat changes that are now on the page. If our page is now as good or better, return an empty "ours" list. Plain words, no markdown.';
         ctx = { recommendation: d.title, changes_made: d.done || [], competitor: oursCtx(d.comp || {}), ours_now: oursCtx(d.ours || {}) };
+      } else if (d.mode === 'raw') {
+        // SiteSculpt (page editor in the extension): its own instructions and page travel as data
+        q = String(d.question || '').slice(0, 1900); ctx = { data: String(d.context || '').slice(0, 15000) };
       }
-      const r = await act({ action: 'ask', account_id: scopeAcc(), section: d.mode === 'verify' ? 'Landing page change check' : d.mode === 'recheck' ? 'Landing page re-check vs competitor' : 'Landing page vs competitor', question: q, context: JSON.stringify(ctx).slice(0, 15800) });
+      const r = await act({ action: 'ask', account_id: scopeAcc(), section: d.mode === 'raw' ? String('Site editor: ' + (d.section || '')).slice(0, 60) : d.mode === 'verify' ? 'Landing page change check' : d.mode === 'recheck' ? 'Landing page re-check vs competitor' : 'Landing page vs competitor', question: q, context: JSON.stringify(ctx).slice(0, 15800) });
       if (!r.ok) throw new Error(r.error || 'No answer');
       const t = String(r.answer || ''); const j = JSON.parse(t.slice(t.indexOf('{'), t.lastIndexOf('}') + 1));
       res = { ok: true, result: j };
