@@ -195,6 +195,7 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
 .drawer .msgs { padding: 12px; } .drawer .msg { max-width: 92%; }
 .fab { position: fixed; right: 18px; bottom: 18px; z-index: 15; background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 999px; padding: 11px 18px; font-weight: 600; cursor: pointer; box-shadow: 0 6px 18px rgba(0,0,0,.2); }
 @media (max-width: 600px) { .fx-b { padding-left: 12px; } .fab { right: 12px; bottom: 12px; } }
+.cp-lp-q{width:100%;margin-bottom:6px}
 </style>
 </head>
 <body>
@@ -2410,6 +2411,59 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
     renderSug(f);
   }
 
+  // ---------- landing page picker: pages used in ads (checked daily) + every published page of the website ----------
+  const lpNum = n => { const x = Number(n || 0); return x ? (Math.round(x * 10) / 10) : 0; };
+  function lpPicker(pages, cur) {
+    const known = pages.map(p => [p.url, (p.title || p.url).replace(/ - Negotrip$/, '') + (lpNum(p.conv) ? ' (' + lpNum(p.conv) + ' leads in 30 days)' : '')]);
+    const inList = !cur || known.some(k => k[0] === cur);
+    const opt = (o, c) => '<option value="' + esc(o[0]) + '"' + (c === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>';
+    return '<input id="cpLpQ" class="cp-lp-q" placeholder="Search pages…" autocomplete="off">' +
+      '<select name="landing_url" id="cpLp"><option value="">— choose a page —</option>' +
+      (cur && !inList ? '<option value="' + esc(cur) + '" selected>' + esc(cur) + '</option>' : '') +
+      '<optgroup label="Used in your ads (checked every morning)">' + known.map(o => opt(o, cur)).join('') + '</optgroup>' +
+      '<optgroup id="cpLpSite" label="Other pages on your website (loading…)"></optgroup>' +
+      '<option value="__custom">✎ Type a page address…</option></select>' +
+      '<input name="landing_url_custom" id="cpLpCustom" class="cp-lp-q" placeholder="https://negotrip.in/your-page/" style="display:none;margin-top:6px">' +
+      '<div class="hint" id="cpLpHint"></div>';
+  }
+  async function wireLpPicker(f, d) {
+    const sel = f.querySelector('#cpLp'), grp = f.querySelector('#cpLpSite'), q = f.querySelector('#cpLpQ'), custom = f.querySelector('#cpLpCustom'), hint = f.querySelector('#cpLpHint');
+    if (!sel) return;
+    const checked = new Set((d.pages || []).map(p => String(p.url).replace(/\/$/, '')));
+    const host = (d.domains || [])[0] || (((d.pages || [])[0] || {}).url ? new URL(d.pages[0].url).hostname : '');
+    const say = () => {
+      const v = sel.value; custom.style.display = v === '__custom' ? '' : 'none';
+      if (v === '__custom') { hint.textContent = 'Paste the full address of a page on your website. The plan checks that it opens before anything is created.'; custom.focus(); return; }
+      if (!v) { hint.textContent = ''; return; }
+      const p = (d.pages || []).find(x => x.url === v);
+      hint.textContent = p ? 'Checked page: already used in your ads' + (lpNum(p.conv) ? ', ' + lpNum(p.conv) + ' leads in the last 30 days.' : '.') : 'Not used in ads yet. The plan checks that it opens; the daily check starts after the campaign runs.';
+    };
+    sel.addEventListener('change', say); say();
+    q.oninput = () => { const s = q.value.trim().toLowerCase(); let first = null;
+      for (const o of sel.querySelectorAll('option')) { if (!o.value || o.value === '__custom') continue; const hit = !s || (o.textContent + ' ' + o.value).toLowerCase().includes(s); o.hidden = !hit; if (hit && !first) first = o; }
+      if (s && first && sel.selectedOptions[0] && sel.selectedOptions[0].hidden) { sel.value = first.value; say(); } };
+    q.onkeydown = e => { if (e.key === 'Enter') e.preventDefault(); };
+    if (!host) { grp.label = 'Other pages on your website (website not known)'; return; }
+    // WordPress lists every published page (newest edits first); works from the browser, no login needed
+    const all = [];
+    try {
+      for (let page = 1; page <= 5; page++) {
+        const r = await fetch('https://' + host.replace(/^www\./, '') + '/wp-json/wp/v2/pages?per_page=100&page=' + page + '&orderby=modified&order=desc&_fields=link,title,modified');
+        if (!r.ok) break; const list = await r.json(); if (!Array.isArray(list) || !list.length) break; all.push(...list);
+        if (page >= Number(r.headers.get('x-wp-totalpages') || 1)) break;
+      }
+    } catch (e) {}
+    if (!document.body.contains(sel)) return;
+    const txt = h => { const t = document.createElement('textarea'); t.innerHTML = String(h || ''); return t.value; };
+    const skip = /thank-?you|\/thanks|-copy-?\d*\/|\/(cart|checkout|my-account|privacy|terms|refund|cancellation|sample-page|elementor-\d+)/i;
+    const fresh = Date.now() - 14 * 864e5;
+    const rows = all.filter(x => x && x.link && !skip.test(x.link) && !checked.has(String(x.link).replace(/\/$/, '')));
+    if (!all.length) { grp.label = 'Other pages on your website (could not load the list; use “Type a page address”)'; return; }
+    grp.label = 'Other pages on ' + host.replace(/^www\./, '') + ' — newest first (' + rows.length + ')';
+    grp.innerHTML = rows.map(x => { const isNew = Date.parse(x.modified) > fresh; return '<option value="' + esc(x.link) + '">' + esc((isNew ? '🆕 ' : '') + (txt(x.title && x.title.rendered) || x.link)) + '</option>'; }).join('');
+    const cur = sel.dataset.want; if (cur) sel.value = cur;
+  }
+
   // ---------- step 1: questions ----------
   async function campWizard(prev) {
     const d = camp.data || {}; const v = prev || {};
@@ -2427,7 +2481,7 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
         fld('What to promote *', inp('promote', v.promote, 'maxlength="200" placeholder="e.g. Puri Konark 2N/3D package"') + sugBox('promote')) + '</div>' +
       fld('Why people should book with you', '<textarea name="selling_points" rows="2" maxlength="800" class="ta" placeholder="e.g. local Odisha team, hotel + cab + guide, pickup from Bhubaneswar">' + esc(v.selling_points || '') + '</textarea>' + sugBox('selling_points')) +
       '<div class="grid two">' + fld('Price from (optional)', inp('price_from', v.price_from, 'maxlength="60" placeholder="e.g. Rs 8,999 per person"') + sugBox('price_from'), 'Only shown in ads if you enter it.') +
-        fld('Landing page *', sel('landing_url', [['', '— choose a page —']].concat(pages.map(p => [p.url, (p.title || p.url).replace(/ - Negotrip$/, '') + (p.conv ? ' (' + p.conv + ' leads)' : '')])), v.landing_url || '') + sugBox('landing_url')) + '</div>' +
+        fld('Landing page *', lpPicker(pages, v.landing_url || '') + sugBox('landing_url')) + '</div>' +
       fld('Where should ads show?', '<div id="cpLocs" class="chips"></div><div class="cp-geo"><input id="cpGeoQ" placeholder="Type a city or state, e.g. Kolkata" autocomplete="off"><div id="cpGeoRes" class="cp-geo-res"></div></div>' + sugBox('locations'), 'Pre-filled with the places your current campaign targets. Remove all to target the whole of India.') +
       fld('Languages', '<div class="cp-langs">' + CP_LANGS.map(l => '<label class="chk"><input type="checkbox" name="lang_' + l[0] + '"' + (langs.includes(l[0]) ? ' checked' : '') + '> ' + l[1] + '</label>').join('') + '</div>' + sugBox('languages')) +
       '<div class="grid two">' + fld('Monthly budget (Rs) *', inp('monthly_budget', v.monthly_budget, 'inputmode="numeric" placeholder="e.g. 12000"') + sugBox('monthly_budget'), 'The most you want to spend a month once it works.') +
@@ -2440,6 +2494,7 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
     setTimeout(() => wireWizard(), 0);
     const f = await formModal('New campaign: tell the AI about it', html, 'Write the plan');
     if (!f) return;
+    if (f.landing_url === '__custom') f.landing_url = String(f.landing_url_custom || '').trim();
     const ans = { type: f.type, goal: f.goal, promote: f.promote, selling_points: f.selling_points, price_from: f.price_from, landing_url: f.landing_url, audience: f.audience,
       monthly_budget: f.monthly_budget, target_cpl: f.target_cpl, start_pct: Number(f.start_pct), phone: f.phone, locations: window.__cpLocs || [] };
     const ck = window.__cpChecks || {};
@@ -2456,6 +2511,7 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
     let locs = window.__cpLocs || [];
     const capture = () => { const c = {}; for (const el of f.elements) if (el.type === 'checkbox') c[el.name] = el.checked; window.__cpChecks = c; };
     capture(); f.addEventListener('change', capture);
+    wireLpPicker(f, d);
     const draw = () => { $('#cpLocs').innerHTML = (locs.length ? locs.map((l, i) => '<span class="chip">' + esc(l.name.split(',').slice(0, 2).join(', ')) + ' <button type="button" data-rm="' + i + '" aria-label="Remove">×</button></span>').join('') : '<span class="small muted">Whole of India</span>'); window.__cpLocs = locs; };
     draw();
     $('#cpLocs').onclick = e => { const b = e.target.closest('[data-rm]'); if (!b) return; locs.splice(Number(b.dataset.rm), 1); draw(); };
