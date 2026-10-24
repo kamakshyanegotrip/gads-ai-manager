@@ -1363,6 +1363,14 @@ ul.since li, ul.conn li { margin: 6px 0; }
       window.postMessage({ source: 'negotrip-app', type: 'guide:start', guide: extGuide(guide) }, location.origin);
       gPersist(); gBadges(); gReasons(guide);
       toast('Opening the steps on the Google Ads page…', 5000);
+      // make sure the extension really took the new guide; if not, say so instead of leaving the old guide on screen
+      { const want = guide.key; let ok = false;
+        const h = e => { if (e.source === window && e.data && e.data.source === 'negotrip-ext' && e.data.type === 'guide:state' && e.data.guide && e.data.guide.key === want) ok = true; };
+        window.addEventListener('message', h);
+        setTimeout(() => window.postMessage({ source: 'negotrip-app', type: 'guide:hello' }, location.origin), 1800);
+        setTimeout(() => { window.removeEventListener('message', h); if (ok) return;
+          modal('The new guide did not reach Google Ads', '<p>The NegoTrip Ads Guide could not take the new steps, so Google Ads may still show the old guide. This happens after the extension is updated while this page was open.</p><ol><li>Reload this page.</li><li>Press <b>Guide me</b> again.</li></ol><p class="small muted">If it still does not open, open chrome://extensions, press the reload arrow on NegoTrip Ads Guide, then reload this page.</p>',
+            [{ key: 'x', label: 'Close' }, { key: 'r', label: 'Reload this page now', cls: 'primary' }]).then(k => { if (k === 'r') location.reload(); }); }, 4500); }
       return;
     }
     let d = $('#guidePanel');
