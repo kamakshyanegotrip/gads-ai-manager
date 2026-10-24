@@ -196,6 +196,46 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
 .fab { position: fixed; right: 18px; bottom: 18px; z-index: 15; background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 999px; padding: 11px 18px; font-weight: 600; cursor: pointer; box-shadow: 0 6px 18px rgba(0,0,0,.2); }
 @media (max-width: 600px) { .fx-b { padding-left: 12px; } .fab { right: 12px; bottom: 12px; } }
 .cp-lp-q{width:100%;margin-bottom:6px}
+/* ---- sections + sub-tabs ---- */
+nav.secs { max-width: 1280px; margin: 0 auto; padding: 0 16px; display: flex; gap: 6px; overflow-x: auto; }
+nav.secs button { border: 0; background: none; padding: 11px 14px 9px; border-bottom: 3px solid transparent; cursor: pointer; color: var(--muted); font-weight: 600; font-size: 15px; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
+nav.secs button .ic { font-size: 13px; opacity: .8; }
+nav.secs button.active { color: var(--ink); border-color: var(--accent); }
+nav.secs .count { background: var(--accent); color: var(--accent-ink); border-radius: 10px; padding: 0 7px; font-size: 11px; }
+nav.tabs { border-top: 1px solid var(--line); }
+nav.tabs button { font-size: 13px; padding: 8px 12px; }
+.hidden { display: none !important; }
+.ph { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.ph h2 { margin-bottom: 8px; }
+ul.since li, ul.conn li { margin: 6px 0; }
+#todoFilters .tc { font-size: 11px; opacity: .7; margin-left: 2px; }
+.has-tip { text-decoration: underline dotted var(--muted); text-underline-offset: 3px; cursor: help; }
+.comp-cards { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+.card.comp .comp-m { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; margin: 8px 0; }
+.card.comp .comp-m div { display: flex; flex-direction: column; background: var(--bg); border-radius: 8px; padding: 6px 8px; }
+.card.comp .comp-m span, .card.comp .comp-m small { font-size: 11px; color: var(--muted); }
+.card.comp .comp-m b { font-size: 16px; }
+.card.comp .rec-actions a.btn { text-decoration: none; }
+/* campaign wizard steps */
+.wz-steps { display: flex; gap: 6px; margin: 0 0 12px; flex-wrap: wrap; }
+.wz-steps span { flex: 1; min-width: 120px; font-size: 12px; padding: 6px 8px; border-radius: 8px; background: var(--bg); color: var(--muted); border: 1px solid var(--line); }
+.wz-steps span.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.wz-steps span.done { color: var(--ink); }
+.wz-nav { display: flex; justify-content: space-between; gap: 8px; margin-top: 12px; }
+.lp-check { margin-top: 8px; font-size: 13px; }
+.lp-check li { margin: 3px 0; }
+.modal .grid.two[data-wz-step="1"] { grid-template-columns: 1fr; }
+/* phones: sections become a bottom bar */
+@media (max-width: 700px) {
+  nav.secs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 14; background: var(--panel); border-top: 1px solid var(--line); justify-content: space-around; padding: 0 4px; gap: 0; }
+  nav.secs button { flex-direction: column; gap: 1px; font-size: 11px; padding: 7px 4px 8px; border-bottom: 0; border-top: 3px solid transparent; flex: 1; }
+  nav.secs button.active { border-top-color: var(--accent); }
+  nav.secs button .ic { font-size: 16px; }
+  main { padding-bottom: 80px; }
+  .grid.kpis { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .grid.kpis .kpi .value { font-size: 20px; }
+  .fab { bottom: 70px !important; }
+}
 </style>
 </head>
 <body>
@@ -233,19 +273,29 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
         <button class="btn" id="logoutBtn">Sign out</button>
       </div>
     </div>
+    <nav class="secs" id="secs" aria-label="Sections">
+      <button data-sec="today" class="active"><span class="ic">◉</span>Today</button>
+      <button data-sec="todo"><span class="ic">✓</span>To-do <span class="count hidden" id="todoCount"></span></button>
+      <button data-sec="camps"><span class="ic">▲</span>Campaigns</button>
+      <button data-sec="leads"><span class="ic">☎</span>Leads</button>
+      <button data-sec="insights"><span class="ic">◔</span>Insights</button>
+    </nav>
     <nav class="tabs" id="tabs">
-      <button data-tab="dash" class="active">Dashboard</button>
-      <button data-tab="recs">Recommendations <span class="count hidden" id="recCount"></span></button>
-      <button data-tab="site">Site &amp; Tracking <span class="count hidden" id="siteCount"></span></button>
-      <button data-tab="intel">Alerts &amp; Insights <span class="count hidden" id="alertCount"></span></button>
-      <button data-tab="market">Market</button>
-      <button data-tab="camp">New campaign</button>
-      <button data-tab="funnel">Funnel &amp; Calls</button>
-      <button data-tab="web">Web &amp; Tags <span class="count hidden" id="webCount"></span></button>
-      <button data-tab="exp">Experiments <span class="count hidden" id="expCount"></span></button>
-      <button data-tab="reports">Reports</button>
-      <button data-tab="chat">AI Chat</button>
-      <button data-tab="log">Change log</button>
+      <button data-tab="dash" data-sec="today" class="active">Today</button>
+      <button data-tab="todo" data-sec="todo">To-do list</button>
+      <button data-tab="recs" data-sec="todo">Approvals &amp; history <span class="count hidden" id="recCount"></span></button>
+      <button data-tab="site" data-sec="todo">Website &amp; tracking checks <span class="count hidden" id="siteCount"></span></button>
+      <button data-tab="camps" data-sec="camps">Your campaigns</button>
+      <button data-tab="camp" data-sec="camps">New campaign</button>
+      <button data-tab="exp" data-sec="camps">Experiments <span class="count hidden" id="expCount"></span></button>
+      <button data-tab="supp" data-sec="camps">Suppliers</button>
+      <button data-tab="funnel" data-sec="leads">Leads &amp; calls</button>
+      <button data-tab="intel" data-sec="insights">Performance analysis <span class="count hidden" id="alertCount"></span></button>
+      <button data-tab="market" data-sec="insights">Market &amp; competitors</button>
+      <button data-tab="web" data-sec="insights">Website analytics <span class="count hidden" id="webCount"></span></button>
+      <button data-tab="reports" data-sec="insights">Reports</button>
+      <button data-tab="log" data-sec="insights">Change log</button>
+      <button data-tab="chat" data-sec="insights">AI chat</button>
     </nav>
   </header>
 
@@ -254,17 +304,42 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
     <section id="tab-dash">
       <div class="grid kpis" id="kpis"></div>
       <div class="grid two" style="margin-top:14px">
-        <div class="panel"><h2>Daily spend &amp; conversions</h2><div class="chart-box"><canvas id="chart"></canvas></div></div>
-        <div class="panel"><h2>Open issues</h2><ul class="issues" id="issues"></ul></div>
+        <div class="panel"><div class="ph"><h2>Do these today</h2><a href="#" class="small" data-goto="todo">See the whole to-do list →</a></div><div id="todayDo"></div></div>
+        <div class="panel"><h2>Since your last visit</h2><div id="todaySince"></div></div>
       </div>
-      <div class="panel" style="margin-top:14px">
+      <div class="grid two" style="margin-top:14px">
+        <div class="panel"><h2>Daily spend &amp; leads</h2><div class="chart-box"><canvas id="chart"></canvas></div></div>
+        <div class="panel"><h2>Is everything connected?</h2><div id="todayConn"></div><ul class="issues hidden" id="issues"></ul></div>
+      </div>
+    </section>
+
+    <!-- TO-DO: alerts, findings and recommendations in one list -->
+    <section id="tab-todo" class="hidden">
+      <div class="filters" id="todoFilters">
+        <button data-tf="all" class="active">All</button>
+        <button data-tf="urgent">Urgent</button>
+        <button data-tf="approve">Needs your approval</button>
+        <button data-tf="money">Saves money</button>
+        <button data-tf="leads">More leads</button>
+        <button data-tf="site">Website &amp; tracking</button>
+      </div>
+      <div class="panel"><div id="todoList"></div></div>
+    </section>
+
+    <!-- YOUR CAMPAIGNS -->
+    <section id="tab-camps" class="hidden">
+      <div class="panel">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-          <h2 style="margin:0">Campaigns</h2>
+          <h2 style="margin:0">Your campaigns</h2>
           <span class="small muted" id="freshness"></span>
         </div>
         <div class="table-wrap" style="margin-top:10px"><table id="campTable"></table></div>
+        <div class="rec-actions" style="margin-top:12px"><button class="btn primary" data-goto="camp">+ Start a new campaign</button></div>
       </div>
     </section>
+
+    <!-- SUPPLIERS (moved out of Market) -->
+    <section id="tab-supp" class="hidden"><div id="suppSlot"></div></section>
 
     <!-- RECOMMENDATIONS -->
     <section id="tab-recs" class="hidden">
@@ -343,12 +418,13 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
 
     <!-- MARKET -->
     <section id="tab-market" class="hidden">
-      <div class="panel" style="margin-bottom:14px"><h2>Competitor ads &amp; strategy</h2><div id="compAdsBox"></div></div>
-      <div class="panel"><h2>Auction insights: share of the auction</h2><div class="lead-bar"><span class="small muted">Upload the Auction insights file from Google Ads once a week.</span><span><button class="btn primary" id="aiUpBtn">Upload Auction insights file</button><input type="file" id="aiFile" accept=".csv,.tsv,text/csv,text/tab-separated-values" hidden></span></div><div id="aiBox"></div>
+      <div class="panel" style="margin-bottom:14px"><div class="ph"><h2>Your competitors</h2><label class="small muted"><input type="checkbox" id="compShowAgg"> show marketplaces (MakeMyTrip, Booking…)</label></div><div id="compProfiles"></div></div>
+      <div class="panel" style="margin-bottom:14px"><h2>Lessons &amp; ad ideas from competitors</h2><div id="compAdsBox"></div></div>
+      <div class="panel"><h2>Auction insights: share of the auction</h2><div class="lead-bar"><span class="small muted">Upload the Auction insights file from Google Ads once a week. <a href="https://ads.google.com/aw/insights/auctioninsights" target="_blank" rel="noopener">Open Auction insights in Google Ads ↗</a></span><span><button class="btn primary" id="aiUpBtn">Upload Auction insights file</button><input type="file" id="aiFile" accept=".csv,.tsv,text/csv,text/tab-separated-values" hidden></span></div><div id="aiBox"></div>
         <details class="small" style="margin-top:8px"><summary>How to get the file</summary><ol><li>Open Google Ads and choose the account.</li><li>Go to <b>Insights &amp; reports</b> &gt; <b>Auction insights</b>.</li><li>Set the date range to <b>Last 30 days</b>.</li><li>Click the <b>Download</b> icon and choose <b>.csv</b>.</li><li>Come back here and press <b>Upload Auction insights file</b>.</li></ol></details><p class="small muted">Impression share below 10% is shown as "&lt; 10%". Uploading the same file twice does nothing.</p><div id="adv-ai"></div></div>
       <div class="panel" style="margin-top:14px"><h2>Keyword gaps &amp; demand</h2><div id="kgSummary"></div><div class="table-wrap"><table id="kgTable"></table></div>
         <p class="small muted">Weekly (Monday 06:10 IST): Google Keyword Planner ideas for India plus your own search terms, compared with your keywords. Brand, portal and temple-room searches are left out.</p><div id="adv-kg"></div></div>
-      <div class="panel" style="margin-top:14px"><h2>Suppliers</h2><div id="supBox"></div>
+      <div class="panel" style="margin-top:14px" id="suppPanel"><h2>Suppliers</h2><div id="supBox"></div>
         <p class="small muted">Saved straight into your "Suppliers" Google Sheet. Edits made in the sheet still show here the next morning (08:10 IST sync). Set a supplier to inactive instead of deleting it.</p><div id="adv-sup"></div></div>
     </section>
 
@@ -519,7 +595,7 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
 
   // ---------- render ----------
   function render() { REG.clear(); setTimeout(() => gBadges(), 0); renderDash(); renderRecs(); renderLog(); renderSite(); renderIntel(); renderMarket(); renderFunnel(); renderWeb(); renderExp(); renderReports();
-    for (const f of [renderLeads, renderSiteAdvice, renderIntelAdvice, renderMarketAdvice, renderFunnelAdvice, renderWebAdvice]) { try { f(); } catch (e) { console.error(f.name, e); } } }
+    for (const f of [renderLeads, renderSiteAdvice, renderIntelAdvice, renderMarketAdvice, renderFunnelAdvice, renderWebAdvice, renderTodo, renderToday, renderCompProfiles, glossary]) { try { f(); } catch (e) { console.error(f.name, e); } } }
 
   function renderDash() {
     const camps = data.campaigns.filter(inScope);
@@ -530,11 +606,11 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
     const cpa = conv > 0 ? cost / conv : null, tgt = targetCpa();
     const cpaCls = cpa === null || !tgt ? '' : (cpa <= tgt ? 'good' : (cpa <= tgt * 1.25 ? 'warn' : 'bad'));
     $('#kpis').innerHTML = [
-      ['Spend', inr(cost), data.days + ' days · ' + num(clicks) + ' clicks'],
-      ['Conversions', num(conv), 'CVR ' + (clicks ? (conv / clicks * 100).toFixed(2) + '%' : '—')],
-      ['CPA', inr(cpa), tgt ? '<span class="pill ' + cpaCls + '">target ' + inr(tgt) + '</span>' : 'no target set'],
-      ['Zero-conversion spend', inr(zero), cost ? (zero / cost * 100).toFixed(1) + '% of spend' : '—'],
-      ['Awaiting approval', String(data.recommendations.filter(r => r.status === 'proposed' && inScope(r)).length), 'recommendations']
+      ['Leads', num(conv), data.days + ' days · ' + (clicks ? (conv / clicks * 100).toFixed(1) + '% of clicks became leads' : 'no clicks yet')],
+      ['Cost per lead', inr(cpa), tgt ? '<span class="pill ' + cpaCls + '">' + (cpa === null ? 'target ' : cpa <= tgt ? 'on target · target ' : 'above target ' ) + inr(tgt) + '</span>' : 'no target set'],
+      ['Spend', inr(cost), num(clicks) + ' clicks'],
+      ['Spend with no leads', inr(zero), cost ? (zero / cost * 100).toFixed(1) + '% of spend, campaigns with 0 leads' : '—'],
+      ['Waiting for you', '<a href="#" data-goto="todo">' + String(todoCountNow()) + '</a>', 'items in your to-do list']
     ].map(k => '<div class="panel kpi"><div class="label">' + k[0] + '</div><div class="value">' + k[1] + '</div><div class="sub muted">' + k[2] + '</div></div>').join('');
 
     const byDate = {};
@@ -1864,7 +1940,7 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
       h += '<div class="small muted" style="margin-bottom:10px">Source: Google Ads Transparency Center, scanned daily for your monitored competitors (' + num((ci || {}).ads_total || ca.length) + ' ads, ' + num((ci || {}).ads_live || ca.filter(x => x.live).length) + ' live). Google does not publish competitors\' clicks, costs or bookings, so "working well" = still running after many weeks (advertisers stop ads that lose money). Destinations are what each ad promotes. Target region: India (country level).' + (ci && ci.generated_at ? ' Updated ' + new Date(ci.generated_at).toLocaleString() + '.' : '') + '</div>';
       if (A && A.summary) h += '<div class="callout">' + esc(A.summary) + '</div>';
       const cstats = (ci && ci.competitors) || [];
-      if (cstats.length) h += '<div class="cards">' + cstats.slice(0, 8).map(c => { const a = ((A && A.competitors) || []).find(x => x.domain === c.domain) || {};
+      if (false && cstats.length) h += '<div class="cards">' + cstats.slice(0, 8).map(c => { const a = ((A && A.competitors) || []).find(x => x.domain === c.domain) || {};
         const best = ca.filter(x => x.domain === c.domain).sort((p, q) => (q.live - p.live) || (Number(q.days_running) - Number(p.days_running))).slice(0, 3);
         return '<div class="card"><div class="card-h"><b>' + esc(c.domain) + '</b><span class="pill ' + (c.live ? 'info' : '') + '">' + c.live + ' live / ' + c.ads + ' ads</span></div>' +
           '<div class="small muted">' + esc(c.advertiser || '') + ' · longest running ' + num(c.longest_days) + ' days · shown on ' + esc((c.surfaces || []).map(s => s.toLowerCase()).join(', ') || '—') + '</div>' +
@@ -2052,7 +2128,7 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
     const gd = e.target.closest('[data-guide]'); if (gd) { e.preventDefault(); const o = REG.get(gd.dataset.guide); if (o) openGuide(o); return; }
     const g = e.target.closest('[data-goto]'); if (g) { e.preventDefault(); const b = document.querySelector('button[data-tab="' + g.dataset.goto + '"]'); if (b) b.click(); const sc = g.dataset.scroll; setTimeout(() => { const el = sc && document.getElementById(sc); (el || document.body).scrollIntoView({ behavior: 'smooth', block: 'start' }); if (!el) window.scrollTo({ top: 0, behavior: 'smooth' }); }, 150); }
   });
-  const TAB_NAMES = { dash: 'Dashboard', recs: 'Recommendations', site: 'Site & Tracking', intel: 'Alerts & Insights', market: 'Market', funnel: 'Funnel & Calls', web: 'Web & Tags', exp: 'Experiments', reports: 'Reports', log: 'Change log' };
+  const TAB_NAMES = { todo: 'To-do list', camps: 'Your campaigns', camp: 'New campaign', supp: 'Suppliers', dash: 'Today', recs: 'Recommendations', site: 'Site & Tracking', intel: 'Alerts & Insights', market: 'Market', funnel: 'Funnel & Calls', web: 'Web & Tags', exp: 'Experiments', reports: 'Reports', log: 'Change log' };
   function tabContext(t) {
     const acc = scopeAcc(), I = insOf(acc);
     switch (t) {
@@ -2284,7 +2360,7 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
   // =====================================================================
   let camp = { loaded: false, acc: null, data: null };
   const CP_ST = { draft: ['info', 'Plan ready'], guided: ['warn', 'Set up in Google Ads'], building: ['warn', 'Being built…'], partial: ['warn', 'Partly built'], built: ['good', 'Built, paused'], live: ['good', 'Live'] };
-  const CP_TYPES = [['auto', 'Let AI suggest (recommended)'], ['search', 'Search'], ['performance_max', 'Performance Max'], ['demand_gen', 'Demand Gen'], ['video', 'Video (YouTube)'], ['display', 'Display']];
+  const CP_TYPES = [['auto', 'Let AI suggest (recommended)'], ['search', 'Search — created in Google Ads automatically'], ['performance_max', 'Performance Max — you set it up (guided steps)'], ['demand_gen', 'Demand Gen — you set it up (guided steps)'], ['video', 'Video (YouTube) — you set it up (guided steps)'], ['display', 'Display — you set it up (guided steps)']];
   const CP_LANGS = [['en', 'English'], ['hi', 'Hindi'], ['bn', 'Bengali'], ['te', 'Telugu'], ['ta', 'Tamil'], ['mr', 'Marathi'], ['gu', 'Gujarati'], ['kn', 'Kannada'], ['ml', 'Malayalam'], ['pa', 'Punjabi'], ['ur', 'Urdu']];
   const rsx2 = v => 'Rs ' + Math.round(Number(v || 0)).toLocaleString('en-IN');
 
@@ -2426,6 +2502,66 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
       '<input name="landing_url_custom" id="cpLpCustom" class="cp-lp-q" placeholder="https://negotrip.in/your-page/" style="display:none;margin-top:6px">' +
       '<div class="hint" id="cpLpHint"></div>';
   }
+
+  // ---------- landing page quick check (price, call, WhatsApp, form) before the plan is written ----------
+  let lpSeq = 0;
+  async function lpCheck(url) {
+    const box = $('#cpLpCheck'); if (!box) return; const my = ++lpSeq;
+    url = String(url || '').trim(); if (!/^https?:\/\//.test(url)) { box.innerHTML = ''; return; }
+    box.innerHTML = '<span class="small muted"><span class="spin"></span> Checking the page…</span>';
+    let html = '', title = '';
+    try { const u = new URL(url); const slug = u.pathname.split('/').filter(Boolean).pop() || '';
+      const r = await fetch(u.origin + '/wp-json/wp/v2/pages?slug=' + encodeURIComponent(slug) + '&_fields=content,title,link');
+      const l = r.ok ? await r.json() : []; const pg = (l || []).find(x => String(x.link).replace(/\/$/, '') === url.replace(/\/$/, '')) || (l || [])[0];
+      if (pg) { html = (pg.content || {}).rendered || ''; title = (pg.title || {}).rendered || ''; } } catch (e) {}
+    if (my !== lpSeq) return;
+    if (!html) { box.innerHTML = '<div class="small muted">Could not read this page from here; the plan still checks that it opens. To improve it, open it and use SiteSculpt (NegoTrip Ads Guide icon).</div>'; return; }
+    const text = html.replace(/<[^>]+>/g, ' ');
+    const checks = [
+      [/href=["']tel:/i.test(html), 'Tap-to-call phone number', 'Add a phone button near the top.'],
+      [/wa\.me\/|api\.whatsapp|whatsapp/i.test(html), 'WhatsApp button', 'Add a WhatsApp button near the top.'],
+      [/<form[\s>]|wpforms|elementor-form|contact-form|fluentform/i.test(html), 'Enquiry form', 'Add a short enquiry form (name, phone, travel date).'],
+      [/(₹|rs\.?|inr)\s?\d[\d,]{2,}/i.test(text), 'Price shown', 'Show a “from Rs …” price; ads with prices get better clicks.']
+    ];
+    const bad = checks.filter(c => !c[0]);
+    box.innerHTML = '<ul class="plain lp-check">' + checks.map(c => '<li>' + (c[0] ? '✅ ' : '⚠️ ') + esc(c[1]) + (c[0] ? '' : ' <span class="muted">— ' + esc(c[2]) + '</span>') + '</li>').join('') + '</ul>' +
+      (bad.length ? '<div class="small">Fix it before the ads run: open <a href="' + esc(url) + '" target="_blank" rel="noopener">the page</a> and press the NegoTrip Ads Guide icon to edit it in SiteSculpt. You can still continue.</div>' : '<div class="small" style="color:var(--good)">This page has what a landing page needs.</div>');
+  }
+  // ---------- campaign wizard in 4 short steps ----------
+  function wizardSteps(f) {
+    const body = f.querySelector('.modal-body'); if (!body || body.dataset.wz) return; body.dataset.wz = '1';
+    const STEPS = [['What & why', ['type', 'goal', 'promote', 'selling_points']], ['Landing page', ['price_from', 'landing_url', 'landing_url_custom']], ['Who & where', ['audience']], ['Budget & go', ['monthly_budget', 'target_cpl', 'start_pct', 'phone', 'has_images', 'copy_negatives']]];
+    const stepOf = el => { if (el.id === 'cpLocs' || el.querySelector('#cpLocs, #cpGeoQ, .cp-langs')) return 2;
+      for (let i = 0; i < STEPS.length; i++) if (STEPS[i][1].some(n => el.querySelector('[name="' + n + '"]') || el.matches('[data-sug="' + n + '"]') || el.querySelector('[data-sug="' + n + '"]'))) return i; return -1; };
+    const kids = [...body.children]; let lastStep = 0; const chat = body.querySelector('.cp-chat');
+    kids.forEach(k => { if (k === chat) return; let st = stepOf(k); if (st < 0) st = lastStep; k.dataset.wzStep = st; lastStep = st; });
+    // the landing page check goes right under the page picker
+    const lpField = f.querySelector('#cpLp'); if (lpField && !f.querySelector('#cpLpCheck')) { const c = document.createElement('div'); c.id = 'cpLpCheck'; (f.querySelector('#cpLpHint') || lpField).after(c); }
+    const bar = document.createElement('div'); bar.className = 'wz-steps'; bar.innerHTML = STEPS.map((s, i) => '<span data-wz="' + i + '">' + (i + 1) + '. ' + s[0] + '</span>').join('');
+    body.prepend(bar);
+    const nav = document.createElement('div'); nav.className = 'wz-nav'; nav.innerHTML = '<button type="button" class="btn" data-wzb="back">◀ Back</button><button type="button" class="btn primary" data-wzb="next">Next ▶</button>';
+    body.append(nav);
+    const submit = f.querySelector('.row button[type="submit"]');
+    let cur = 0;
+    const need = i => { const v = n => (f.elements[n] ? String(f.elements[n].value || '').trim() : '');
+      if (i === 0 && !v('promote')) return 'Say what to promote.';
+      if (i === 1 && (!v('landing_url') || (v('landing_url') === '__custom' && !/^https?:\/\//.test(v('landing_url_custom'))))) return 'Choose the landing page.';
+      return ''; };
+    const show = i => { cur = i; kids.forEach(k => { if (k.dataset.wzStep !== undefined) k.style.display = Number(k.dataset.wzStep) === i ? '' : 'none'; });
+      bar.querySelectorAll('span').forEach((s, j) => { s.classList.toggle('on', j === i); s.classList.toggle('done', j < i); });
+      nav.querySelector('[data-wzb="back"]').style.visibility = i ? 'visible' : 'hidden';
+      nav.querySelector('[data-wzb="next"]').style.display = i < STEPS.length - 1 ? '' : 'none';
+      if (submit) submit.style.display = i === STEPS.length - 1 ? '' : 'none';
+      if (chat) chat.style.display = i === 0 ? '' : 'none';
+      body.scrollTop = 0; };
+    nav.onclick = e => { const b = e.target.closest('[data-wzb]'); if (!b) return; if (b.dataset.wzb === 'back') return show(Math.max(0, cur - 1));
+      const m = need(cur); if (m) { toast(m); return; } show(Math.min(STEPS.length - 1, cur + 1)); };
+    bar.onclick = e => { const s = e.target.closest('[data-wz]'); if (!s) return; const to = Number(s.dataset.wz); for (let i = cur; i < to; i++) { const m = need(i); if (m) { toast(m); return show(i); } } show(to); };
+    // Enter in a text box goes to the next step instead of submitting the form early
+    f.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.tagName === 'INPUT' && cur < STEPS.length - 1) { e.preventDefault(); nav.querySelector('[data-wzb="next"]').click(); } });
+    show(0);
+  }
+
   async function wireLpPicker(f, d) {
     const sel = f.querySelector('#cpLp'), grp = f.querySelector('#cpLpSite'), q = f.querySelector('#cpLpQ'), custom = f.querySelector('#cpLpCustom'), hint = f.querySelector('#cpLpHint');
     if (!sel) return;
@@ -2438,7 +2574,8 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
       const p = (d.pages || []).find(x => x.url === v);
       hint.textContent = p ? 'Checked page: already used in your ads' + (lpNum(p.conv) ? ', ' + lpNum(p.conv) + ' leads in the last 30 days.' : '.') : 'Not used in ads yet. The plan checks that it opens; the daily check starts after the campaign runs.';
     };
-    sel.addEventListener('change', say); say();
+    sel.addEventListener('change', () => { say(); lpCheck(sel.value === '__custom' ? custom.value : sel.value); }); say(); if (sel.value && sel.value !== '__custom') lpCheck(sel.value);
+    custom.addEventListener('change', () => lpCheck(custom.value));
     q.oninput = () => { const s = q.value.trim().toLowerCase(); let first = null;
       for (const o of sel.querySelectorAll('option')) { if (!o.value || o.value === '__custom') continue; const hit = !s || (o.textContent + ' ' + o.value).toLowerCase().includes(s); o.hidden = !hit; if (hit && !first) first = o; }
       if (s && first && sel.selectedOptions[0] && sel.selectedOptions[0].hidden) { sel.value = first.value; say(); } };
@@ -2511,7 +2648,7 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
     let locs = window.__cpLocs || [];
     const capture = () => { const c = {}; for (const el of f.elements) if (el.type === 'checkbox') c[el.name] = el.checked; window.__cpChecks = c; };
     capture(); f.addEventListener('change', capture);
-    wireLpPicker(f, d);
+    wireLpPicker(f, d); wizardSteps(f);
     const draw = () => { $('#cpLocs').innerHTML = (locs.length ? locs.map((l, i) => '<span class="chip">' + esc(l.name.split(',').slice(0, 2).join(', ')) + ' <button type="button" data-rm="' + i + '" aria-label="Remove">×</button></span>').join('') : '<span class="small muted">Whole of India</span>'); window.__cpLocs = locs; };
     draw();
     $('#cpLocs').onclick = e => { const b = e.target.closest('[data-rm]'); if (!b) return; locs.splice(Number(b.dataset.rm), 1); draw(); };
@@ -2686,10 +2823,178 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
   $('#tabs').onclick = e => {
     const b = e.target.closest('button[data-tab]'); if (!b) return;
     $$('#tabs button').forEach(x => x.classList.toggle('active', x === b));
-    ['dash', 'recs', 'site', 'intel', 'market', 'camp', 'funnel', 'web', 'exp', 'reports', 'chat', 'log'].forEach(t => $('#tab-' + t).classList.toggle('hidden', t !== b.dataset.tab));
+    ['dash', 'todo', 'recs', 'site', 'camps', 'camp', 'exp', 'supp', 'funnel', 'intel', 'market', 'web', 'reports', 'chat', 'log'].forEach(t => { const sec = $('#tab-' + t); if (sec) sec.classList.toggle('hidden', t !== b.dataset.tab); });
+    syncSec(b);
+    try { window.scrollTo({ top: 0 }); } catch (x) {}
     if (b.dataset.tab === 'chat') $('#chatInput').focus();
     if (b.dataset.tab === 'camp') loadCamp();
   };
+
+
+  // =====================================================================
+  // TO-DO: live alerts, audit findings, daily-analysis findings and recommendations in ONE list
+  // =====================================================================
+  let todoFilter = 'all';
+  const normT = t => String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().slice(0, 80);
+  const moneyOf = t => { const m = String(t || '').match(/(?:₹|rs\.?\s?)\s?([\d,]{2,})/i); return m ? Number(m[1].replace(/,/g, '')) : 0; };
+  function todoItems() {
+    const out = [], usedRecs = new Set(), seen = new Set();
+    const add = (it, meta) => { const k = normT(it.title); if (!k || seen.has(k)) return; seen.add(k); (it.recs || []).forEach(r => r && usedRecs.add(r.recommendation_id)); out.push({ it, ...meta, money: moneyOf(it.title) }); };
+    const kindOf = (t, type) => /landing|page|tracking|tag|conversion action|consent|website|site|url|speed|form/i.test(t + ' ' + (type || '')) ? 'site'
+      : /wast|negative|block|pause|budget|cost|spend|irrelevant|no lead|zero/i.test(t) ? 'money' : 'leads';
+    const RANK = { critical: 0, high: 0, warning: 1, medium: 1, opportunity: 2, info: 3, tip: 3 };
+    // 1. live alerts (something is wrong right now)
+    (data.alerts || []).filter(a => inScope(a) && a.status !== 'resolved').forEach(a => { const sol = alertSolution(a);
+      add({ sev: a.severity, title: a.title, why: sol.why, steps: sol.steps, fixes: sol.fixes, evidence: (a.root_cause || []).length ? '<ul class="plain small">' + a.root_cause.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' : '',
+        ask: { section: 'Alert: ' + trunc(a.title, 70), ctx: { ...ctxBase(), alert: a } } }, { urgent: true, kind: kindOf(a.title, a.alert_type), rank: -1 }); });
+    // 2. audit findings (website, tracking, ads, keywords)
+    data.issues.filter(inScope).forEach(i => { const it = findingItem(i, 'To-do'); add(it, { urgent: /critical|high/.test(i.severity), kind: kindOf(it.title, i.issue_type), rank: RANK[i.severity] ?? 3 }); });
+    // 3. daily-analysis findings
+    (data.insights || []).filter(inScope).forEach(x => (((x.insights || {}).intelligence || {}).findings || []).forEach(f => { const pb = playbook(f.title, { ...f, account_id: x.account_id });
+      add({ sev: f.severity, title: f.title, why: pb.why, steps: pb.steps, fixes: pb.fixes, recs: pb.recs, ask: { section: 'Daily analysis: ' + trunc(f.title, 70), ctx: { ...ctxBase(), finding: f } } }, { urgent: /critical|high/.test(f.severity), kind: kindOf(f.title), rank: RANK[f.severity] ?? 3 }); }));
+    // 4. recommendations not already shown with a finding
+    data.recommendations.filter(r => inScope(r) && ['proposed', 'advisory'].includes(r.status) && !usedRecs.has(r.recommendation_id)).forEach(r => { const x = recHow(r) || {}; const pb = x.pb || {};
+      add({ sev: r.status === 'proposed' ? 'warning' : 'info', sevLabel: r.status === 'proposed' ? 'approve' : 'to do', title: r.title, why: [r.rationale, r.expected_impact ? 'Expected: ' + r.expected_impact : ''].filter(Boolean).join(' '),
+        steps: x.auto ? [] : pb.steps, fixes: x.auto ? [] : pb.fixes, recs: [r], ask: { section: 'Recommendation ' + r.recommendation_id, ctx: { recommendation: r } } }, { urgent: false, kind: kindOf(r.title, r.category), rank: r.status === 'proposed' ? 1.5 : 2.5 }); });
+    out.forEach(o => { o.approve = (o.it.recs || []).some(r => r && r.status === 'proposed'); });
+    return out.sort((a, b) => (b.urgent - a.urgent) || (a.rank - b.rank) || (b.approve - a.approve) || (b.money - a.money));
+  }
+  function todoCountNow() { try { return todoItems().length; } catch (e) { return 0; } }
+  function renderTodo() {
+    const all = todoItems();
+    const n = all.length; $('#todoCount').textContent = n; $('#todoCount').classList.toggle('hidden', !n);
+    const f = { all: () => true, urgent: o => o.urgent, approve: o => o.approve, money: o => o.kind === 'money' || o.money > 0, leads: o => o.kind === 'leads', site: o => o.kind === 'site' }[todoFilter] || (() => true);
+    $$('#todoFilters button').forEach(b => { const k = b.dataset.tf; const c = all.filter({ all: () => true, urgent: o => o.urgent, approve: o => o.approve, money: o => o.kind === 'money' || o.money > 0, leads: o => o.kind === 'leads', site: o => o.kind === 'site' }[k]).length; b.innerHTML = b.innerHTML.replace(/ <span class="tc">.*<\/span>$/, '') + ' <span class="tc">' + c + '</span>'; });
+    const list = all.filter(f);
+    $('#todoList').innerHTML = list.length ? '<p class="small muted" style="margin-top:0">Most important first. Open an item to see why it matters and the one button that does it — <b>Apply</b> (the app changes Google Ads after you approve), <b>Guide me</b> (arrows on the Google Ads page) or <b>Discuss with AI</b>.</p>' +
+      list.map(o => (o.money ? o.it.title.includes('₹') || /rs\s?\d/i.test(o.it.title) ? '' : '' : '') + item(o.it)).join('') : '<div class="empty">Nothing here. 🎉</div>';
+  }
+  $('#todoFilters').onclick = e => { const b = e.target.closest('button[data-tf]'); if (!b) return; todoFilter = b.dataset.tf; $$('#todoFilters button').forEach(x => x.classList.toggle('active', x === b)); renderTodo(); };
+
+  // =====================================================================
+  // TODAY: top 3 to-dos, what changed since the last visit, and whether everything is connected
+  // =====================================================================
+  const LV_KEY = 'gads_last_visit'; let prevVisit = null;
+  try { prevVisit = Number(localStorage.getItem(LV_KEY) || 0) || null; } catch (e) {}
+  setTimeout(() => { try { localStorage.setItem(LV_KEY, String(Date.now())); } catch (e) {} }, 15000);
+  function renderToday() {
+    const top = todoItems().slice(0, 3);
+    $('#todayDo').innerHTML = top.length ? top.map(o => item({ ...o.it, open: false })).join('') : '<div class="empty">Nothing urgent today. 🎉</div>';
+    const since = prevVisit || (Date.now() - 7 * 864e5), when = t => Date.parse(t || 0) > since;
+    const leads = (data.leads || []).filter(l => inScope(l) && when(l.lead_at));
+    const changes = (data.ledger || []).filter(l => inScope(l) && when(l.executed_at));
+    const alerts = (data.alerts || []).filter(a => inScope(a) && when(a.first_seen));
+    const recs = data.recommendations.filter(r => inScope(r) && when(r.created_at));
+    const row = (n, label, tab) => '<li><b>' + num(n) + '</b> ' + label + (n && tab ? ' <a href="#" class="small" data-goto="' + tab + '">open →</a>' : '') + '</li>';
+    $('#todaySince').innerHTML = '<div class="small muted" style="margin-bottom:6px">' + (prevVisit ? 'Since ' + new Date(prevVisit).toLocaleString() : 'In the last 7 days') + '</div><ul class="plain since">' +
+      row(leads.length, 'new lead' + (leads.length === 1 ? '' : 's') + (leads.length ? ': ' + esc(leads.slice(0, 3).map(l => l.contact_name || l.lead_source).join(', ')) : ''), 'funnel') +
+      row(changes.length, 'change' + (changes.length === 1 ? '' : 's') + ' made in Google Ads', 'log') +
+      row(alerts.length, 'new alert' + (alerts.length === 1 ? '' : 's'), 'todo') +
+      row(recs.length, 'new suggestion' + (recs.length === 1 ? '' : 's'), 'todo') + '</ul>';
+    // connections
+    const accs = data.accounts.filter(inScope);
+    const last = accs.map(a => a.last_collected).filter(Boolean).sort().pop();
+    const ageH = last ? (Date.now() - Date.parse(last)) / 36e5 : null;
+    const wa = ((insOf(scopeAcc()) || {}).web_analytics || {}).status || {};
+    const ext = document.documentElement.dataset.ngGuideExt || '';
+    const st = (ok, label, note) => '<li><span class="pill ' + (ok === true ? 'good' : ok === false ? 'bad' : 'warn') + '">' + (ok === true ? 'OK' : ok === false ? 'check' : '—') + '</span> <b>' + label + '</b> <span class="small muted">' + note + '</span></li>';
+    $('#todayConn').innerHTML = '<ul class="plain conn">' +
+      st(ageH === null ? false : ageH < 36, 'Google Ads data', last ? 'updated ' + new Date(last).toLocaleString() + (ageH >= 36 ? ' — older than a day' : '') : 'not collected yet') +
+      st(wa.ga4 === 'ok' ? true : wa.ga4 ? false : null, 'Google Analytics 4', wa.ga4 === 'ok' ? 'connected' + (wa.ga4_property_id ? ' (' + esc(wa.ga4_property_id) + ')' : '') : (wa.ga4 ? esc(wa.ga4) : 'not set up')) +
+      st(wa.gsc === 'ok' ? true : wa.gsc ? false : null, 'Search Console', wa.gsc === 'ok' ? 'connected' : (wa.gsc ? esc(wa.gsc) : 'not set up')) +
+      st(ext ? true : false, 'Ads Guide extension', ext ? 'version ' + esc(ext) + ' on this browser' : 'not found on this browser (Google Ads arrows and SiteSculpt need it)') + '</ul>' +
+      '<div class="small muted">' + ($('#freshness') ? esc($('#freshness').textContent) : '') + '</div>';
+  }
+
+  // =====================================================================
+  // COMPETITOR PROFILES: everything about one competitor on one card
+  // =====================================================================
+  const AGG_RE = /(^|\.)(google|booking|agoda|airbnb|makemytrip|goibibo|yatra|cleartrip|expedia|tripadvisor|skyscanner|traveltriangle|thrillophilia|holidify|oyorooms|trivago|ixigo|easemytrip|redbus|abhibus|thomascook|veenaworld|bharatbooking)\.[a-z.]+$/i;
+  function renderCompProfiles() {
+    const box = $('#compProfiles'); if (!box) return;
+    const acc = scopeAcc(), I = insOf(acc) || {};
+    const showAgg = !!($('#compShowAgg') || {}).checked;
+    const map = {};
+    const get = d => { d = String(d || '').toLowerCase().replace(/^www\./, ''); if (!d) return null; return map[d] || (map[d] = { domain: d, ads: [], campaigns: 0 }); };
+    (data.competitors || []).filter(inScopeA).forEach(c => { const x = get(c.domain); if (x) Object.assign(x, { m: c }); });
+    ((I.competitor_ads || {}).competitors || []).forEach(c => { const x = get(c.domain); if (x) x.stats = c; });
+    (((I.competitor_ads || {}).ai || {}).competitors || []).forEach(c => { const x = get(c.domain); if (x) x.ai = c; });
+    (data.competitor_ads || []).filter(inScopeA).forEach(a => { const x = get(a.domain); if (x) x.ads.push(a); });
+    (I.competitor_pages || []).forEach(pg => { const x = get(pg.domain || shortUrl(pg.url).split('/')[0]); if (x) x.page = pg; });
+    (I.competitors || []).forEach(c => { const x = get(c.domain); if (x) { x.agg = !!c.aggregator; x.campaigns = (c.campaigns || []).length; } });
+    let list = Object.values(map).map(x => ({ ...x, agg: x.agg || AGG_RE.test(x.domain) }));
+    const aggN = list.filter(x => x.agg).length;
+    if (!showAgg) list = list.filter(x => !x.agg);
+    const score = x => (x.m && x.m.position_above_rate != null ? Number(x.m.position_above_rate) * 200 : 0) + (x.m && x.m.overlap_rate != null ? Number(x.m.overlap_rate) * 100 : 0) + Math.min(20, (x.stats ? Number(x.stats.live || 0) : x.ads.filter(a => a.live).length) * 2) + x.campaigns * 8 + (x.page ? 3 : 0);
+    list.sort((a, b) => score(b) - score(a));
+    const own = I.own_main_page || null;
+    const yn = (v, label) => v === true ? '<span class="pill good">' + label + ' ✓</span>' : v === false ? '<span class="pill">no ' + label.toLowerCase() + '</span>' : '';
+    if (!list.length) { box.innerHTML = '<div class="empty">No competitors found yet. They appear after the daily check (Auction insights domains and ad scans).' + (aggN ? ' ' + aggN + ' marketplace(s) are hidden — tick “show marketplaces”.' : '') + '</div>'; return; }
+    box.innerHTML = '<p class="small muted" style="margin-top:0">Ranked by how much they compete with you: how often they show above you, how many ads they run and how many of your campaigns they meet. ' + (aggN && !showAgg ? aggN + ' marketplace(s) hidden.' : '') + '</p>' +
+      '<div class="cards comp-cards">' + list.slice(0, 12).map((x, i) => {
+        const m = x.m || {}, live = x.stats ? Number(x.stats.live || 0) : x.ads.filter(a => a.live).length, total = x.stats ? Number(x.stats.ads || 0) : x.ads.length;
+        const best = x.ads.slice().sort((p, q) => (q.live - p.live) || (Number(q.days_running) - Number(p.days_running))).slice(0, 2);
+        const pg = x.page;
+        const ctx = { competitor: x.domain, auction: pick(m, ['impression_share', 'overlap_rate', 'position_above_rate', 'top_of_page_rate', 'outranking_share']), ads: best.map(a => pick(a, ['offer_summary', 'destinations', 'days_running', 'live'])), their_page: pg ? pick(pg, ['url', 'title', 'pagespeed_mobile', 'has_form', 'has_phone', 'has_whatsapp']) : null, our_page: own ? pick(own, ['url', 'title', 'pagespeed_mobile', 'has_form', 'has_phone', 'has_whatsapp']) : null, what_they_push: x.ai && x.ai.what_they_push };
+        return '<div class="card comp"><div class="card-h"><b>' + (i + 1) + '. ' + esc(x.domain) + '</b>' + (x.agg ? '<span class="pill">marketplace</span>' : '') + (live ? '<span class="pill info">' + live + ' live ad' + (live > 1 ? 's' : '') + '</span>' : '') + '</div>' +
+          '<div class="comp-m">' +
+            (m.metrics_updated_at ? '<div><span>Shows above you</span><b>' + pct(m.position_above_rate) + '</b></div><div><span>Meets you in</span><b>' + pct(m.overlap_rate) + '</b><small>of your auctions</small></div>' : '<div><span>Auction share</span><b class="muted">—</b><small>upload Auction insights</small></div>') +
+            '<div><span>Your campaigns met</span><b>' + (x.campaigns || '—') + '</b></div>' +
+            (total ? '<div><span>Ads</span><b>' + total + '</b><small>' + (x.stats && x.stats.longest_days ? 'longest ' + num(x.stats.longest_days) + ' days' : '') + '</small></div>' : '') + '</div>' +
+          (x.ai && x.ai.what_they_push ? '<p class="small"><b>What they push:</b> ' + esc(x.ai.what_they_push) + '</p>' : '') +
+          (best.length ? '<div class="small"><b>Their longest-running ads:</b><ul class="plain">' + best.map(a => '<li>' + esc(trunc(a.offer_summary || '', 100)) + ' <span class="muted">(' + num(a.days_running) + ' days' + (a.live ? ', live' : '') + ')</span></li>').join('') + '</ul></div>' : '') +
+          (pg ? '<div class="small comp-pg"><b>Their page vs yours:</b> ' + (pg.pagespeed_mobile != null ? 'speed ' + pg.pagespeed_mobile + (own && own.pagespeed_mobile != null ? ' vs yours ' + own.pagespeed_mobile : '') + ' · ' : '') + yn(pg.has_form, 'Form') + ' ' + yn(pg.has_phone, 'Call') + ' ' + yn(pg.has_whatsapp, 'WhatsApp') + '</div>' : '') +
+          '<div class="rec-actions">' +
+            '<a class="btn sm" href="https://adstransparency.google.com/?region=IN&domain=' + encodeURIComponent(x.domain) + '" target="_blank" rel="noopener">See their ads ↗</a>' +
+            '<a class="btn sm" href="' + esc(pg && pg.url ? pg.url : 'https://' + x.domain + '/') + '" target="_blank" rel="noopener">Visit their page ↗</a>' +
+            '<button class="btn primary sm" data-ask="' + reg({ section: 'Competitor ' + x.domain, ctx: { ...ctxBase(), ...ctx }, question: 'How do I beat ' + x.domain + ' for my enquiries? Give me 3 concrete changes: one for my ads, one for my landing page and one for my offer or price.' }) + '">How do I beat them?</button>' +
+            '<button class="btn sm" data-ask="' + reg({ section: 'Competitor ' + x.domain, ctx: { ...ctxBase(), ...ctx }, question: 'Write 5 Google Ads headlines (max 30 characters) and 2 descriptions (max 90 characters) for my trips that beat what ' + x.domain + ' advertises.' }) + '">Write an ad that beats theirs</button>' +
+          '</div></div>';
+      }).join('') + '</div>';
+  }
+  document.addEventListener('change', e => { if (e.target && e.target.id === 'compShowAgg') renderCompProfiles(); });
+
+  // =====================================================================
+  // GLOSSARY: plain-word explanations on hover for the Google Ads terms used in headings and tables
+  // =====================================================================
+  const TERMS = {
+    'impr. share': 'Impression share: out of all the times your ad could have shown, how often it did.',
+    'impression share': 'Out of all the times your ad could have shown, how often it did.',
+    'lost: budget': 'Times your ad did not show because the daily budget ran out.',
+    'lost: rank': 'Times your ad did not show because competitors ranked higher (bid, ad quality or landing page).',
+    'quality score': 'Google’s 1–10 rating of how relevant your keyword, ad and landing page are. Higher = cheaper clicks.',
+    'target cpa': 'Target cost per lead: what you tell Google you want to pay for one enquiry.',
+    'cpa': 'Cost per lead (cost per acquisition): spend divided by leads.',
+    'auction insights': 'Google’s report of which other advertisers compete in the same auctions as you.',
+    'final urls': 'The page people land on after clicking your ad.',
+    'conversion actions': 'The things Google counts as a lead: form sent, call, WhatsApp click, thank-you page.',
+    'experiments': 'A change tested for 14 days and compared with before, so you know if it helped.'
+  };
+  function glossary() {
+    $$('#appView h2, #appView th, #appView .kpi .label').forEach(el => {
+      if (el.dataset.gl) return; const t = el.textContent.trim().toLowerCase();
+      const k = Object.keys(TERMS).find(x => t === x || t.startsWith(x + ' ') || t.includes(x)); if (!k) return;
+      el.dataset.gl = '1'; el.title = TERMS[k]; el.classList.add('has-tip');
+    });
+  }
+
+  // ---------- 5 main sections; each shows only its own sub-tabs ----------
+  const lastTab = {};
+  function syncSec(b) {
+    const sec = b.dataset.sec || 'today'; lastTab[sec] = b.dataset.tab;
+    $$('#secs button').forEach(x => x.classList.toggle('active', x.dataset.sec === sec));
+    const mine = $$('#tabs button').filter(x => x.dataset.sec === sec);
+    $$('#tabs button').forEach(x => x.classList.toggle('hidden', x.dataset.sec !== sec));
+    $('#tabs').classList.toggle('hidden', mine.length < 2);
+  }
+  $('#secs').onclick = e => {
+    const s = e.target.closest('button[data-sec]'); if (!s) return;
+    const want = lastTab[s.dataset.sec]; const b = (want && document.querySelector('#tabs button[data-tab="' + want + '"]')) || document.querySelector('#tabs button[data-sec="' + s.dataset.sec + '"]');
+    if (b) b.click();
+  };
+  syncSec(document.querySelector('#tabs button[data-tab="dash"]'));
+  // the suppliers panel lives under Campaigns now
+  { const sp = $('#suppPanel'), slot = $('#suppSlot'); if (sp && slot) { sp.style.marginTop = '0'; slot.appendChild(sp); } }
 
   // ---------- chat ----------
   function addMsg(who, text) {
