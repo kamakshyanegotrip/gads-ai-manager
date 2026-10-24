@@ -1471,8 +1471,9 @@ ul.since li, ul.conn li { margin: 6px 0; }
       });
       for (const q of (s.match(/"([^"]{2,30})"/g) || []).map(x => x.slice(1, -1))) if (!/^(mark done|run audit now)$/i.test(q) && !targets.some(x => x.label === q)) targets.push({ label: q, say: 'Click "' + q + '"' });
       // no menu path written in the step: work out the Google Ads place from what the step is about
+      // (only for steps that say where to go; "Compare conversions…" or "Add Search impr. share…" are not menu trips — the extension reads those itself)
       let appDoes = '';
-      if (!targets.length) {
+      if (!targets.length && /^\s*(open|go to|navigate to|find)\b/i.test(s) && !/\s[>›]\s/.test(s)) {
         const T = (label, say) => targets.push({ label, say: say || 'Click "' + label + '"' });
         if (/search terms?/i.test(s)) { T('Insights and reports'); T('Search terms'); }
         else if (/negative/i.test(s)) { T('Audiences, keywords, and content'); T('Search keywords'); T('Negative search keywords'); }
