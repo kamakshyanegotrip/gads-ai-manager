@@ -196,6 +196,11 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
 .fab { position: fixed; right: 18px; bottom: 18px; z-index: 15; background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 999px; padding: 11px 18px; font-weight: 600; cursor: pointer; box-shadow: 0 6px 18px rgba(0,0,0,.2); }
 @media (max-width: 600px) { .fx-b { padding-left: 12px; } .fab { right: 12px; bottom: 12px; } }
 .cp-lp-q{width:100%;margin-bottom:6px}
+.tf-done{margin-left:auto}
+.done-row{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;padding:10px 4px;border-bottom:1px solid var(--line,#e5e7eb)}
+.done-row .t{font-weight:600}
+.done-row.hl{background:#ecfdf5;border-radius:8px}
+.pill.donep{background:#def7ec;color:#03543f}
 /* ---- sections + sub-tabs ---- */
 nav.secs { max-width: 1280px; margin: 0 auto; padding: 0 16px; display: flex; gap: 6px; overflow-x: auto; }
 nav.secs button { border: 0; background: none; padding: 11px 14px 9px; border-bottom: 3px solid transparent; cursor: pointer; color: var(--muted); font-weight: 600; font-size: 15px; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
@@ -322,6 +327,7 @@ ul.since li, ul.conn li { margin: 6px 0; }
         <button data-tf="money">Saves money</button>
         <button data-tf="leads">More leads</button>
         <button data-tf="site">Website &amp; tracking</button>
+        <button data-tf="done" class="tf-done">✓ Done list</button>
       </div>
       <div class="panel"><div id="todoList"></div></div>
     </section>
@@ -1543,7 +1549,8 @@ ul.since li, ul.conn li { margin: 6px 0; }
   });
   function gCompleted(g) {
     const ok = g.steps.filter((x, k) => gDone(g.st[k])).length, n = g.steps.length;
-    toast('✓ Recommended steps completed: ' + ok + ' of ' + n + ' done. Press Mark done on the recommendation.', 9000);
+    toast('✓ Recommended steps completed: ' + ok + ' of ' + n + ' done.', 6000);
+    setTimeout(() => askMoveDone(g.title, 'You completed ' + ok + ' of ' + n + ' guided steps.'), 400);
     try { if (window.Notification && Notification.permission === 'granted') new Notification('Recommended steps completed', { body: g.title + ': ' + ok + ' of ' + n + ' done.' }); } catch (e) {}
   }
   function gBadgeHtml(o) { return '<span class="g-badge" data-gbadge="' + esc(gKeyOf(o)) + '" data-gn="' + (o.steps || []).filter(Boolean).length + '"></span>'; }
@@ -1604,6 +1611,7 @@ ul.since li, ul.conn li { margin: 6px 0; }
     const where = it.where || { account_id: (recs[0] || fixes[0] || {}).account_id, campaign_id: (recs[0] || {}).campaign_id || ((fixes[0] || {}).params || {}).campaign_id, url: it.url || ((((it.ask || {}).ctx) || {}).page || {}).url, section: it.ask ? it.ask.section : it.title };
     if (steps.length) btns.unshift('<button class="btn primary sm" data-guide="' + reg({ title: it.title, steps, why: it.why || '', c: where, recId: (recs.find(r => ['proposed', 'advisory'].includes(r.status)) || {}).recommendation_id }) + '">▶ Guide me through it</button>' + gBadgeHtml({ title: it.title, steps, recId: (recs.find(r => ['proposed', 'advisory'].includes(r.status)) || {}).recommendation_id }));
     if (askId) btns.push('<button class="btn sm" data-ask="' + askId + '">Discuss with AI</button>');
+    if (it.doneKey && it.sevLabel !== '✓ done') btns.push('<button class="btn sm" data-tdone="' + esc(it.doneKey) + '" title="Remove from To-do and keep it in the Done list">✓ Mark done</button>');
     return '<details class="fx"' + (it.open ? ' open' : '') + '><summary><span class="pill ' + (SEV[it.sev] || '') + '">' + esc(it.sevLabel || it.sev || 'tip') + '</span> <span class="fx-t">' + esc(it.title) + '</span>' +
       (fixes.length || recs.some(r => r.status === 'proposed' && r.action_type) ? ' <span class="pill good">fixable</span>' : '') + '</summary><div class="fx-b">' +
       (it.sub ? '<div class="small muted">' + esc(it.sub) + '</div>' : '') + (it.evidence || '') +
@@ -2835,11 +2843,50 @@ ul.since li, ul.conn li { margin: 6px 0; }
   // TO-DO: live alerts, audit findings, daily-analysis findings and recommendations in ONE list
   // =====================================================================
   let todoFilter = 'all';
+  // ---------- Done list: items the owner marked done leave To-do and are kept for reference (this browser) ----------
+  const DONE_KEY = 'gads_todo_done', REOPEN_DAYS = 30;
+  const doneLoad = () => { try { return JSON.parse(localStorage.getItem(DONE_KEY) || '{}'); } catch (e) { return {}; } };
+  const doneSave = o => { try { localStorage.setItem(DONE_KEY, JSON.stringify(o)); } catch (e) {} };
+  // the same problem keeps its key when the daily numbers in its title change (e.g. "CPA ₹484" → "CPA ₹502")
+  const dKey = title => String(title || '').toLowerCase().replace(/₹|\brs\.?/g, ' ').replace(/[0-9][0-9.,:%]*/g, ' ').replace(/[^a-z]+/g, ' ').trim().slice(0, 90);
+  let doneHl = '';
+  async function askMoveDone(title, why) {
+    const k = dKey(title); if (!k) return;
+    const d = doneLoad(); if (d[k] && !d[k].keep) return;
+    const c = await modal('Mark this as done?', '<p><b>' + esc(title) + '</b></p>' + (why ? '<p class="small">' + esc(why) + '</p>' : '') +
+      '<p>Remove it from your To-do list and keep it in the <b>Done list</b> for future reference?</p><p class="small muted">If the daily check still finds the same problem ' + REOPEN_DAYS + ' days from now, it comes back to To-do with a note, so nothing is forgotten.</p>',
+      [{ key: 'no', label: 'Cancel' }, { key: 'keep', label: 'Done, but keep it in To-do' }, { key: 'move', label: 'Yes, move to Done list', cls: 'good' }]);
+    if (c === 'no') return;
+    const all = doneLoad(); all[k] = { title: String(title), at: Date.now(), keep: c === 'keep' }; doneSave(all);
+    if (c === 'move') { todoFilter = 'done'; doneHl = k; $$('#todoFilters button').forEach(x => x.classList.toggle('active', x.dataset.tf === 'done')); const b = document.querySelector('#tabs button[data-tab="todo"]'); if (b) b.click(); try { renderTodo(); renderToday(); } catch (e) {} toast('✓ Moved to the Done list.'); }
+    else { try { renderTodo(); renderToday(); } catch (e) {} toast('✓ Marked done. It stays in To-do.'); }
+  }
+  function renderDone() {
+    const all = doneLoad(), rows = Object.entries(all).filter(([, v]) => !v.keep).sort((a, b) => b[1].at - a[1].at);
+    $('#todoList').innerHTML = rows.length ? '<p class="small muted" style="margin-top:0">Things you marked done, newest first. They stay here for reference. If the same problem is still found ' + REOPEN_DAYS + ' days after you marked it, it goes back to To-do.</p>' +
+      rows.map(([k, v]) => '<div class="done-row' + (k === doneHl ? ' hl' : '') + '" data-dk="' + esc(k) + '"><div><span class="pill donep">done</span> <span class="t">' + esc(v.title) + '</span><div class="small muted">Marked done ' + new Date(v.at).toLocaleString() + '</div></div><button class="btn sm" data-tundo="' + esc(k) + '">↩ Back to To-do</button></div>').join('')
+      : '<div class="empty">Nothing in the Done list yet. Press <b>✓ Mark done</b> on a To-do item when you have finished it.</div>';
+    if (doneHl) { const el = document.querySelector('.done-row.hl'); if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 120); doneHl = ''; }
+  }
+  document.addEventListener('click', e => {
+    const m = e.target.closest('[data-tdone]'); if (m) { e.preventDefault(); e.stopPropagation(); askMoveDone(m.dataset.tdone); return; }
+    const u = e.target.closest('[data-tundo]'); if (u) { e.preventDefault(); const all = doneLoad(); delete all[u.dataset.tundo]; doneSave(all); renderTodo(); renderToday(); toast('Back in your To-do list.'); return; }
+    // a recommendation inside a To-do item was marked done/applied: offer to move the whole item to the Done list
+    const a = e.target.closest('[data-apply]'); if (a) { const box = a.closest('#todoList details.fx, #todayDo details.fx'); const tt = box && box.querySelector('.fx-t'); if (tt) { const id = a.dataset.apply, title = tt.textContent;
+      const wait = setInterval(() => { const r = (data.recommendations || []).find(x => x.recommendation_id === id); if (r && !['proposed', 'advisory'].includes(r.status)) { clearInterval(wait); askMoveDone(title, 'The recommendation inside it is now ' + r.status + '.'); } }, 2000); setTimeout(() => clearInterval(wait), 180000); } }
+  }, true);
   const normT = t => String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().slice(0, 80);
   const moneyOf = t => { const m = String(t || '').match(/(?:₹|rs\.?\s?)\s?([\d,]{2,})/i); return m ? Number(m[1].replace(/,/g, '')) : 0; };
   function todoItems() {
     const out = [], usedRecs = new Set(), seen = new Set();
-    const add = (it, meta) => { const k = normT(it.title); if (!k || seen.has(k)) return; seen.add(k); (it.recs || []).forEach(r => r && usedRecs.add(r.recommendation_id)); out.push({ it, ...meta, money: moneyOf(it.title) }); };
+    const DN = doneLoad();
+    const add = (it, meta) => { const k = normT(it.title); if (!k || seen.has(k)) return; seen.add(k); (it.recs || []).forEach(r => r && usedRecs.add(r.recommendation_id));
+      const dk = dKey(it.title), d = DN[dk];
+      if (d && !d.keep && Date.now() - d.at < REOPEN_DAYS * 864e5) return;
+      it = { ...it, doneKey: it.title };
+      if (d && d.keep) it.sevLabel = '✓ done';
+      if (d && !d.keep) it.sub = 'Back in To-do: still found ' + Math.round((Date.now() - d.at) / 864e5) + ' days after you marked it done on ' + new Date(d.at).toLocaleDateString() + '.';
+      out.push({ it, ...meta, money: moneyOf(it.title) }); };
     const kindOf = (t, type) => /landing|page|tracking|tag|conversion action|consent|website|site|url|speed|form/i.test(t + ' ' + (type || '')) ? 'site'
       : /wast|negative|block|pause|budget|cost|spend|irrelevant|no lead|zero/i.test(t) ? 'money' : 'leads';
     const RANK = { critical: 0, high: 0, warning: 1, medium: 1, opportunity: 2, info: 3, tip: 3 };
@@ -2864,7 +2911,9 @@ ul.since li, ul.conn li { margin: 6px 0; }
     const all = todoItems();
     const n = all.length; $('#todoCount').textContent = n; $('#todoCount').classList.toggle('hidden', !n);
     const f = { all: () => true, urgent: o => o.urgent, approve: o => o.approve, money: o => o.kind === 'money' || o.money > 0, leads: o => o.kind === 'leads', site: o => o.kind === 'site' }[todoFilter] || (() => true);
-    $$('#todoFilters button').forEach(b => { const k = b.dataset.tf; const c = all.filter({ all: () => true, urgent: o => o.urgent, approve: o => o.approve, money: o => o.kind === 'money' || o.money > 0, leads: o => o.kind === 'leads', site: o => o.kind === 'site' }[k]).length; b.innerHTML = b.innerHTML.replace(/ <span class="tc">.*<\/span>$/, '') + ' <span class="tc">' + c + '</span>'; });
+    const doneN = Object.values(doneLoad()).filter(v => !v.keep).length;
+    $$('#todoFilters button').forEach(b => { const k = b.dataset.tf; if (k === 'done') { b.innerHTML = '✓ Done list <span class="tc">' + doneN + '</span>'; return; } const c = all.filter({ all: () => true, urgent: o => o.urgent, approve: o => o.approve, money: o => o.kind === 'money' || o.money > 0, leads: o => o.kind === 'leads', site: o => o.kind === 'site' }[k]).length; b.innerHTML = b.innerHTML.replace(/ <span class="tc">.*<\/span>$/, '') + ' <span class="tc">' + c + '</span>'; });
+    if (todoFilter === 'done') { renderDone(); return; }
     const list = all.filter(f);
     $('#todoList').innerHTML = list.length ? '<p class="small muted" style="margin-top:0">Most important first. Open an item to see why it matters and the one button that does it — <b>Apply</b> (the app changes Google Ads after you approve), <b>Guide me</b> (arrows on the Google Ads page) or <b>Discuss with AI</b>.</p>' +
       list.map(o => (o.money ? o.it.title.includes('₹') || /rs\s?\d/i.test(o.it.title) ? '' : '' : '') + item(o.it)).join('') : '<div class="empty">Nothing here. 🎉</div>';
