@@ -197,6 +197,9 @@ table.mini { width: auto; min-width: 360px; margin-top: 10px; } table.mini td, t
 @media (max-width: 600px) { .fx-b { padding-left: 12px; } .fab { right: 12px; bottom: 12px; } }
 .cp-lp-q{width:100%;margin-bottom:6px}
 .tf-done{margin-left:auto}
+.exp-sec{font-size:14px;margin:14px 0 8px}
+.exp-hist{margin-top:14px}
+.exp-hist>summary{cursor:pointer;padding:8px 0}
 .done-row{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;padding:10px 4px;border-bottom:1px solid var(--line,#e5e7eb)}
 .done-row .t{font-weight:600}
 .done-row.hl{background:#ecfdf5;border-radius:8px}
@@ -2038,14 +2041,12 @@ ul.since li, ul.conn li { margin: 6px 0; }
   // ---------- EXPERIMENTS ----------
   function renderExp() {
     const ex = (data.experiments || []).filter(inScopeA);
-    const live = ex.filter(e => ['running', 'measuring', 'proposed'].includes(e.status)).length;
-    $('#expCount').textContent = live; $('#expCount').classList.toggle('hidden', !live);
     const acc = scopeAcc();
     const stCls = { running: 'info', measuring: 'info', proposed: 'warn', completed: 'good', cancelled: '', stopped: '' };
     const typ = { change_impact: 'Before / after check of a change', ad_copy: 'Ad A/B test', ad_pause: 'Pause a weak ad' };
     const fmt = (v, k) => v === null || v === undefined ? '—' : (/cost|cpa/.test(k) ? rsx(v) : (Math.round(Number(v) * 100) / 100).toLocaleString('en-IN'));
     const ch = (a, b, good) => { if (a === null || a === undefined || b === null || b === undefined) return ''; a = Number(a); b = Number(b); if (!isFinite(a) || !isFinite(b) || !b) return ''; const v = Math.round((a - b) / b * 100); const better = good === 'up' ? v > 0 : v < 0; return '<span class="' + (v === 0 ? '' : better ? 'down' : 'up') + '">' + (v > 0 ? '+' : '') + v + '%</span>'; };
-    const cards = ex.map(e => {
+    const card = (e, note) => {
       const s = e.start_date ? new Date(e.start_date) : null, en = e.end_date ? new Date(e.end_date) : null;
       const pct = s && en ? Math.max(0, Math.min(100, Math.round((Date.now() - s) / (en - s) * 100))) : null;
       const b = (e.baseline || {}).per_day || {}, r = (e.result || {}).per_day || {};
@@ -2054,7 +2055,6 @@ ul.since li, ul.conn li { margin: 6px 0; }
       const cv = (e.control || e.variant) ? ['control', 'variant'].map(k => { const o = e[k] || {}; return '<tr><td>' + (k === 'control' ? 'Current ad' : 'New ad') + (o.ad_id ? ' <span class="small muted">' + esc(o.ad_id) + '</span>' : '') + '</td><td class="num">' + num(o.clicks) + '</td><td class="num">' + num(o.conversions) + '</td><td class="num">' + (o.ctr != null ? o.ctr + '%' : '—') + '</td><td class="num">' + (o.cvr != null ? o.cvr + '%' : '—') + '</td></tr>'; }).join('') : '';
       const rec = e.recommendation_id ? (data.recommendations || []).find(x => x.recommendation_id === e.recommendation_id) : null;
       const adv = [];
-      if (e.status === 'measuring') adv.push({ sev: 'info', sevLabel: 'what to do', title: 'Keep the campaign stable until ' + String(e.end_date || '').slice(0, 10), why: 'Other big changes during the test would make the result impossible to read.', steps: ['Avoid budget or bidding changes on this campaign until the end date.', 'Come back after the end date for the verdict.', 'Small fixes (tracking, landing page) are fine.'] });
       if (e.status === 'completed' && /worse/.test(String(e.winner)) && rec && rec.action_type === 'update_keywords') {
         const ids = ((rec.action_params || {}).updates || []).map(u => u.criterion_id);
         adv.push({ sev: 'warning', title: 'The change made results worse: undo it', fixes: [{ label: 'Fix: turn the keywords back on', kind: 'enable_keywords', account_id: e.account_id, params: { ad_group_id: (rec.action_params || {}).ad_group_id, criterion_ids: ids, reason: 'Experiment ' + e.experiment_id + ' showed the pause made results worse.' } }] });
@@ -2065,16 +2065,52 @@ ul.since li, ul.conn li { margin: 6px 0; }
       if (recs.length) adv.push({ sev: 'opportunity', title: 'Next step prepared from this test', recs });
       return '<article class="exp"><div class="exp-h"><div><span class="pill ' + (stCls[e.status] || '') + '">' + esc(e.status) + '</span> ' + (e.winner ? '<span class="pill ' + (/improved|variant/.test(e.winner) ? 'good' : /worse|control/.test(e.winner) ? 'bad' : '') + '">' + esc(String(e.winner).replace(/_/g, ' ')) + '</span> ' : '') + '<span class="small muted">' + esc(typ[e.experiment_type] || e.experiment_type || '') + ' · ' + esc(e.experiment_id) + '</span></div>' +
         '<div class="small muted">' + (s ? esc(String(e.start_date).slice(0, 10)) + ' → ' + esc(String(e.end_date || '').slice(0, 10)) : '') + '</div></div>' +
-        '<div class="exp-title">' + esc(e.title || '') + '</div><div class="small muted">' + esc(campName2(e.account_id, e.campaign_id)) + (e.ad_group_id ? ' · ad group ' + esc(e.ad_group_id) : '') + '</div>' +
+        '<div class="exp-title">' + esc(e.title || '') + '</div><div class="small muted">' + esc(campName2(e.account_id, e.campaign_id)) + (e.ad_group_id ? ' · ad group ' + esc(e.ad_group_id) : '') + '</div>' + (note || '') +
         (pct !== null && ['measuring', 'running'].includes(e.status) ? '<div class="prog"><span style="width:' + pct + '%"></span></div><div class="small muted">' + pct + '% of the measuring period done</div>' : '') +
         (e.hypothesis ? '<p class="small"><b>Idea being tested:</b> ' + esc(e.hypothesis) + '</p>' : '') +
         (rows ? '<div class="table-wrap"><table class="mini"><thead><tr><th></th><th class="num">Before (14 days)</th><th class="num">After</th><th class="num">Change</th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '') +
         (cv ? '<div class="table-wrap"><table class="mini"><thead><tr><th>Ad</th><th class="num">Clicks</th><th class="num">Conv.</th><th class="num">CTR</th><th class="num">Conv. rate</th></tr></thead><tbody>' + cv + '</tbody></table></div>' : '') +
         (e.summary ? '<div class="callout small"><b>Result so far:</b> ' + esc(e.summary) + '</div>' : '') +
-        box('Recommendation', adv, { ask: { section: 'Experiment ' + e.experiment_id, ctx: { experiment: e } } }) + '</article>';
+        (adv.length ? box('Recommendation', adv, { ask: { section: 'Experiment ' + e.experiment_id, ctx: { experiment: e } } }) : '<div class="rec-actions">' + askBtnHtml('Experiment ' + e.experiment_id, { experiment: e }) + '</div>') + '</article>';
+    };
+    // ---------- one test per thing changed: the newest check of the same kind of change on the same campaign replaces the older ones ----------
+    const KIND = { schedule: 'ad hours (ad schedule)', negatives: 'blocked searches (negative keywords)', target_cpa: 'Target CPA', keywords: 'keywords', budget: 'budget', bidding: 'bidding', ads: 'ads' };
+    const kindOf = e => { const tl = String(e.title || '').toLowerCase();
+      if (e.experiment_type !== 'change_impact') return 'ads';
+      return /schedule|stop showing ads|ad hours/.test(tl) ? 'schedule' : /negative|block .*search/.test(tl) ? 'negatives' : /target.?cpa/.test(tl) ? 'target_cpa' : /keyword/.test(tl) ? 'keywords' : /budget/.test(tl) ? 'budget' : /bid/.test(tl) ? 'bidding' : tl.replace(/[0-9]+/g, '').slice(0, 40); };
+    const kName = k => KIND[k] || k;
+    const expN = e => Number(String(e.experiment_id).replace(/\D+/g, '')) || 0;
+    const newer = (a, b) => (String(b.start_date || '') > String(a.start_date || '') ? 1 : String(b.start_date || '') < String(a.start_date || '') ? -1 : expN(b) - expN(a));
+    const groups = {};
+    ex.forEach(e => { const k = e.account_id + '|' + e.campaign_id + '|' + kindOf(e) + (e.experiment_type !== 'change_impact' ? '|' + (e.ad_group_id || '') : ''); (groups[k] = groups[k] || []).push(e); });
+    const needs = [], watch = [], hist = [];
+    const isOpen = e => ['running', 'measuring'].includes(e.status);
+    const isWorse = e => e.status === 'completed' && /worse|control/.test(String(e.winner));
+    Object.values(groups).forEach(l => { l.sort(newer); const top = l[0], rest = l.slice(1);
+      const dups = rest.filter(x => x.title === top.title && String(x.start_date).slice(0, 10) === String(top.start_date).slice(0, 10));
+      const older = rest.filter(x => !dups.includes(x));
+      // other kinds of change on the same campaign in the same weeks: the numbers measure all of them together
+      const s0 = Date.parse(top.start_date || 0), together = isOpen(top) ? [...new Set(ex.filter(x => x !== top && !l.includes(x) && x.campaign_id === top.campaign_id && isOpen(x) && Math.abs(Date.parse(x.start_date || 0) - s0) < 14 * 864e5).map(kindOf))] : [];
+      const note = (dups.length ? '<div class="callout small">The same change was recorded ' + (dups.length + 1) + ' times (' + esc([top, ...dups].map(x => x.experiment_id).join(', ')) + '). It is shown once.</div>' : '') +
+        (older.length ? '<div class="small muted">Replaces ' + older.length + ' earlier check' + (older.length > 1 ? 's' : '') + ' of the ' + esc(kName(kindOf(top))) + ' on this campaign (' + esc(older.map(x => x.experiment_id).join(', ')) + '), see History.</div>' : '') +
+        (together.length ? '<div class="callout small"><b>Measured together with</b> the changes to ' + esc(together.map(kName).join(' and ')) + ' made in the same weeks on this campaign. The before/after numbers show the effect of all of them together, so read them as one result.</div>' : '');
+      const html = card(top, note);
+      if (top.status === 'proposed' || isWorse(top)) needs.push({ e: top, html }); else if (isOpen(top)) watch.push({ e: top, html }); else hist.push({ e: top, html });
+      older.forEach(x => hist.push({ e: x, html: card(x, '<div class="small muted">Replaced by the newer check ' + esc(top.experiment_id) + ' of the same kind of change.</div>') }));
     });
+    $('#expCount').textContent = needs.length; $('#expCount').classList.toggle('hidden', !needs.length);
+    // one plain instruction per campaign instead of one per test
+    const byCamp = {}; watch.forEach(w => { const k = w.e.account_id + '|' + w.e.campaign_id; (byCamp[k] = byCamp[k] || []).push(w.e); });
+    const todo = needs.map(n => '<li><b>' + esc(n.e.status === 'proposed' ? 'Approve or decline: ' : 'Undo or rethink: ') + '</b>' + esc(n.e.title || n.e.experiment_id) + '</li>').concat(Object.values(byCamp).map(l => { const end = l.map(x => String(x.end_date || '').slice(0, 10)).sort().pop();
+      return '<li><b>Keep “' + esc(campName2(l[0].account_id, l[0].campaign_id)) + '” stable until ' + esc(end) + '.</b> ' + l.length + ' change' + (l.length > 1 ? 's are' : ' is') + ' being measured (' + esc(l.map(x => kName(kindOf(x))).join(', ')) + '). No budget or bidding changes on this campaign until then; small fixes to tracking or the landing page are fine. The verdict appears here after that date.</li>'; }));
+    const sum = '<div class="callout" style="margin-bottom:12px"><b>What you need to do</b>' + (todo.length ? '<ul class="plain" style="margin:6px 0 0">' + todo.join('') + '</ul>' : '<div class="small">Nothing right now. Finished tests are in History below.</div>') + '</div>';
+    hist.sort((a, b) => newer(a.e, b.e));
+    const cardsHtml = sum +
+      (needs.length ? '<h3 class="exp-sec">Needs you (' + needs.length + ')</h3><div class="exp-list">' + needs.map(x => x.html).join('') + '</div>' : '') +
+      (watch.length ? '<h3 class="exp-sec">Being measured: nothing to do (' + watch.length + ')</h3><div class="exp-list">' + watch.map(x => x.html).join('') + '</div>' : '') +
+      (hist.length ? '<details class="exp-hist"><summary><b>History: finished and replaced tests (' + hist.length + ')</b></summary><div class="exp-list">' + hist.map(x => x.html).join('') + '</div></details>' : '');
     const startItems = [{ sev: 'tip', sevLabel: 'start a test', title: 'Start a new ad A/B test', why: 'The AI writes a new ad with a different angle; Google rotates it with your current ads and this tab compares them with a significance test.', steps: ['Press the button below. If the ad group already has 3 ads, first pause the weakest (button shown).', 'Review the ad text and press "Apply now".', 'Leave it running 2–4 weeks; the verdict appears here.'], fixes: newAdFixes(acc, 'Test a clearly different angle from the current ads (e.g. trust and local expertise, or detailed itinerary with inclusions).') }];
-    $('#expBox').innerHTML = (cards.length ? '<div class="exp-list">' + cards.join('') + '</div>' : '<div class="empty">No experiments yet. They appear after you approve a change or start an ad test.</div>') + box('Start a new test', startItems, { ask: { section: 'Experiments', ctx: { experiments: ex, ads: (data.ads || []).filter(inScope).map(a => pick(a, ['ad_id', 'ad_group_id', 'ad_strength', 'cost_30d', 'conversions_30d', 'clicks_30d'])) } } });
+    $('#expBox').innerHTML = (ex.length ? cardsHtml : '<div class="empty">No experiments yet. They appear after you approve a change or start an ad test.</div>') + box('Start a new test', startItems, { ask: { section: 'Experiments', ctx: { experiments: ex, ads: (data.ads || []).filter(inScope).map(a => pick(a, ['ad_id', 'ad_group_id', 'ad_strength', 'cost_30d', 'conversions_30d', 'clicks_30d'])) } } });
   }
 
   // ---------- REPORTS ----------
