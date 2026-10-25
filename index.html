@@ -160,6 +160,7 @@ ol.steps.rich li { margin-bottom: 8px; } .st-a { display: flex; flex-wrap: wrap;
 .change { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin: 8px 0; font-size: 13px; }
 .lead-bar { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; } .lead-bar .seg { display: flex; gap: 6px; flex-wrap: wrap; }
 .ta { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; width: 100%; resize: vertical; } td.nowrap { white-space: nowrap; } .lead-form .grid.two { gap: 0 12px; } table.leads td { vertical-align: top; }
+.crep-h { font-size: 14px; margin: 16px 0 6px; } .crep-funnel { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; } .crep-funnel div { border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; background: var(--bg); } .crep-funnel span { display: block; font-size: 11px; color: var(--muted); } #campTable a.crep-link { color: inherit; text-decoration: none; } #campTable a.crep-link:hover b { text-decoration: underline; } #campTable tr.crep-on td { background: var(--bg); }
 .modal.wide { max-width: 640px; } .modal-body { max-height: 65vh; overflow-y: auto; }
 .modal .row { flex-wrap: wrap; }
 .callout { background: var(--info-bg); border-radius: 8px; padding: 10px 12px; margin: 8px 0; }
@@ -345,6 +346,7 @@ ul.since li, ul.conn li { margin: 6px 0; }
         <div class="table-wrap" style="margin-top:10px"><table id="campTable"></table></div>
         <div class="rec-actions" style="margin-top:12px"><button class="btn primary" data-goto="camp">+ Start a new campaign</button></div>
       </div>
+      <div id="campReport"></div>
     </section>
 
     <!-- SUPPLIERS (moved out of Market) -->
@@ -604,7 +606,7 @@ ul.since li, ul.conn li { margin: 6px 0; }
 
   // ---------- render ----------
   function render() { REG.clear(); setTimeout(() => gBadges(), 0); renderDash(); renderRecs(); renderLog(); renderSite(); renderIntel(); renderMarket(); renderFunnel(); renderWeb(); renderExp(); renderReports();
-    for (const f of [renderLeads, renderSiteAdvice, renderIntelAdvice, renderMarketAdvice, renderFunnelAdvice, renderWebAdvice, renderTodo, renderToday, renderCompProfiles, glossary]) { try { f(); } catch (e) { console.error(f.name, e); } } }
+    for (const f of [renderLeads, renderSiteAdvice, renderIntelAdvice, renderMarketAdvice, renderFunnelAdvice, renderWebAdvice, renderTodo, renderToday, renderCompProfiles, renderCampReport, glossary]) { try { f(); } catch (e) { console.error(f.name, e); } } }
 
   function renderDash() {
     const camps = data.campaigns.filter(inScope);
@@ -652,7 +654,7 @@ ul.since li, ul.conn li { margin: 6px 0; }
       (camps.length ? camps.map(c => {
         const cc = Number(c.conversions) > 0 ? Number(c.cost) / Number(c.conversions) : null;
         const st = String(c.status || '').toUpperCase();
-        return '<tr><td><b>' + esc(c.campaign_name) + '</b><div class="small muted">' + esc(c.campaign_type || '') + ' · ' + esc((c.bidding_strategy_type || '').replace(/_/g, ' ').toLowerCase()) + '</div></td>' +
+        const ck = c.account_id + '|' + c.campaign_id; return '<tr' + (ck === crepSel ? ' class="crep-on"' : '') + '><td><a href="#" class="crep-link" data-crep="' + esc(ck) + '" title="Open the campaign report"><b>' + esc(c.campaign_name) + '</b></a> <a href="#" class="small" data-crep="' + esc(ck) + '">Report →</a><div class="small muted">' + esc(c.campaign_type || '') + ' · ' + esc((c.bidding_strategy_type || '').replace(/_/g, ' ').toLowerCase()) + '</div></td>' +
           '<td>' + esc(accName(c.account_id)) + '</td><td><span class="pill ' + (st === 'ENABLED' ? 'good' : '') + '">' + esc(st.toLowerCase()) + '</span></td>' +
           '<td class="num">' + inr(c.cost) + '</td><td class="num">' + num(c.clicks) + '</td><td class="num">' + num(c.conversions) + '</td>' +
           '<td class="num">' + (cc === null ? '—' : '<span class="pill ' + (tgt ? (cc <= tgt ? 'good' : cc <= tgt * 1.25 ? 'warn' : 'bad') : '') + '">' + inr(cc) + '</span>') + '</td>' +
@@ -1055,6 +1057,186 @@ ul.since li, ul.conn li { margin: 6px 0; }
   const accOf = x => x.account_id || x.google_ads_account_id || scopeAcc();
   const rsx = v => 'Rs ' + Math.round(Number(v || 0)).toLocaleString('en-IN');
   const trunc = (s, n) => { s = String(s || ''); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
+
+  // ---------- campaign report (one campaign: numbers, trend, breakdown, findings, AI analysis) ----------
+  let crepSel = (() => { try { return localStorage.getItem('gads_crep') || ''; } catch (e) { return ''; } })();
+  let crepChart = null;
+  const crepAiCache = {};
+  const CR_DAY = 86400000;
+  const crIso = d => new Date(d).toISOString().slice(0, 10);
+  function crepPick() {
+    const camps = (data.campaigns || []).filter(inScope);
+    let c = camps.find(x => x.account_id + '|' + x.campaign_id === crepSel);
+    if (!c) c = camps.filter(x => String(x.status).toUpperCase() === 'ENABLED').sort((a, b) => Number(b.cost) - Number(a.cost))[0] || camps[0];
+    return c || null;
+  }
+  function crepStats(c) {
+    const days = Number(data.days || 30);
+    const all = (data.campaign_daily || []);
+    const rows = all.filter(d => d.account_id === c.account_id && String(d.campaign_id) === String(c.campaign_id));
+    const lastDate = all.map(d => String(d.metric_date).slice(0, 10)).sort().pop() || crIso(Date.now());
+    const end = new Date(lastDate + 'T00:00:00Z').getTime();
+    const curStart = crIso(end - (days - 1) * CR_DAY), prevStart = crIso(end - (2 * days - 1) * CR_DAY);
+    const sum = list => list.reduce((o, d) => { o.cost += Number(d.cost || 0); o.clicks += Number(d.clicks || 0); o.impr += Number(d.impressions || 0); o.conv += Number(d.conversions || 0); return o; }, { cost: 0, clicks: 0, impr: 0, conv: 0 });
+    const cur = rows.filter(d => String(d.metric_date).slice(0, 10) >= curStart), prev = rows.filter(d => { const k = String(d.metric_date).slice(0, 10); return k >= prevStart && k < curStart; });
+    const spendDays = rows.filter(d => Number(d.cost) > 0).map(d => String(d.metric_date).slice(0, 10)).sort();
+    const first = spendDays[0] || null;
+    const age = first ? Math.floor((end - new Date(first + 'T00:00:00Z').getTime()) / CR_DAY) + 1 : null;
+    const k = s => ({ ...s, ctr: s.impr ? s.clicks / s.impr : null, cpc: s.clicks ? s.cost / s.clicks : null, cvr: s.clicks ? s.conv / s.clicks : null, cpa: s.conv ? s.cost / s.conv : null });
+    const curK = k(sum(cur)), prevK = k(sum(prev));
+    const activeCur = cur.filter(d => Number(d.cost) > 0).length;
+    const series = [];
+    for (let t = new Date(curStart + 'T00:00:00Z').getTime(); t <= end; t += CR_DAY) { const key = crIso(t); const r = sum(cur.filter(d => String(d.metric_date).slice(0, 10) === key)); series.push({ date: key, ...r }); }
+    const todayKey = crIso(Date.now() + 5.5 * 3600000);
+    return { days, cur: curK, prev: prevK, hasPrev: prev.some(d => Number(d.cost) > 0), first, age, activeCur, series, lastDate, partialToday: lastDate === todayKey };
+  }
+  function crepFindings(c, s) {
+    const out = [], tgt = targetCpa(), type = String(c.campaign_type || '').toUpperCase(), search = type === 'SEARCH';
+    const cur = s.cur, prev = s.prev, cname = c.campaign_name;
+    const where = { account_id: c.account_id, campaign_id: c.campaign_id, section: 'Campaign report' };
+    const ask = (t, extra) => ({ section: cname + ': ' + trunc(t, 70), ctx: { campaign: crepCtx(c, s), finding: extra || t } });
+    const recsFor = f => (data.recommendations || []).filter(r => ['proposed', 'advisory'].includes(r.status) && r.account_id === c.account_id && String(r.campaign_id) === String(c.campaign_id) && f(r));
+    const young = s.age !== null && s.age < 14;
+    if (String(c.status).toUpperCase() !== 'ENABLED') out.push({ sev: 'info', title: 'This campaign is ' + String(c.status).toLowerCase() + ' — it is not spending now', where });
+    if (young) out.push({ sev: 'info', sevLabel: 'learning', title: 'New campaign: ' + s.age + ' day' + (s.age === 1 ? '' : 's') + ' old — still learning', open: true,
+      sub: 'Google needs about 2 weeks (and around 30 conversions for smart bidding) to learn who converts. Results in the first days swing a lot.',
+      why: 'Pausing or changing budget, bidding or audience now restarts the learning and usually makes results worse. Judge cost per lead after ' + (14 - s.age) + ' more day' + (14 - s.age === 1 ? '' : 's') + '.',
+      steps: ['Leave budget, bidding, audience and ads unchanged until day 14.', 'Check daily that conversions are being recorded (Google Ads > Goals > Summary: status should not stay "Inactive" or "No recent conversions").', 'Open your landing page from a phone and submit a test enquiry once, to be sure the thank-you page loads.', 'On day 14 open this report again and compare cost per lead with your target.'],
+      where, ask: ask('New campaign still learning') });
+    const earlyPause = recsFor(r => r.action_type === 'pause_campaign');
+    if (young && earlyPause.length) out.push({ sev: 'high', sevLabel: 'decline', title: 'Decline the proposal to pause this campaign — it is too early to judge', open: true,
+      sub: 'Proposal waiting in Recommendations: "' + earlyPause[0].title + '". It was made before the engine knew this campaign is new.',
+      steps: ['Open the To-do / Recommendations list.', 'Find "' + trunc(earlyPause[0].title, 70) + '".', 'Press Decline. Nothing in Google Ads changes.'], where });
+    if (tgt && cur.conv > 0 && cur.cpa > tgt * 1.15 && !young) out.push({ sev: cur.cpa > tgt * 1.5 ? 'high' : 'medium', title: 'Cost per lead ' + rsx(cur.cpa) + ' is ' + Math.round((cur.cpa / tgt - 1) * 100) + '% above your target ' + rsx(tgt),
+      why: 'Every lead costs more than you planned; at this rate ' + rsx(cur.cost) + ' bought ' + num(cur.conv) + ' leads instead of ' + num(cur.cost / tgt) + '.',
+      steps: search ? ['Open Campaigns > ' + cname + ' > Insights and reports > Search terms; add irrelevant terms as negative keywords.', 'Pause keywords with spend over ' + rsx(tgt) + ' and no conversions (Keywords tab, sort by Cost).', 'Check Devices and Locations below for a segment with a much higher cost per lead and lower its bid adjustment or exclude it.'] : ['Open Campaigns > ' + cname + ' > Audiences; check which audience segment brings leads and narrow the rest.', 'Review Placements / channels report and exclude placements with clicks but no leads.', 'Test a new video or image ad with a stronger price/offer message.'],
+      recs: recsFor(r => /cpa|keyword|negative|bid|ad_schedule/i.test((r.category || '') + ' ' + (r.action_type || ''))), where, ask: ask('CPA above target') });
+    if (tgt && cur.conv > 0 && cur.cpa <= tgt * 0.85 && !young) out.push({ sev: 'opportunity', title: 'Cost per lead ' + rsx(cur.cpa) + ' is better than your target ' + rsx(tgt), why: 'This campaign is efficient. If it is limited by budget, more budget usually brings more leads at a similar cost.', where, ask: ask('CPA below target - scale?'),
+      recs: recsFor(r => /budget/i.test((r.category || '') + ' ' + (r.action_type || ''))) });
+    if (cur.conv === 0 && cur.cost > 0 && !young) out.push({ sev: tgt && cur.cost >= 1.5 * tgt ? 'high' : 'medium', title: rsx(cur.cost) + ' spent with no leads in ' + s.days + ' days', why: 'Either the campaign reaches the wrong people, or leads are not being counted. Check tracking first, then targeting.',
+      steps: ['Google Ads > Goals > Summary: check the goal this campaign uses shows recent conversions.', 'Submit a test enquiry from the landing page and confirm the thank-you page opens.', 'If tracking works, narrow targeting (keywords / audiences / locations) and refresh the ads.'], recs: recsFor(r => r.action_type === 'pause_campaign'), where, ask: ask('Spend with no leads') });
+    if (s.hasPrev && prev.conv >= 3 && !young) { const ch = (cur.conv - prev.conv) / prev.conv; if (ch <= -0.3) out.push({ sev: 'high', title: 'Leads fell ' + Math.round(-ch * 100) + '% vs the previous ' + s.days + ' days (' + num(prev.conv) + ' → ' + num(cur.conv) + ')', why: 'A drop this size usually has one cause: lower budget or impression share, a change in the account, a tracking problem, or seasonality.', where, ask: ask('Leads dropped vs previous period') });
+      else if (ch >= 0.3) out.push({ sev: 'opportunity', title: 'Leads grew ' + Math.round(ch * 100) + '% vs the previous ' + s.days + ' days (' + num(prev.conv) + ' → ' + num(cur.conv) + ')', where, ask: ask('Leads grew vs previous period') }); }
+    if (s.hasPrev && prev.cpa && cur.cpa && !young) { const ch = (cur.cpa - prev.cpa) / prev.cpa; if (ch >= 0.25) out.push({ sev: 'medium', title: 'Cost per lead rose ' + Math.round(ch * 100) + '% (' + rsx(prev.cpa) + ' → ' + rsx(cur.cpa) + ')', where, ask: ask('CPA rose vs previous period') }); }
+    if (search) {
+      const bl = Number(c.budget_lost_is || 0), rl = Number(c.rank_lost_is || 0);
+      if (bl >= 0.15) out.push({ sev: tgt && cur.cpa && cur.cpa <= tgt ? 'opportunity' : 'medium', title: 'Missing ' + pct(bl) + ' of possible ads because the budget runs out', why: tgt && cur.cpa && cur.cpa <= tgt ? 'Cost per lead is on target, so a higher budget should bring more leads.' : 'Before adding budget, bring cost per lead down; otherwise more budget buys expensive leads.', recs: recsFor(r => /budget/i.test((r.category || '') + ' ' + (r.action_type || ''))), where, ask: ask('Lost impression share to budget') });
+      if (rl >= 0.3) out.push({ sev: 'medium', title: 'Missing ' + pct(rl) + ' of possible ads because of low ad rank', why: 'Ad rank = bid × quality. Better ads and landing page raise quality and lower cost per click.', steps: ['Improve ads rated Average/Poor below (add headlines that repeat the main keywords).', 'Raise Quality Score on keywords below 5: tighter ad group themes, landing page that matches the search.'], where, ask: ask('Lost impression share to rank') });
+      if (cur.impr > 500 && cur.ctr !== null && cur.ctr < 0.03) out.push({ sev: 'medium', title: 'Click-through rate is low: ' + pct(cur.ctr), why: 'Search ads normally get 4–8% CTR for travel. Low CTR raises cost per click and loses auctions.', where, ask: ask('Low CTR') });
+      const lowQs = (data.keywords || []).filter(k => k.account_id === c.account_id && String(k.campaign_id) === String(c.campaign_id) && k.quality_score && Number(k.quality_score) <= 4 && Number(k.cost_30d) > 0);
+      if (lowQs.length) out.push({ sev: 'medium', title: lowQs.length + ' keyword' + (lowQs.length > 1 ? 's have' : ' has') + ' Quality Score 4 or lower', sub: lowQs.slice(0, 6).map(k => k.keyword_text + ' (QS ' + k.quality_score + ')').join(' · '), where, ask: ask('Low quality score keywords', lowQs.slice(0, 10)) });
+    } else {
+      if (cur.impr > 2000 && cur.ctr !== null && cur.ctr < 0.005) out.push({ sev: 'medium', title: 'Click-through rate is low: ' + pct(cur.ctr), why: 'For Demand Gen / video, under 0.5% usually means the creative or audience does not fit. Try a new first 5 seconds of the video or a different audience.', where, ask: ask('Low CTR on Demand Gen') });
+      if (cur.clicks >= 150 && cur.conv === 0) out.push({ sev: young ? 'medium' : 'high', title: num(cur.clicks) + ' clicks and no lead yet', why: 'Many clicks without a single enquiry often means the landing page or the conversion tag is not working for these visitors, or the clicks are accidental (Shorts / mobile apps).', steps: ['Open the landing page on a phone and check it loads fast and the form works.', 'Google Ads > Goals > Summary: confirm the goal this campaign bids on is recording conversions.', 'Campaign > Insights and reports > Where ads showed: exclude mobile app / game placements with many clicks.'], where, ask: ask('Clicks but no leads on Demand Gen') });
+    }
+    const pace = s.activeCur ? (cur.cost / s.activeCur) / Number(c.daily_budget || 0) : null;
+    if (c.daily_budget && pace !== null && String(c.status).toUpperCase() === 'ENABLED' && pace < 0.6 && s.activeCur >= 3) out.push({ sev: 'info', title: 'Spending only ' + Math.round(pace * 100) + '% of the daily budget', why: 'The campaign cannot find enough traffic at current targeting/bids. Budget is not the limit here.', where, ask: ask('Underspending budget') });
+    const ads = (data.ads || []).filter(a => a.account_id === c.account_id && String(a.campaign_id) === String(c.campaign_id));
+    const weak = ads.filter(a => /POOR|AVERAGE/i.test(a.ad_strength || ''));
+    if (weak.length) out.push({ sev: 'medium', title: weak.length + ' ad' + (weak.length > 1 ? 's are' : ' is') + ' rated ' + [...new Set(weak.map(a => String(a.ad_strength).toLowerCase()))].join('/'), why: 'Stronger ads (more unique headlines, keywords in headlines) win more auctions at lower cost.', recs: recsFor(r => /ad/i.test(r.action_type || '')), where, ask: ask('Weak ad strength') });
+    const disapproved = ads.filter(a => a.approval_status && !/APPROVED/i.test(a.approval_status));
+    if (disapproved.length) out.push({ sev: 'high', title: disapproved.length + ' ad' + (disapproved.length > 1 ? 's are' : ' is') + ' not approved', where, ask: ask('Ads not approved') });
+    const fc = (data.funnel_campaigns || []).find(f => f.account_id === c.account_id && String(f.campaign_id) === String(c.campaign_id)) || (data.funnel_campaigns || []).find(f => String(f.campaign_id) === String(c.campaign_id));
+    if (fc && Number(fc.leads) >= 5) { const q = Number(fc.qualified || 0) / Number(fc.leads); if (q < 0.2) out.push({ sev: 'medium', title: 'Only ' + Math.round(q * 100) + '% of this campaign\'s leads are marked qualified', why: 'Either lead status is not being updated in the Leads list, or the campaign brings low-quality enquiries. Update the statuses first so the AI can judge lead quality.', where, ask: ask('Low qualified-lead rate') }); }
+    const known = new Set(out.map(o => o.title));
+    (data.alerts || []).filter(a => a.account_id === c.account_id && String(a.campaign_id) === String(c.campaign_id) && !a.resolved_at).forEach(a => { if (!young || !/ZERO_CONV/i.test(a.alert_type || '')) out.push({ sev: a.severity || 'medium', title: a.title || a.alert_type, sub: (a.root_cause || []).join(' '), where, ask: ask(a.title || a.alert_type, a.detail) }); });
+    const order = { critical: 0, high: 0, medium: 1, warning: 1, opportunity: 2, info: 3, tip: 4 };
+    return out.filter((o, i, a) => a.findIndex(x => x.title === o.title) === i).sort((a, b) => (order[a.sev] ?? 3) - (order[b.sev] ?? 3));
+  }
+  function crepCtx(c, s) {
+    const r2 = v => v === null || v === undefined ? null : Math.round(Number(v) * 100) / 100;
+    const kk = o => ({ spend: Math.round(o.cost), clicks: o.clicks, impressions: o.impr, conversions: r2(o.conv), ctr_pct: o.ctr === null ? null : r2(o.ctr * 100), cpc: r2(o.cpc), conv_rate_pct: o.cvr === null ? null : r2(o.cvr * 100), cost_per_lead: r2(o.cpa) });
+    const fc = (data.funnel_campaigns || []).find(f => String(f.campaign_id) === String(c.campaign_id)) || null;
+    return {
+      campaign: { name: c.campaign_name, type: c.campaign_type, status: c.status, bidding: c.bidding_strategy_type, daily_budget: Number(c.daily_budget || 0), search_impr_share: c.search_is, lost_is_budget: c.budget_lost_is, lost_is_rank: c.rank_lost_is, age_days: s.age, first_spend_date: s.first },
+      target_cost_per_lead: targetCpa(), period_days: s.days, includes_partial_today: s.partialToday,
+      current_period: kk(s.cur), previous_period: s.hasPrev ? kk(s.prev) : 'no data (campaign is new)',
+      daily: s.series.filter(d => d.cost > 0).map(d => [d.date.slice(5), Math.round(d.cost), d.clicks, r2(d.conv)]),
+      lead_quality: fc ? { leads: fc.leads, qualified: fc.qualified, quoted: fc.quoted, booked: fc.booked, revenue: fc.revenue, spam: fc.spam, lost: fc.lost, cost_per_qualified: fc.cost_per_qualified, cost_per_booking: fc.cost_per_booking } : null,
+      ad_groups: (data.ad_groups || []).filter(g => String(g.campaign_id) === String(c.campaign_id)).map(g => ({ id: g.ad_group_id, cost: Math.round(g.cost_30d || 0), conversions: g.conversions_30d, keywords: g.keywords, live_ads: g.live_ads, url: g.final_url })),
+      top_keywords: (data.keywords || []).filter(k => String(k.campaign_id) === String(c.campaign_id)).sort((a, b) => Number(b.cost_30d) - Number(a.cost_30d)).slice(0, 12).map(k => [k.keyword_text, k.match_type, Math.round(k.cost_30d || 0), k.clicks_30d, k.conversions_30d, k.quality_score]),
+      ads: (data.ads || []).filter(a => String(a.campaign_id) === String(c.campaign_id)).map(a => ({ strength: a.ad_strength, approval: a.approval_status, cost: Math.round(a.cost_30d || 0), clicks: a.clicks_30d, conversions: a.conversions_30d })),
+      open_recommendations: (data.recommendations || []).filter(r => ['proposed', 'advisory'].includes(r.status) && String(r.campaign_id) === String(c.campaign_id)).map(r => r.title)
+    };
+  }
+  function renderCampReport() {
+    const el = $('#campReport'); if (!el) return;
+    if (!data || !data.campaigns) { el.innerHTML = ''; return; }
+    const c = crepPick();
+    if (!c) { el.innerHTML = ''; return; }
+    if (!data.campaign_daily) { el.innerHTML = '<div class="panel"><div class="empty">Campaign reports need the latest server update. Press Refresh.</div></div>'; return; }
+    const s = crepStats(c), cur = s.cur, prev = s.prev, tgt = targetCpa();
+    const camps = (data.campaigns || []).filter(inScope);
+    const delta = (a, b, goodUp, isMoney) => { if (!s.hasPrev || b === null || b === undefined || !Number(b)) return '<span class="muted">no earlier data</span>'; const v = (a - b) / b; const good = goodUp === null ? '' : ((v >= 0) === goodUp ? 'good' : 'bad'); return '<span class="pill ' + (Math.abs(v) < 0.05 ? '' : good) + '">' + (v >= 0 ? '▲ ' : '▼ ') + Math.abs(Math.round(v * 100)) + '%</span> <span class="muted">vs ' + (isMoney ? rsx(b) : (b < 1 ? pct(b) : num(b))) + '</span>'; };
+    const kp = (label, val, sub) => '<div class="panel kpi"><div class="label">' + label + '</div><div class="value">' + val + '</div><div class="sub">' + sub + '</div></div>';
+    const cpaPill = cur.cpa === null ? '' : tgt ? ' <span class="pill ' + (cur.cpa <= tgt ? 'good' : cur.cpa <= tgt * 1.25 ? 'warn' : 'bad') + '">target ' + rsx(tgt) + '</span>' : '';
+    const pace = s.activeCur && c.daily_budget ? (cur.cost / s.activeCur) / Number(c.daily_budget) : null;
+    const fc = (data.funnel_campaigns || []).find(f => String(f.campaign_id) === String(c.campaign_id));
+    const findings = crepFindings(c, s);
+    const type = String(c.campaign_type || '').toUpperCase();
+    const kws = (data.keywords || []).filter(k => k.account_id === c.account_id && String(k.campaign_id) === String(c.campaign_id)).sort((a, b) => Number(b.cost_30d) - Number(a.cost_30d));
+    const ads = (data.ads || []).filter(a => a.account_id === c.account_id && String(a.campaign_id) === String(c.campaign_id));
+    const ags = (data.ad_groups || []).filter(g => g.account_id === c.account_id && String(g.campaign_id) === String(c.campaign_id));
+    const leads = (data.leads || []).filter(l => l.campaign_name && l.campaign_name === c.campaign_name);
+    const aiKey = c.account_id + '|' + c.campaign_id + '|' + s.days + '|' + s.lastDate;
+    const table = (head, rows) => '<div class="table-wrap"><table><thead><tr>' + head.map(h => '<th' + (/^(Spend|Clicks|Conv|CPA|Cost|QS|Leads)/.test(h) ? ' class="num"' : '') + '>' + h + '</th>').join('') + '</tr></thead><tbody>' + rows.join('') + '</tbody></table></div>';
+    const cpaCell = (cost, conv) => Number(conv) > 0 ? rsx(Number(cost) / Number(conv)) : '—';
+    let breakdown = '';
+    if (ags.length) breakdown += '<h3 class="crep-h">Ad groups</h3>' + table(['Ad group', 'Landing page', 'Keywords', 'Live ads', 'Spend (30d)', 'Conv.', 'CPA'], ags.map(g => '<tr><td>' + esc(g.ad_group_id) + '</td><td class="small">' + esc(String(g.final_url || '').replace(/^https?:\/\//, '')) + '</td><td>' + num(g.keywords) + '</td><td>' + num(g.live_ads) + '</td><td class="num">' + rsx(g.cost_30d) + '</td><td class="num">' + num(g.conversions_30d) + '</td><td class="num">' + cpaCell(g.cost_30d, g.conversions_30d) + '</td></tr>'));
+    if (kws.length) breakdown += '<h3 class="crep-h">Keywords (top ' + Math.min(15, kws.length) + ' by spend, 30 days)</h3>' + table(['Keyword', 'Match', 'Clicks', 'Spend', 'Conv.', 'CPA', 'QS'], kws.slice(0, 15).map(k => '<tr><td>' + esc(k.keyword_text) + (String(k.status).toUpperCase() === 'PAUSED' ? ' <span class="pill">paused</span>' : '') + '</td><td class="small">' + esc(String(k.match_type || '').toLowerCase()) + '</td><td class="num">' + num(k.clicks_30d) + '</td><td class="num">' + rsx(k.cost_30d) + '</td><td class="num">' + num(k.conversions_30d) + '</td><td class="num">' + cpaCell(k.cost_30d, k.conversions_30d) + '</td><td class="num">' + (k.quality_score ? '<span class="pill ' + (k.quality_score >= 7 ? 'good' : k.quality_score >= 5 ? '' : 'bad') + '">' + esc(k.quality_score) + '</span>' : '—') + '</td></tr>'));
+    if (ads.length) breakdown += '<h3 class="crep-h">Ads</h3>' + table(['Ad', 'Strength', 'Status', 'Clicks', 'Spend', 'Conv.'], ads.map(a => '<tr><td class="small">' + esc(trunc((a.headlines || []).slice(0, 3).map(h => typeof h === 'object' ? (h.text || '') : h).join(' | ') || ('Ad ' + a.ad_id), 90)) + '</td><td><span class="pill ' + (/EXCELLENT|GOOD/i.test(a.ad_strength) ? 'good' : /POOR/i.test(a.ad_strength) ? 'bad' : 'warn') + '">' + esc(String(a.ad_strength || '—').toLowerCase()) + '</span></td><td class="small">' + esc(String(a.approval_status || '').toLowerCase()) + '</td><td class="num">' + num(a.clicks_30d) + '</td><td class="num">' + rsx(a.cost_30d) + '</td><td class="num">' + num(a.conversions_30d) + '</td></tr>'));
+    if (!breakdown) breakdown = '<div class="small muted">' + (type === 'DEMAND_GEN' || type === 'PERFORMANCE_MAX' ? 'Ad-group, audience and placement details for ' + esc(type.replace('_', ' ').toLowerCase()) + ' campaigns are not collected yet — see them in Google Ads > Campaigns > ' + esc(c.campaign_name) + '.' : 'No ad group / keyword details collected for this campaign yet.') + '</div>';
+    const funnel = fc ? '<div class="crep-funnel">' + [['Leads', fc.leads], ['Qualified', fc.qualified], ['Quoted', fc.quoted], ['Booked', fc.booked], ['Revenue', rsx(fc.revenue)], ['Cost / qualified', fc.cost_per_qualified ? rsx(fc.cost_per_qualified) : '—'], ['Cost / booking', fc.cost_per_booking ? rsx(fc.cost_per_booking) : '—']].map(x => '<div><span>' + x[0] + '</span><b>' + (typeof x[1] === 'string' ? x[1] : num(x[1])) + '</b></div>').join('') + '</div>' : '<div class="small muted">No leads recorded from this campaign yet.</div>';
+    el.innerHTML = '<div class="panel" style="margin-top:14px">' +
+      '<div class="ph"><h2 style="margin:0">Campaign report</h2><label class="small">Campaign <select id="crepSel">' + camps.map(x => '<option value="' + esc(x.account_id + '|' + x.campaign_id) + '"' + (x === c ? ' selected' : '') + '>' + esc(x.campaign_name) + (String(x.status).toUpperCase() === 'ENABLED' ? '' : ' (' + esc(String(x.status).toLowerCase()) + ')') + '</option>').join('') + '</select></label></div>' +
+      '<div class="small muted" style="margin:4px 0 10px">' + esc(String(c.campaign_type || '').replace(/_/g, ' ').toLowerCase()) + ' · ' + esc(String(c.bidding_strategy_type || '').replace(/_/g, ' ').toLowerCase()) + ' · budget ' + rsx(c.daily_budget) + '/day · ' + esc(String(c.status || '').toLowerCase()) +
+        (s.first ? ' · first spend ' + esc(s.first) + ' (' + s.age + ' day' + (s.age === 1 ? '' : 's') + ' ago)' : '') + ' · last ' + s.days + ' days' + (s.partialToday ? ', today is partial' : '') + ', compared with the ' + s.days + ' days before</div>' +
+      '<div class="grid kpis">' +
+        kp('Leads (conversions)', num(cur.conv), delta(cur.conv, prev.conv, true)) +
+        kp('Cost per lead', cur.cpa === null ? '—' : rsx(cur.cpa), (cpaPill || '') + ' ' + (cur.cpa !== null && prev.cpa ? delta(cur.cpa, prev.cpa, false, true) : '')) +
+        kp('Spend', rsx(cur.cost), delta(cur.cost, prev.cost, null, true)) +
+        kp('Clicks', num(cur.clicks), 'CTR ' + pct(cur.ctr) + ' · CPC ' + (cur.cpc === null ? '—' : rsx(cur.cpc))) +
+        kp('Click → lead rate', pct(cur.cvr), num(cur.impr) + ' impressions') +
+        kp('Budget used', pace === null ? '—' : Math.round(pace * 100) + '%', 'avg ' + (s.activeCur ? rsx(cur.cost / s.activeCur) : '—') + ' of ' + rsx(c.daily_budget) + '/day' + (String(c.campaign_type).toUpperCase() === 'SEARCH' ? ' · lost to budget ' + pct(c.budget_lost_is) : '')) +
+      '</div>' +
+      '<div class="panel" style="margin-top:10px;height:240px"><canvas id="crepChart"></canvas></div>' +
+      '<div class="advice"><div class="advice-h"><span>AI analysis & recommendations for this campaign</span><button class="btn primary sm" data-crepai="' + esc(aiKey) + '">' + (crepAiCache[aiKey] ? 'Run again' : 'Analyse this campaign') + '</button></div><div id="crepAi">' + (crepAiCache[aiKey] ? richAnswer(crepAiCache[aiKey], { account_id: c.account_id, campaign_id: c.campaign_id, section: 'Campaign report' }) : '<div class="small muted" style="padding:6px 2px">The AI compares this period with the previous one, checks keywords / ads / lead quality and gives a short verdict with numbered actions. Takes 20–40 seconds.</div>') + '</div></div>' +
+      box('Findings for this campaign', findings.map(f => ({ ...f, ask: f.ask })), { empty: 'No problems found for this campaign in this period.', ask: { section: 'Campaign: ' + c.campaign_name, ctx: { campaign: crepCtx(c, s) } } }) +
+      '<h3 class="crep-h">Lead quality (from your Leads list)</h3>' + funnel +
+      (leads.length ? '<div class="small muted" style="margin-top:4px">Latest leads: ' + leads.slice(0, 6).map(l => esc((l.contact_name || l.lead_ref || 'lead') + ' – ' + (l.status || 'new'))).join(' · ') + '</div>' : '') +
+      breakdown + '</div>';
+    if (window.Chart) {
+      if (crepChart) { try { crepChart.destroy(); } catch (e) {} }
+      const css = getComputedStyle(document.documentElement);
+      const accent = css.getPropertyValue('--accent').trim(), good = css.getPropertyValue('--good').trim(), muted = css.getPropertyValue('--muted').trim(), line = css.getPropertyValue('--line').trim();
+      crepChart = new Chart($('#crepChart'), { data: { labels: s.series.map(d => d.date.slice(5)), datasets: [
+        { type: 'bar', label: 'Spend (₹)', data: s.series.map(d => Math.round(d.cost)), backgroundColor: accent + '99', borderRadius: 3, yAxisID: 'y' },
+        { type: 'line', label: 'Leads', data: s.series.map(d => d.conv), borderColor: good, backgroundColor: good, tension: .3, pointRadius: 2, yAxisID: 'y1' },
+        { type: 'line', label: 'Clicks', data: s.series.map(d => d.clicks), borderColor: muted, backgroundColor: muted, borderDash: [4, 3], tension: .3, pointRadius: 0, yAxisID: 'y2' }] },
+        options: { maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { labels: { color: muted, boxWidth: 12 } } },
+          scales: { x: { ticks: { color: muted, maxRotation: 0, autoSkip: true }, grid: { display: false } }, y: { ticks: { color: muted }, grid: { color: line } }, y1: { position: 'right', ticks: { color: muted, precision: 0 }, grid: { display: false }, beginAtZero: true }, y2: { display: false, beginAtZero: true } } } });
+    }
+  }
+  async function crepRunAi(key) {
+    const c = crepPick(); if (!c) return; const s = crepStats(c);
+    const el = $('#crepAi'); const btn = document.querySelector('[data-crepai]'); if (btn) btn.disabled = true;
+    el.innerHTML = '<span class="spin"></span> Analysing ' + esc(c.campaign_name) + '… (20–40 seconds)';
+    const ctx = crepCtx(c, s); ctx.rule_findings = crepFindings(c, s).map(f => f.title);
+    let cj = JSON.stringify(ctx); if (cj.length > 14000) cj = cj.slice(0, 14000);
+    const q = 'Analyse this one campaign as a Google Ads expert for a travel company. Use only the numbers in the context; do the arithmetic yourself. Reply in this order, plain words, Rs for money:\n1) Verdict in 2 sentences (is it working against the target cost per lead; is it improving or getting worse vs the previous period; if age_days < 14 say it is still learning and must not be judged or paused yet).\n2) What is working (max 3 bullets with numbers).\n3) What is not working and why (max 4 bullets with numbers).\n4) Actions, numbered, most important first (max 6). For each: what to do, exact Google Ads menu path, expected effect, and whether the app can do it with an Apply button. Never suggest pausing or big changes for a campaign under 14 days old.\n5) What to check next week.';
+    try {
+      const r = await act({ action: 'ask', account_id: c.account_id, section: 'Campaign report: ' + c.campaign_name, question: q, context: cj, history: '[]' });
+      if (r.ok && r.answer) { crepAiCache[key] = r.answer; el.innerHTML = richAnswer(r.answer, { account_id: c.account_id, campaign_id: c.campaign_id, section: 'Campaign report' }) + '<div class="rec-actions">' + askBtnHtml('Campaign: ' + c.campaign_name, { campaign: ctx, ai_analysis: r.answer }, 'Ask a follow-up question') + '</div>'; }
+      else el.innerHTML = '<span class="muted">' + esc(r.error || 'No answer from the AI. Try again.') + '</span>';
+    } catch (e) { el.innerHTML = '<span class="muted">' + esc(e.message) + '</span>'; }
+    finally { if (btn) { btn.disabled = false; btn.textContent = 'Run again'; } }
+  }
+  document.addEventListener('click', e => {
+    const a = e.target.closest('[data-crep]');
+    if (a) { e.preventDefault(); crepSel = a.dataset.crep; try { localStorage.setItem('gads_crep', crepSel); } catch (x) {} renderCampReport(); const r = $('#campReport'); if (r) r.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+    const b = e.target.closest('[data-crepai]'); if (b) { e.preventDefault(); crepRunAi(b.dataset.crepai); }
+  });
+  document.addEventListener('change', e => { if (e.target && e.target.id === 'crepSel') { crepSel = e.target.value; try { localStorage.setItem('gads_crep', crepSel); } catch (x) {} renderCampReport(); } });
 
   // ---------- generic modal with several buttons ----------
   function modal(title, html, buttons, wide) {
