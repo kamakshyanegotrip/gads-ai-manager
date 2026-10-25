@@ -3169,30 +3169,33 @@ ul.since li, ul.conn li { margin: 6px 0; }
       it = { ...it, doneKey: it.title };
       if (d && d.keep) it.sevLabel = '✓ done';
       if (d && !d.keep) it.sub = 'Back in To-do: still found ' + Math.round((Date.now() - d.at) / 864e5) + ' days after you marked it done on ' + new Date(d.at).toLocaleDateString() + '.';
-      const cid = meta.cid ? String(meta.cid) : '', acc = meta.acc || '';
+      let cid = meta.cid ? String(meta.cid) : '', acc = meta.acc || '', guessed = false;
+      if (!cid) { const g = guessCamp(it, meta.src); if (g) { cid = String(g.campaign_id); acc = g.account_id; guessed = true; } }
       if (cid) { const age = campAge(acc, cid); if (age !== null && age < 14) {
         const pauseRec = (it.recs || []).some(r => r && r.action_type === 'pause_campaign');
         if (pauseRec) { const pr = (it.recs || []).find(r => r && r.action_type === 'pause_campaign'); it = { ...it, recs: (it.recs || []).filter(r => r !== pr), evidence: (it.evidence || '') + (pr && pr.status === 'proposed' ? '<div class="rec-actions"><button class="btn bad sm" data-decline="' + esc(pr.recommendation_id) + '">Decline this proposal (keep the campaign running)</button></div>' : ''), sev: 'high', sevLabel: 'decline — too early', sub: 'This campaign is only ' + age + ' day' + (age > 1 ? 's' : '') + ' old. Pausing now throws away what Google has learned. Open Approvals & history and press Decline on this proposal.' }; meta = { ...meta, urgent: true, rank: 0 }; }
         else if (/0 conversions|no conversions|no lead|zero/i.test(it.title)) { it = { ...it, sev: 'info', sevLabel: 'learning', sub: 'This campaign is ' + age + ' day' + (age > 1 ? 's' : '') + ' old and still learning. No conversions in the first days is normal — do not pause it; judge it after day 14.' }; meta = { ...meta, urgent: false, rank: 3 }; }
       } }
-      out.push({ it, ...meta, cid, acc, money: moneyOf(it.title) }); };
+      out.push({ it, ...meta, cid, acc, guessed, money: moneyOf(it.title) }); };
     const kindOf = (t, type) => /landing|page|tracking|tag|conversion action|consent|website|site|url|speed|form/i.test(t + ' ' + (type || '')) ? 'site'
       : /wast|negative|block|pause|budget|cost|spend|irrelevant|no lead|zero/i.test(t) ? 'money' : 'leads';
     const RANK = { critical: 0, high: 0, warning: 1, medium: 1, opportunity: 2, info: 3, tip: 3 };
     // 1. live alerts (something is wrong right now)
     (data.alerts || []).filter(a => inScope(a) && a.status !== 'resolved').forEach(a => { const sol = alertSolution(a);
       add({ sev: a.severity, title: a.title, why: sol.why, steps: sol.steps, fixes: sol.fixes, evidence: (a.root_cause || []).length ? '<ul class="plain small">' + a.root_cause.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' : '',
-        ask: { section: 'Alert: ' + trunc(a.title, 70), ctx: { ...ctxBase(), alert: a } } }, { urgent: true, kind: kindOf(a.title, a.alert_type), rank: -1, cid: a.campaign_id, acc: a.account_id }); });
+        ask: { section: 'Alert: ' + trunc(a.title, 70), ctx: { ...ctxBase(), alert: a } } }, { urgent: true, kind: kindOf(a.title, a.alert_type), rank: -1, cid: a.campaign_id, acc: a.account_id, src: a }); });
     // 2. audit findings (website, tracking, ads, keywords)
-    data.issues.filter(inScope).forEach(i => { const it = findingItem(i, 'To-do'); add(it, { urgent: /critical|high/.test(i.severity), kind: kindOf(it.title, i.issue_type), rank: RANK[i.severity] ?? 3, cid: i.campaign_id, acc: i.account_id }); });
+    data.issues.filter(inScope).forEach(i => { const it = findingItem(i, 'To-do'); add(it, { urgent: /critical|high/.test(i.severity), kind: kindOf(it.title, i.issue_type), rank: RANK[i.severity] ?? 3, cid: i.campaign_id, acc: i.account_id, src: i }); });
     // 3. daily-analysis findings
     (data.insights || []).filter(inScope).forEach(x => (((x.insights || {}).intelligence || {}).findings || []).filter(f => inCamp({ ...f, account_id: f.google_ads_account_id || x.account_id })).forEach(f => { const pb = playbook(f.title, { ...f, account_id: x.account_id });
-      add({ sev: f.severity, title: f.title, why: pb.why, steps: pb.steps, fixes: pb.fixes, recs: pb.recs, ask: { section: 'Daily analysis: ' + trunc(f.title, 70), ctx: { ...ctxBase(), finding: f } } }, { urgent: /critical|high/.test(f.severity), kind: kindOf(f.title), rank: RANK[f.severity] ?? 3, cid: f.campaign_id, acc: f.google_ads_account_id || f.account_id || x.account_id }); }));
+      add({ sev: f.severity, title: f.title, why: pb.why, steps: pb.steps, fixes: pb.fixes, recs: pb.recs, ask: { section: 'Daily analysis: ' + trunc(f.title, 70), ctx: { ...ctxBase(), finding: f } } }, { urgent: /critical|high/.test(f.severity), kind: kindOf(f.title), rank: RANK[f.severity] ?? 3, cid: f.campaign_id, acc: f.google_ads_account_id || f.account_id || x.account_id, src: { ...f, account_id: f.google_ads_account_id || x.account_id } }); }));
     // 4. recommendations not already shown with a finding
     data.recommendations.filter(r => inScope(r) && ['proposed', 'advisory'].includes(r.status) && !usedRecs.has(r.recommendation_id)).forEach(r => { const x = recHow(r) || {}; const pb = x.pb || {};
       add({ sev: r.status === 'proposed' ? 'warning' : 'info', sevLabel: r.status === 'proposed' ? 'approve' : 'to do', title: r.title, why: [r.rationale, r.expected_impact ? 'Expected: ' + r.expected_impact : ''].filter(Boolean).join(' '),
-        steps: x.auto ? [] : pb.steps, fixes: x.auto ? [] : pb.fixes, recs: [r], ask: { section: 'Recommendation ' + r.recommendation_id, ctx: { recommendation: r } } }, { urgent: false, kind: kindOf(r.title, r.category), rank: r.status === 'proposed' ? 1.5 : 2.5, cid: r.campaign_id, acc: r.account_id }); });
+        steps: x.auto ? [] : pb.steps, fixes: x.auto ? [] : pb.fixes, recs: [r], ask: { section: 'Recommendation ' + r.recommendation_id, ctx: { recommendation: r } } }, { urgent: false, kind: kindOf(r.title, r.category), rank: r.status === 'proposed' ? 1.5 : 2.5, cid: r.campaign_id, acc: r.account_id, src: r }); });
     out.forEach(o => { o.approve = (o.it.recs || []).some(r => r && r.status === 'proposed'); });
+    const cv = campIgnore ? 'ALL' : campV(); const cs = cv === 'ALL' ? null : campOf(cv);
+    if (cs) { for (let i = out.length - 1; i >= 0; i--) { const o = out[i]; if (o.cid && String(o.cid) !== String(cs.campaign_id)) out.splice(i, 1); } }
     return out.sort((a, b) => (b.urgent - a.urgent) || (a.rank - b.rank) || (b.approve - a.approve) || (b.money - a.money));
   }
   function todoCountNow() { try { return todoItems().length; } catch (e) { return 0; } }
@@ -3205,6 +3208,24 @@ ul.since li, ul.conn li { margin: 6px 0; }
     if (todoFilter === 'done') { renderDone(); return; }
     const list = all.filter(f);
     $('#todoList').innerHTML = list.length ? '<p class="small muted" style="margin-top:0">Grouped by campaign, most important first. Open an item to see why it matters and the one button that does it — <b>Apply</b> (the app changes Google Ads after you approve), <b>Guide me</b> (arrows on the Google Ads page) or <b>Discuss with AI</b>.</p>' + todoGroups(list) : '<div class="empty">Nothing here' + (campV() !== 'ALL' ? ' for this campaign' : '') + '. 🎉</div>';
+  }
+  // work out which campaign an item belongs to when the server did not tag it
+  function guessCamp(it, src) {
+    src = src || {}; const d = src.detail || src.metrics || {};
+    const biz = $('#bizSel').value, accSel = $('#accSel').value;
+    const camps = (data.campaigns || []).filter(c => (biz === 'ALL' || c.business_id === biz) && (accSel === 'ALL' || c.account_id === accSel) && (!src.account_id || c.account_id === src.account_id));
+    const byId = id => camps.find(c => String(c.campaign_id) === String(id));
+    if (d.campaign_id && byId(d.campaign_id)) return byId(d.campaign_id);
+    const txt = [it.title, it.sub, d.title, d.note, d.campaign_name, src.title].filter(Boolean).join(' ');
+    const named = camps.filter(c => c.campaign_name && txt.includes(c.campaign_name)).sort((a, b) => b.campaign_name.length - a.campaign_name.length);
+    if (named.length) return named[0];
+    const nu = u => String(u || '').toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split(/[?#\s"')]/)[0].replace(/\/+$/, '');
+    const urls = (txt + ' ' + JSON.stringify(d)).match(/(?:https?:\/\/)?(?:www\.)?[a-z0-9-]+\.[a-z.]{2,}\/[^\s"'<>)]*/gi) || [];
+    if (urls.length) { const owners = new Set(); urls.map(nu).forEach(u => { (data.ads || []).forEach(a => { if ([].concat(a.final_urls || []).some(f => nu(f) === u)) owners.add(String(a.campaign_id)); }); (data.ad_groups || []).forEach(g => { if (nu(g.final_url) === u) owners.add(String(g.campaign_id)); }); });
+      const own = [...owners].map(byId).filter(Boolean); if (own.length === 1) return own[0]; }
+    const searchOnly = /keyword|search term|searches|quality score|landing page experience|ad schedule|between \d|hour|sitelink|callout|responsive search|\bRSA\b|live ads|match type|negative|impression share|ad rank|ad group/i;
+    if (searchOnly.test(txt + ' ' + (src.issue_type || '') + ' ' + (src.category || '') + ' ' + (src.action_type || ''))) { const s = camps.filter(c => String(c.campaign_type).toUpperCase() === 'SEARCH' && String(c.status).toUpperCase() === 'ENABLED'); if (s.length === 1) return s[0]; }
+    return null;
   }
   function todoGroups(list) {
     const groups = new Map();
